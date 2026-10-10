@@ -1,0 +1,74 @@
+<%= if @print? do %>
+  <div class="min-h-screen bg-canvas px-4 py-6 print:bg-white print:p-0">
+    <div class="mx-auto mb-4 flex max-w-[820px] items-center justify-between print:hidden">
+      <.link navigate={~p"/goods-receipts/#{@note}"} class="text-sm text-muted hover:text-ink">
+        ← Back
+      </.link>
+      <.button phx-click={JS.dispatch("zippiker:print")} variant="primary" id="print-button">
+        <.icon name="hero-printer-micro" /> Print / Save as PDF
+      </.button>
+    </div>
+    <.goods_receipt_paper note={@note} />
+  </div>
+<% else %>
+  <Layouts.app
+    flash={@flash}
+    current_user={@current_user}
+    current_organization={@current_organization}
+    active={:goods_receipts}
+  >
+    <.header>
+      <:breadcrumb>
+        <.link navigate={~p"/goods-receipts"} class="hover:text-ink">Goods received</.link>
+      </:breadcrumb>
+      <span class="flex items-center gap-3">
+        {@note.number}
+        <.badge color={if(@note.status == :received, do: :emerald, else: :slate)}>
+          {Format.humanize(@note.status)}
+        </.badge>
+      </span>
+      <:subtitle>{@note.supplier.name} · {Format.date(@note.received_on)}</:subtitle>
+      <:actions>
+        <.button navigate={~p"/goods-receipts/#{@note}/print"} variant="primary" id="print-grn">
+          <.icon name="hero-printer-micro" /> Print note
+        </.button>
+      </:actions>
+    </.header>
+
+    <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+      <.goods_receipt_paper note={@note} />
+
+      <aside class="space-y-4">
+        <.card title="Details">
+          <.list>
+            <:item :if={@note.purchase_order} title="Purchase order">
+              <.link
+                navigate={~p"/purchase-orders/#{@note.purchase_order}"}
+                class="hover:underline"
+              >
+                {@note.purchase_order.number}
+              </.link>
+            </:item>
+            <:item :if={@note.bill} title="Bill">
+              <.link navigate={~p"/bills/#{@note.bill}"} class="hover:underline">{@note.bill.number}</.link>
+            </:item>
+            <:item title="Supplier's ref.">{@note.supplier_reference || "—"}</:item>
+            <:item title="Warehouse">{(@note.warehouse && @note.warehouse.name) || "—"}</:item>
+            <:item :if={@note.stock_operation} title="Stock movement">
+              <.link
+                navigate={~p"/inventory/operations/#{@note.stock_operation}"}
+                class="hover:underline"
+              >
+                {@note.stock_operation.number}
+              </.link>
+            </:item>
+            <:item title="Received by">{Format.user_name(@note.received_by)}</:item>
+          </.list>
+        </.card>
+        <p :if={@note.status == :cancelled} class="px-1 text-xs text-muted">
+          Cancelled because the bill that brought these goods in was voided.
+        </p>
+      </aside>
+    </div>
+  </Layouts.app>
+<% end %>

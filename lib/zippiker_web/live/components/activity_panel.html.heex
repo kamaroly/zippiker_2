@@ -1,0 +1,136 @@
+<div id={@id}>
+  <.card padded={false}>
+    <div class="flex items-center gap-1 border-b border-line px-3 pt-3">
+      <.tab_button target={@myself} tab={:activity} current={@tab}>Activity</.tab_button>
+      <.tab_button target={@myself} tab={:tasks} current={@tab}>
+        Tasks
+        <span
+          :if={@open_tasks > 0}
+          class="ml-1 rounded-full bg-brand-soft px-1.5 text-[11px] text-brand"
+        >
+          {@open_tasks}
+        </span>
+      </.tab_button>
+    </div>
+
+    <div :if={@tab == :activity} class="p-5">
+      <.form
+        for={@activity_form}
+        id={"#{@id}-activity-form"}
+        phx-submit="log"
+        phx-target={@myself}
+      >
+        <div class="rounded-xl border border-line bg-surface-muted p-3 focus-within:border-brand focus-within:ring-3 focus-within:ring-brand/15">
+          <div class="mb-2 flex gap-1">
+            <button
+              :for={{kind, label} <- @kinds}
+              type="button"
+              phx-click="kind"
+              phx-value-kind={kind}
+              phx-target={@myself}
+              class={[
+                "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition",
+                @kind == kind && "bg-surface text-ink shadow-card",
+                @kind != kind && "text-muted hover:text-ink"
+              ]}
+            >
+              <.icon name={activity_icon(kind)} class="size-3.5" />{label}
+            </button>
+          </div>
+          <input type="hidden" name={@activity_form[:kind].name} value={@kind} />
+          <textarea
+            id={"#{@id}-activity-body"}
+            name={@activity_form[:body].name}
+            rows="2"
+            placeholder={placeholder(@kind)}
+            class="w-full resize-none border-0 bg-transparent p-1 text-sm text-ink placeholder:text-muted focus:outline-none"
+          >{@activity_form[:body].value}</textarea>
+          <div class="flex justify-end">
+            <.button type="submit" variant="primary" size="sm" id={"#{@id}-log"}>Log {@kind}</.button>
+          </div>
+        </div>
+      </.form>
+
+      <ol id={"#{@id}-timeline"} phx-update="stream" class="mt-6 space-y-5">
+        <li id={"#{@id}-timeline-empty"} class="hidden only:block">
+          <p class="py-6 text-center text-sm text-muted">
+            No activity yet. Log a note or a call.
+          </p>
+        </li>
+        <li :for={{dom_id, activity} <- @streams.timeline} id={dom_id} class="group flex gap-3">
+          <span class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-canvas text-ink-soft">
+            <.icon name={activity_icon(activity.kind)} class="size-4" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs text-muted">
+              <span class="font-medium text-ink">{Format.user_name(activity.author)}</span>
+              logged a {activity.kind}
+              <span :if={activity.deal && !@scope[:deal_id]}>
+                on
+                <.link navigate={~p"/deals/#{activity.deal}"} class="text-ink hover:underline">{activity.deal.title}</.link>
+              </span>
+              · {Format.ago(activity.occurred_at)}
+            </p>
+            <p class="mt-1 text-sm whitespace-pre-line text-ink-soft">{activity.body}</p>
+          </div>
+          <button
+            phx-click="delete_activity"
+            phx-value-id={activity.id}
+            phx-target={@myself}
+            data-confirm="Delete this activity?"
+            class="h-fit rounded p-1 text-muted opacity-0 transition group-hover:opacity-100 hover:text-danger"
+            title="Delete"
+          >
+            <.icon name="hero-trash" class="size-4" />
+          </button>
+        </li>
+      </ol>
+    </div>
+
+    <div :if={@tab == :tasks} class="p-5">
+      <.form
+        for={@task_form}
+        id={"#{@id}-task-form"}
+        phx-submit="add_task"
+        phx-target={@myself}
+        class="flex flex-wrap gap-2"
+      >
+        <div class="min-w-48 flex-1">
+          <.input field={@task_form[:title]} placeholder="Add a task…" />
+        </div>
+        <div class="w-40"><.input field={@task_form[:due_on]} type="date" /></div>
+        <.button type="submit" variant="primary">Add</.button>
+      </.form>
+
+      <ul id={"#{@id}-tasks"} phx-update="stream" class="mt-4 divide-y divide-line">
+        <li id={"#{@id}-tasks-empty"} class="hidden only:block">
+          <p class="py-6 text-center text-sm text-muted">Nothing to do here.</p>
+        </li>
+        <li
+          :for={{dom_id, task} <- @streams.tasks}
+          id={dom_id}
+          class="flex items-center gap-3 py-2.5"
+        >
+          <.task_check task={task} target={@myself} />
+          <span class={[
+            "flex-1 text-sm",
+            task.done? && "text-muted line-through",
+            !task.done? && "text-ink"
+          ]}>
+            {task.title}
+          </span>
+          <span
+            :if={task.due_on}
+            class={[
+              "text-xs",
+              task.overdue? && "font-medium text-danger",
+              !task.overdue? && "text-muted"
+            ]}
+          >
+            {Format.due(task.due_on)}
+          </span>
+        </li>
+      </ul>
+    </div>
+  </.card>
+</div>

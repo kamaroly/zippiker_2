@@ -1,0 +1,106 @@
+<Layouts.platform flash={@flash} current_user={@current_user} active={:plans}>
+  <.header>
+    Plans
+    <:subtitle>
+      Workspaces pay price × members each month. The default plan is where new workspaces start.
+    </:subtitle>
+    <:actions>
+      <.button patch={~p"/platform/plans/new"} variant="primary" id="new-plan">
+        <.icon name="hero-plus-micro" /> Plan
+      </.button>
+    </:actions>
+  </.header>
+
+  <.table id="plans" rows={@streams.plans}>
+    <:col :let={{_id, plan}} label="Plan">
+      <span class="font-medium text-ink">{plan.name}</span>
+      <span class="ml-1 text-xs text-muted">{plan.code}</span>
+      <.badge :if={plan.default?} color={:orange} class="ml-2">Default</.badge>
+      <.badge :if={!plan.active?} class="ml-2">Retired</.badge>
+    </:col>
+    <:col :let={{_id, plan}} label="Per seat" class="text-right">
+      <span class="tabular">{amount(plan.price_per_seat, plan.currency)}</span>
+    </:col>
+    <:col :let={{_id, plan}} label="Seats">{plan.seat_limit || "Unlimited"}</:col>
+    <:col :let={{_id, plan}} label="Trial">{plan.trial_days} days</:col>
+    <:col :let={{_id, plan}} label="Modules" class="hidden md:table-cell">
+      <span class="flex flex-wrap gap-1">
+        <.badge :for={module <- plan.modules}>{ZippikerWeb.Modules.name(module)}</.badge>
+      </span>
+    </:col>
+    <:action :let={{_id, plan}}>
+      <.link patch={~p"/platform/plans/#{plan}/edit"} class="text-ink-soft hover:text-ink">
+        Edit
+      </.link>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-tag" title="No plans yet">
+        Create your first plan. Until then, new workspaces get a "Standard" plan automatically.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="plan-modal"
+    show
+    size="lg"
+    title={if(@plan, do: "Edit #{@plan.name}", else: "New plan")}
+    on_cancel={JS.patch(~p"/platform/plans")}
+  >
+    <.form for={@form} id="plan-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:name]} label="Name" placeholder="Growth" phx-mounted={JS.focus()} />
+        <.input field={@form[:code]} label="Code" placeholder="growth" />
+      </div>
+      <.input field={@form[:description]} label="Tagline" placeholder="For growing teams" />
+      <div class="grid gap-4 sm:grid-cols-4">
+        <.input
+          field={@form[:price_per_seat]}
+          type="number"
+          step="0.01"
+          min="0"
+          label="Price / seat"
+        />
+        <.input field={@form[:currency]} label="Currency" />
+        <.input
+          field={@form[:seat_limit]}
+          type="number"
+          min="1"
+          label="Seat limit"
+          placeholder="∞"
+        />
+        <.input field={@form[:trial_days]} type="number" min="0" label="Trial days" />
+      </div>
+
+      <fieldset>
+        <legend class="mb-2 text-sm font-medium text-ink">Included modules</legend>
+        <input type="hidden" name="plan[modules][]" value="" />
+        <div class="grid gap-2 sm:grid-cols-3">
+          <label
+            :for={module <- ZippikerWeb.Modules.all()}
+            class="flex cursor-pointer items-center gap-2 rounded-xl border border-line p-3 text-sm transition has-checked:border-brand has-checked:bg-brand-soft/40"
+          >
+            <input
+              type="checkbox"
+              name="plan[modules][]"
+              value={module.key}
+              checked={checked?(@form, module.key)}
+              class="size-4 rounded border-line-strong text-brand focus:ring-brand/30"
+            />
+            <.icon name={module.icon} class="size-4 text-muted" /> {module.name}
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <.input field={@form[:position]} type="number" label="Sort order" />
+        <.input field={@form[:default?]} type="checkbox" label="Default for new workspaces" />
+        <.input field={@form[:active?]} type="checkbox" label="Offered" />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save plan</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.platform>

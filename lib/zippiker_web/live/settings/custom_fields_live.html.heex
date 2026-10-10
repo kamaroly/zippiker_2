@@ -1,0 +1,139 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:custom_fields}
+>
+  <.header>
+    Custom fields
+    <:subtitle>Capture the details that matter to your business on any record.</:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/settings/custom-fields/new?entity=#{@entity}"}
+        variant="primary"
+        id="new-field"
+      >
+        <.icon name="hero-plus-micro" /> Field
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4">
+    <.segmented
+      current={@entity}
+      options={
+        for {label, entity} <- @entities,
+            do: {label, entity, ~p"/settings/custom-fields?entity=#{entity}"}
+      }
+    />
+  </div>
+
+  <p :if={!admin?(assigns)} class="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+    Only workspace admins can change custom fields.
+  </p>
+
+  <.table id="fields" rows={@streams.fields}>
+    <:col :let={{_id, field}} label="Field">
+      <p class="font-medium text-ink">{field.label}</p>
+      <p class="font-mono text-xs text-muted">{field.key}</p>
+    </:col>
+    <:col :let={{_id, field}} label="Type">
+      <.badge>{FieldType.label(field.type)}</.badge>
+    </:col>
+    <:col :let={{_id, field}} label="Options" class="hidden md:table-cell">
+      <span class="text-xs">{Enum.join(field.options, ", ")}</span>
+    </:col>
+    <:col :let={{_id, field}} label="Required">
+      <.icon :if={field.required?} name="hero-check" class="size-4 text-success" />
+    </:col>
+    <:action :let={{_id, field}}>
+      <span :if={admin?(assigns)} class="flex items-center gap-1">
+        <button
+          phx-click="move"
+          phx-value-id={field.id}
+          phx-value-dir="up"
+          class="rounded p-1 text-muted hover:bg-canvas hover:text-ink"
+          title="Move up"
+        >
+          <.icon name="hero-chevron-up-micro" />
+        </button>
+        <button
+          phx-click="move"
+          phx-value-id={field.id}
+          phx-value-dir="down"
+          class="rounded p-1 text-muted hover:bg-canvas hover:text-ink"
+          title="Move down"
+        >
+          <.icon name="hero-chevron-down-micro" />
+        </button>
+        <.link
+          patch={~p"/settings/custom-fields/#{field}/edit?entity=#{@entity}"}
+          class="ml-2 text-ink-soft hover:text-ink"
+        >Edit</.link>
+        <button
+          phx-click="archive"
+          phx-value-id={field.id}
+          data-confirm="Archive this field? Existing values are kept but hidden."
+          class="ml-2 text-danger hover:underline"
+        >
+          Archive
+        </button>
+      </span>
+    </:action>
+    <:empty>
+      <.empty_state
+        icon="hero-adjustments-horizontal"
+        title={"No custom fields for #{Entity.label(@entity)} yet"}
+      >
+        Add fields like “Budget”, “Industry segment” or “Renewal date”.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="field-modal"
+    show
+    title={
+      if(@field,
+        do: "Edit field",
+        else: "New #{Entity.label(@entity) |> String.downcase()} field"
+      )
+    }
+    on_cancel={JS.patch(~p"/settings/custom-fields?entity=#{@entity}")}
+  >
+    <.form for={@form} id="field-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <.input :if={!@field} field={@form[:entity]} type="hidden" />
+      <.input
+        field={@form[:label]}
+        label="Label"
+        placeholder="Annual budget"
+        phx-mounted={JS.focus()}
+      />
+      <.input
+        field={@form[:type]}
+        type="select"
+        label="Type"
+        options={@types}
+        disabled={@field != nil}
+        hint={@field && "The type can't change once values exist."}
+      />
+      <.input
+        :if={selected_type(@form) in FieldType.with_options()}
+        name={@form[:options].name}
+        id={@form[:options].id}
+        value={Enum.join(List.wrap(@form[:options].value), "\n")}
+        errors={Enum.map(@form[:options].errors, &translate_error/1)}
+        type="textarea"
+        label="Options"
+        hint="One option per line."
+      />
+      <.input field={@form[:help_text]} label="Help text" placeholder="Shown under the field" />
+      <.input field={@form[:required?]} type="checkbox" label="Required" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save field</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

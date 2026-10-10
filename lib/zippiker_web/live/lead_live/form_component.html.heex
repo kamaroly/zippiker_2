@@ -1,0 +1,35 @@
+<div>
+  <.form
+    for={@form}
+    id="lead-form"
+    phx-change="validate"
+    phx-submit="save"
+    phx-target={@myself}
+    class="space-y-4"
+  >
+    <div class="grid gap-4 sm:grid-cols-2">
+      <.input field={@form[:first_name]} label="First name" phx-mounted={JS.focus()} />
+      <.input field={@form[:last_name]} label="Last name" />
+      <.input field={@form[:company_name]} label="Company" />
+      <.input field={@form[:job_title]} label="Job title" />
+      <.input field={@form[:email]} type="email" label="Email" />
+      <.input field={@form[:phone]} type="tel" label="Phone" />
+      <.input field={@form[:source]} type="select" label="Source" options={@sources} />
+      <.input :if={@lead} field={@form[:status]} type="select" label="Status" options={@statuses} />
+      <.input
+        field={@form[:owner_id]}
+        type="select"
+        label="Owner"
+        prompt="—"
+        options={@members}
+      />
+    </div>
+    <.input field={@form[:notes]} type="textarea" label="Notes" />
+
+    <.custom_field_inputs form={@form} definitions={@definitions} />
+
+    <div class="flex justify-end pt-2">
+      <.button type="submit" variant="primary" phx-disable-with="Saving…">Save lead</.button>
+    </div>
+  </.form>
+</div>

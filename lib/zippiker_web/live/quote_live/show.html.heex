@@ -1,0 +1,131 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:quotes}
+>
+  <.header>
+    <:breadcrumb><.link navigate={~p"/quotes"} class="hover:text-ink">Quotes</.link></:breadcrumb>
+    <span class="flex items-center gap-3">{@quote.number} <.quote_status status={@quote.status} /></span>
+    <:subtitle>{@quote.customer.name} · {Format.money(@quote.total)}</:subtitle>
+    <:actions>
+      <.button navigate={~p"/quotes/#{@quote}/print"} id="print-quote">
+        <.icon name="hero-printer-micro" /> Print / PDF
+      </.button>
+      <.button navigate={~p"/quotes/new?copy=#{@quote.id}"} id="duplicate-quote">
+        <.icon name="hero-document-duplicate-micro" /> Duplicate
+      </.button>
+      <.button
+        :if={@quote.status in [:draft, :sent]}
+        navigate={~p"/quotes/#{@quote}/edit"}
+        id="edit-quote"
+      >
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+      <.button
+        :if={@quote.status == :draft}
+        phx-click="transition"
+        phx-value-to="sent"
+        id="send-quote"
+      >
+        <.icon name="hero-paper-airplane-micro" /> Mark sent
+      </.button>
+      <.button
+        :if={@quote.status in [:draft, :sent]}
+        phx-click="transition"
+        phx-value-to="accepted"
+        variant="primary"
+        id="accept-quote"
+      >
+        <.icon name="hero-check-micro" /> Accept
+      </.button>
+      <.button
+        :if={
+          @quote.status in [:draft, :sent, :accepted] and is_nil(@quote.sales_order) and
+            is_nil(@quote.invoice)
+        }
+        phx-click="order"
+        id="order-quote"
+      >
+        <.icon name="hero-clipboard-document-check-micro" /> Create order
+      </.button>
+      <.button
+        :if={
+          @quote.status in [:draft, :sent, :accepted] and is_nil(@quote.invoice) and
+            is_nil(@quote.sales_order)
+        }
+        phx-click="invoice"
+        variant="primary"
+        id="invoice-quote"
+      >
+        <.icon name="hero-banknotes-micro" /> Create invoice
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_280px]">
+    <.paper document={@quote} kind={:quote} />
+
+    <aside class="space-y-4">
+      <.card title="Details">
+        <.list>
+          <:item title="Customer">
+            <.link
+              navigate={
+                if(@quote.customer.kind == :person,
+                  do: ~p"/contacts/#{@quote.customer}",
+                  else: ~p"/companies/#{@quote.customer}"
+                )
+              }
+              class="hover:underline"
+            >
+              {@quote.customer.name}
+            </.link>
+          </:item>
+          <:item :if={@quote.deal} title="Deal">
+            <.link navigate={~p"/deals/#{@quote.deal}"} class="hover:underline">{@quote.deal.title}</.link>
+          </:item>
+          <:item :if={@quote.sales_order} title="Order">
+            <.link navigate={~p"/orders/#{@quote.sales_order}"} class="hover:underline">
+              {@quote.sales_order.number}
+            </.link>
+          </:item>
+          <:item :if={@quote.invoice} title="Invoice">
+            <.link navigate={~p"/invoices/#{@quote.invoice}"} class="hover:underline">
+              {@quote.invoice.number || "Draft invoice"}
+            </.link>
+          </:item>
+          <:item title="Owner">{Format.user_name(@quote.owner)}</:item>
+          <:item :if={@quote.decided_at} title="Decided">{Format.date(@quote.decided_at)}</:item>
+        </.list>
+      </.card>
+
+      <div class="flex flex-col gap-2">
+        <.button
+          :if={@quote.status in [:draft, :sent]}
+          phx-click="transition"
+          phx-value-to="declined"
+          variant="ghost"
+        >
+          Mark declined
+        </.button>
+        <.button
+          :if={@quote.status in [:sent, :declined]}
+          phx-click="transition"
+          phx-value-to="draft"
+          variant="ghost"
+        >
+          Back to draft
+        </.button>
+        <.button
+          :if={@quote.status in [:draft, :declined]}
+          phx-click="archive"
+          data-confirm="Archive this quote?"
+          variant="danger"
+        >
+          Archive
+        </.button>
+      </div>
+    </aside>
+  </div>
+</Layouts.app>

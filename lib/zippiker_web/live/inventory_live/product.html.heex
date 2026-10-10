@@ -1,0 +1,92 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:stock}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/inventory"} class="hover:text-ink">Stock</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      {@product.name}
+      <.badge :if={@product.low_stock?} color={:rose}>Low stock</.badge>
+    </span>
+    <:subtitle>{@product.sku}</:subtitle>
+    <:actions>
+      <.button navigate={~p"/inventory/adjust?product_id=#{@product.id}"} id="adjust-product">
+        <.icon name="hero-adjustments-vertical-micro" /> Adjust
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <.stat
+      id="stat-on-hand"
+      label="On hand"
+      value={"#{Decimal.normalize(@product.on_hand)} #{@product.unit}"}
+      icon="hero-archive-box"
+    />
+    <.stat
+      id="stat-average-cost"
+      label="Average cost"
+      value={amount(@product.average_cost, @current_organization.currency)}
+      icon="hero-scale"
+    />
+    <.stat
+      id="stat-value"
+      label="Value"
+      value={amount(@product.stock_value, @current_organization.currency)}
+      icon="hero-banknotes"
+    />
+    <.stat
+      id="stat-reorder"
+      label="Reorder level"
+      value={
+        if(@product.reorder_level,
+          do: to_string(Decimal.normalize(@product.reorder_level)),
+          else: "—"
+        )
+      }
+      icon="hero-bell-alert"
+    />
+  </div>
+
+  <div class="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
+    <table class="w-full min-w-[640px] text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-muted">
+          <th class="px-5 py-2.5 font-medium">Date</th>
+          <th class="px-3 py-2.5 font-medium">Operation</th>
+          <th class="px-3 py-2.5 font-medium">Warehouse</th>
+          <th class="px-3 py-2.5 text-right font-medium">Quantity</th>
+          <th class="px-5 py-2.5 text-right font-medium">Unit cost</th>
+        </tr>
+      </thead>
+      <tbody id="product-movements" phx-update="stream" class="divide-y divide-line">
+        <tr id="product-movements-empty" class="hidden only:table-row">
+          <td colspan="5" class="px-5 py-10 text-center text-muted">No movements yet.</td>
+        </tr>
+        <tr :for={{id, movement} <- @streams.movements} id={id} class="hover:bg-canvas">
+          <td class="px-5 py-2.5 whitespace-nowrap text-muted">{Format.date(movement.date)}</td>
+          <td class="px-3 py-2.5">
+            <.link
+              navigate={~p"/inventory/operations/#{movement.operation}"}
+              class="font-medium text-ink hover:underline"
+            >
+              {movement.operation.number}
+            </.link>
+            <span class="ml-1 text-xs text-muted">{movement.operation.source_label}</span>
+          </td>
+          <td class="px-3 py-2.5 text-ink-soft">{movement.warehouse.name}</td>
+          <td class="px-3 py-2.5 text-right">
+            <.signed_quantity quantity={movement.quantity} unit={@product.unit} />
+          </td>
+          <td class="tabular px-5 py-2.5 text-right text-ink-soft">
+            {amount(movement.unit_cost, @current_organization.currency)}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</Layouts.app>

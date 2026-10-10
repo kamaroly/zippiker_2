@@ -1,0 +1,29 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:org_chart}
+  wide
+>
+  <.header>
+    Org chart
+    <:subtitle>Set “Reports to” on each employee to build it.</:subtitle>
+  </.header>
+
+  <div
+    :if={@tree != []}
+    id="org-chart"
+    class="overflow-x-auto rounded-2xl border border-line bg-surface-muted p-8"
+  >
+    <ul class="org-tree mx-auto w-max">
+      <.org_node :for={node <- @tree} node={node} />
+    </ul>
+  </div>
+
+  <.empty_state :if={@tree == []} icon="hero-share" title="No employees yet">
+    Add employees and who they report to.
+    <:action>
+      <.button navigate={~p"/hr/employees/new"} variant="primary">Add employee</.button>
+    </:action>
+  </.empty_state>
+</Layouts.app>

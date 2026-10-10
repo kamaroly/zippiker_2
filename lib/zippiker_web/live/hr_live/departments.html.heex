@@ -1,0 +1,92 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:departments}
+>
+  <.header>
+    Departments
+    <:subtitle>Group people into teams. Employees can belong to one department.</:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/hr/departments/new"}
+        variant="primary"
+        id="new-department"
+      >
+        <.icon name="hero-plus-micro" /> Department
+      </.button>
+    </:actions>
+  </.header>
+
+  <.table
+    id="departments"
+    rows={@streams.departments}
+    row_click={
+      fn {_id, department} -> JS.navigate(~p"/hr/employees?department=#{department.id}") end
+    }
+  >
+    <:col :let={{_id, department}} label="Name">
+      <span class="font-medium text-ink">{department.name}</span>
+      <span :if={department.parent} class="ml-1 text-xs text-muted">in {department.parent.name}</span>
+    </:col>
+    <:col :let={{_id, department}} label="Head">
+      {department.head && department.head.party.name}
+    </:col>
+    <:col :let={{_id, department}} label="People" class="text-right">
+      <span class="tabular">{department.headcount}</span>
+    </:col>
+    <:action :let={{_id, department}}>
+      <span :if={admin?(assigns)} class="flex gap-3">
+        <.link patch={~p"/hr/departments/#{department}/edit"} class="text-ink-soft hover:text-ink">
+          Edit
+        </.link>
+        <button
+          phx-click="delete"
+          phx-value-id={department.id}
+          data-confirm="Delete this department? Its people stay, without a department."
+          class="text-danger hover:underline"
+        >
+          Delete
+        </button>
+      </span>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-rectangle-group" title="No departments yet">
+        Sales, Operations, Finance… whatever your teams are.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="department-modal"
+    show
+    title={if(@department, do: "Edit #{@department.name}", else: "New department")}
+    on_cancel={JS.patch(~p"/hr/departments")}
+  >
+    <.form
+      for={@form}
+      id="department-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="space-y-4"
+    >
+      <.input field={@form[:name]} label="Name" phx-mounted={JS.focus()} />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:head_id]} type="select" label="Head" prompt="—" options={@heads} />
+        <.input
+          field={@form[:parent_id]}
+          type="select"
+          label="Part of"
+          prompt="—"
+          options={@parents}
+        />
+      </div>
+      <.input field={@form[:description]} type="textarea" label="Description" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

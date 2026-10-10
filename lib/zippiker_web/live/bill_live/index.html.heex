@@ -1,0 +1,94 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:bills}
+>
+  <.header>
+    Bills
+    <:subtitle>Invoices from your suppliers: approve them, then pay them.</:subtitle>
+    <:actions>
+      <.button navigate={~p"/bills/new"} variant="primary" id="new-bill">
+        <.icon name="hero-plus-micro" /> Bill
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-3">
+    <.stat
+      id="stat-payable"
+      label="You owe suppliers"
+      value={Format.money_short(@summary.payable)}
+      icon="hero-document-minus"
+    >
+      {Format.count(@summary.open_count, "bill")} to pay
+    </.stat>
+    <.stat
+      id="stat-due-week"
+      label="Due this week"
+      value={Format.money_short(@summary.due_this_week)}
+      icon="hero-calendar"
+    />
+    <.stat
+      id="stat-bills-overdue"
+      label="Overdue"
+      value={Format.money_short(@summary.overdue)}
+      icon="hero-exclamation-triangle"
+    >
+      {Format.count(@summary.overdue_count, "bill")}
+    </.stat>
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box
+      id="bill-search"
+      value={@query}
+      placeholder="Search number, reference or supplier…"
+    />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, bills_path(%{q: @query})},
+        {"Draft", :draft, bills_path(%{q: @query, status: :draft})},
+        {"To pay", :open, bills_path(%{q: @query, status: :open})},
+        {"Overdue", :overdue, bills_path(%{q: @query, status: :overdue})},
+        {"Paid", :paid, bills_path(%{q: @query, status: :paid})},
+        {"Void", :void, bills_path(%{q: @query, status: :void})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="bills"
+    rows={@streams.bills}
+    row_click={fn {_id, bill} -> JS.navigate(~p"/bills/#{bill}") end}
+  >
+    <:col :let={{_id, bill}} label="Number">
+      <span class="font-medium text-ink">{bill.number}</span>
+      <span :if={bill.supplier_reference} class="block text-xs text-muted">
+        {bill.supplier_reference}
+      </span>
+    </:col>
+    <:col :let={{_id, bill}} label="Supplier">{bill.supplier.name}</:col>
+    <:col :let={{_id, bill}} label="Status"><.bill_status bill={bill} /></:col>
+    <:col :let={{_id, bill}} label="Due" class="hidden md:table-cell">
+      <span class={bill.overdue? && "font-medium text-danger"}>{Format.date(bill.due_on)}</span>
+    </:col>
+    <:col :let={{_id, bill}} label="Total" class="text-right">
+      <span class="tabular text-ink">{Format.money(bill.total)}</span>
+    </:col>
+    <:col :let={{_id, bill}} label="To pay" class="hidden text-right lg:table-cell">
+      <span class="tabular font-medium text-ink">{Format.money(bill.amount_due)}</span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-document-minus"
+        title={if(@query != "", do: "No matches", else: "No bills yet")}
+      >
+        Enter a supplier's invoice, or bill a purchase order.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&bills_path(%{q: @query, status: @status, page: &1})} />
+</Layouts.app>

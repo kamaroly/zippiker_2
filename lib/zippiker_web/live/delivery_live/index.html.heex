@@ -1,0 +1,64 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:deliveries}
+>
+  <.header>
+    Delivery notes
+    <:subtitle>A note for every shipment. Deliver a sales order to create one.</:subtitle>
+    <:actions>
+      <.button navigate={~p"/orders?status=confirmed"} variant="primary" id="ship-goods">
+        <.icon name="hero-truck-micro" /> Ship an order
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box
+      id="dn-search"
+      value={@query}
+      placeholder="Search number, customer, order, tracking…"
+    />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, notes_path(%{q: @query})},
+        {"In transit", :shipped, notes_path(%{q: @query, status: :shipped})},
+        {"Delivered", :delivered, notes_path(%{q: @query, status: :delivered})},
+        {"Cancelled", :cancelled, notes_path(%{q: @query, status: :cancelled})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="deliveries"
+    rows={@streams.notes}
+    row_click={fn {_id, note} -> JS.navigate(~p"/deliveries/#{note}") end}
+  >
+    <:col :let={{_id, note}} label="Number">
+      <span class={["font-medium text-ink", note.status == :cancelled && "line-through"]}>
+        {note.number}
+      </span>
+    </:col>
+    <:col :let={{_id, note}} label="Shipped">{Format.date(note.shipped_on)}</:col>
+    <:col :let={{_id, note}} label="Customer">{note.customer.name}</:col>
+    <:col :let={{_id, note}} label="Order / invoice" class="hidden md:table-cell">
+      {(note.sales_order && note.sales_order.number) || (note.invoice && note.invoice.number)}
+    </:col>
+    <:col :let={{_id, note}} label="Tracking" class="hidden lg:table-cell">
+      <span class="text-ink-soft">{note.carrier} {note.tracking_number}</span>
+    </:col>
+    <:col :let={{_id, note}} label="Status"><.delivery_status status={note.status} /></:col>
+    <:empty>
+      <.empty_state
+        icon="hero-truck"
+        title={if(@query != "", do: "No matches", else: "Nothing shipped yet")}
+      >
+        Confirm a sales order and click Deliver to send goods.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&notes_path(%{q: @query, status: @status, page: &1})} />
+</Layouts.app>

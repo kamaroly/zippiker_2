@@ -1,0 +1,212 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:dashboard}
+>
+  <.header>
+    {Format.greeting(@now)}, {Format.first_name(@current_user)}
+    <:subtitle>
+      {Calendar.strftime(@now, "%A, %B %-d")} · here's how your pipeline looks.
+    </:subtitle>
+    <:actions :if={module?(assigns, :crm)}>
+      <.button navigate={~p"/leads/new"}><.icon name="hero-plus-micro" /> Lead</.button>
+      <.button navigate={~p"/deals/new"} variant="primary"><.icon name="hero-plus-micro" /> Deal</.button>
+    </:actions>
+  </.header>
+
+  <div :if={module?(assigns, :crm)} class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <.stat
+      id="stat-pipeline"
+      label="Open pipeline"
+      value={Format.money_short(@summary.open_value)}
+      icon="hero-funnel"
+    >
+      {Format.count(@summary.open_count, "open deal")}
+    </.stat>
+    <.stat
+      id="stat-weighted"
+      label="Weighted forecast"
+      value={Format.money_short(@summary.weighted_value)}
+      icon="hero-scale"
+    >
+      by stage probability
+    </.stat>
+    <.stat
+      id="stat-won"
+      label="Won this month"
+      value={Format.money_short(@summary.won_this_month)}
+      icon="hero-trophy"
+    >
+      {Format.count(@summary.won_this_month_count, "deal")} closed
+    </.stat>
+    <.stat
+      id="stat-win-rate"
+      label="Win rate"
+      value={if(@summary.win_rate, do: "#{@summary.win_rate}%", else: "—")}
+      icon="hero-chart-pie"
+    >
+      last 90 days · {Format.count(@summary.new_leads, "new lead")} this month
+    </.stat>
+  </div>
+
+  <div
+    :if={@sales}
+    id="sales-strip"
+    class="mb-4 grid grid-cols-2 gap-4 rounded-2xl border border-line bg-surface p-5 shadow-card lg:grid-cols-4"
+  >
+    <.link navigate={~p"/invoices?status=issued"} class="group">
+      <p class="text-xs font-medium text-muted">Outstanding</p>
+      <p class="tabular mt-1 text-lg font-semibold text-ink group-hover:text-brand">
+        {Format.money_short(@sales.receivable)}
+      </p>
+      <p class="text-xs text-muted">{Format.count(@sales.open_count, "open invoice")}</p>
+    </.link>
+    <.link navigate={~p"/invoices?status=overdue"} class="group">
+      <p class="text-xs font-medium text-muted">Overdue</p>
+      <p class={[
+        "tabular mt-1 text-lg font-semibold group-hover:text-brand",
+        @sales.overdue_count > 0 && "text-danger",
+        @sales.overdue_count == 0 && "text-ink"
+      ]}>
+        {Format.money_short(@sales.overdue)}
+      </p>
+      <p class="text-xs text-muted">{Format.count(@sales.overdue_count, "invoice")}</p>
+    </.link>
+    <div>
+      <p class="text-xs font-medium text-muted">Collected this month</p>
+      <p class="tabular mt-1 text-lg font-semibold text-ink">
+        {Format.money_short(@sales.collected_this_month)}
+      </p>
+      <p class="text-xs text-muted">
+        of {Format.money_short(@sales.invoiced_this_month)} invoiced
+      </p>
+    </div>
+    <.link navigate={~p"/quotes?status=sent"} class="group">
+      <p class="text-xs font-medium text-muted">Quotes awaiting answer</p>
+      <p class="tabular mt-1 text-lg font-semibold text-ink group-hover:text-brand">
+        {Format.money_short(@sales.open_quotes_value)}
+      </p>
+      <p class="text-xs text-muted">{Format.count(@sales.open_quotes_count, "quote")}</p>
+    </.link>
+  </div>
+
+  <div :if={module?(assigns, :crm)} class="mb-4 grid gap-4 lg:grid-cols-3">
+    <.card title="Revenue won" class="lg:col-span-2">
+      <:action><span class="text-muted">Last 6 months</span></:action>
+      <.revenue_chart trend={@summary.revenue_trend} />
+    </.card>
+
+    <.card title="Pipeline by stage">
+      <:action>
+        <.link navigate={~p"/deals"} class="text-muted hover:text-ink">Board →</.link>
+      </:action>
+      <.pipeline_bars :if={@summary.stages != []} stages={@summary.stages} />
+      <.empty_state :if={@summary.stages == []} icon="hero-view-columns" title="No pipeline yet" />
+    </.card>
+  </div>
+
+  <div :if={module?(assigns, :crm)} class="grid gap-4 lg:grid-cols-3">
+    <.card title="Your agenda" padded={false}>
+      <:action>
+        <.link navigate={~p"/tasks"} class="text-muted hover:text-ink">All tasks →</.link>
+      </:action>
+      <ul id="agenda" class="divide-y divide-line px-5 pb-2">
+        <li
+          :for={task <- @summary.agenda}
+          id={"agenda-#{task.id}"}
+          class="flex items-center gap-3 py-3"
+        >
+          <span class={[
+            "size-2 shrink-0 rounded-full",
+            if(task.overdue?, do: "bg-danger", else: "bg-brand")
+          ]} />
+          <span class="min-w-0 flex-1 truncate text-sm text-ink">{task.title}</span>
+          <span class={["text-xs", if(task.overdue?, do: "text-danger", else: "text-muted")]}>
+            {Format.due(task.due_on)}
+          </span>
+        </li>
+      </ul>
+      <.empty_state :if={@summary.agenda == []} icon="hero-sun" title="All clear today">
+        No tasks due. Enjoy the calm.
+      </.empty_state>
+    </.card>
+
+    <.card title="Closing soon" padded={false}>
+      <:action><span class="text-muted">Next 30 days</span></:action>
+      <ul id="closing-soon" class="divide-y divide-line px-5 pb-2">
+        <li :for={deal <- @summary.closing_soon} id={"closing-#{deal.id}"}>
+          <.link
+            navigate={~p"/deals/#{deal}"}
+            class="flex items-center gap-3 py-3 hover:opacity-80"
+          >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-ink">{deal.title}</p>
+              <p class="truncate text-xs text-muted">
+                {deal.company && deal.company.name} · {deal.stage.name}
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="tabular text-sm font-medium text-ink">
+                {Format.money_short(deal.amount)}
+              </p>
+              <p class={["text-xs", if(deal.overdue?, do: "text-danger", else: "text-muted")]}>
+                {Format.due(deal.expected_close_on)}
+              </p>
+            </div>
+          </.link>
+        </li>
+      </ul>
+      <.empty_state
+        :if={@summary.closing_soon == []}
+        icon="hero-calendar"
+        title="Nothing closing soon"
+      >
+        Set expected close dates on deals to see them here.
+      </.empty_state>
+    </.card>
+
+    <.card title="Recent activity" padded={false}>
+      <ul id="recent-activity" class="space-y-4 px-5 pt-2 pb-5">
+        <li
+          :for={activity <- @summary.recent_activity}
+          id={"recent-#{activity.id}"}
+          class="flex gap-3"
+        >
+          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-canvas text-ink-soft">
+            <.icon name={activity_icon(activity.kind)} class="size-3.5" />
+          </span>
+          <div class="min-w-0 text-sm">
+            <p class="truncate text-ink-soft">{activity.body}</p>
+            <p class="text-xs text-muted">
+              {Format.user_name(activity.author)} · {Format.ago(activity.occurred_at)}
+            </p>
+          </div>
+        </li>
+      </ul>
+      <.empty_state
+        :if={@summary.recent_activity == []}
+        icon="hero-chat-bubble-left-right"
+        title="No activity yet"
+      >
+        Notes and calls you log will show up here.
+      </.empty_state>
+    </.card>
+  </div>
+  <div
+    :if={!module?(assigns, :crm)}
+    id="quick-links"
+    class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+  >
+    <.link
+      :for={{label, icon, path} <- quick_links(assigns)}
+      navigate={path}
+      class="flex items-center gap-3 rounded-2xl border border-line bg-surface p-5 shadow-card transition hover:border-line-strong"
+    >
+      <span class="flex size-9 items-center justify-center rounded-xl bg-canvas text-ink-soft">
+        <.icon name={icon} class="size-5" />
+      </span>
+      <span class="font-medium text-ink">{label}</span>
+    </.link>
+  </div>
+</Layouts.app>

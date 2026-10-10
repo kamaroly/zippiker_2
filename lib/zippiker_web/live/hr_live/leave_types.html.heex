@@ -1,0 +1,100 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:leave_types}
+>
+  <.header>
+    Leave types
+    <:subtitle>Allowances are counted in working days per calendar year.</:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/hr/leave-types/new"}
+        variant="primary"
+        id="new-leave-type"
+      >
+        <.icon name="hero-plus-micro" /> Leave type
+      </.button>
+    </:actions>
+  </.header>
+
+  <.table id="leave-types" rows={@streams.leave_types}>
+    <:col :let={{_id, type}} label="Name">
+      <.leave_type_badge type={type} />
+      <.badge :if={!type.active?} class="ml-2">Inactive</.badge>
+    </:col>
+    <:col :let={{_id, type}} label="Allowance">
+      {if type.allowance_days,
+        do: "#{Decimal.normalize(type.allowance_days)} days / year",
+        else: "No limit"}
+    </:col>
+    <:col :let={{_id, type}} label="Paid">{if type.paid?, do: "Paid", else: "Unpaid"}</:col>
+    <:col :let={{_id, type}} label="Approval">
+      {if type.requires_approval?, do: "Manager approves", else: "Automatic"}
+    </:col>
+    <:action :let={{_id, type}}>
+      <.link
+        :if={admin?(assigns)}
+        patch={~p"/hr/leave-types/#{type}/edit"}
+        class="text-ink-soft hover:text-ink"
+      >
+        Edit
+      </.link>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-calendar-days" title="No leave types yet">
+        Add Annual leave, Sick leave… before people can request time off.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="leave-type-modal"
+    show
+    title={if(@leave_type, do: "Edit #{@leave_type.name}", else: "New leave type")}
+    on_cancel={JS.patch(~p"/hr/leave-types")}
+  >
+    <.form
+      for={@form}
+      id="leave-type-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="space-y-4"
+    >
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:name]}
+          label="Name"
+          placeholder="Annual leave"
+          phx-mounted={JS.focus()}
+        />
+        <.input
+          field={@form[:allowance_days]}
+          type="number"
+          step="0.5"
+          min="0"
+          label="Days per year"
+          placeholder="No limit"
+        />
+        <.input
+          field={@form[:color]}
+          type="select"
+          label="Color"
+          options={Enum.map(@colors, &{Format.humanize(&1), &1})}
+        />
+      </div>
+      <.input field={@form[:paid?]} type="checkbox" label="Paid leave" />
+      <.input
+        field={@form[:requires_approval?]}
+        type="checkbox"
+        label="Needs the manager's approval"
+      />
+      <.input :if={@leave_type} field={@form[:active?]} type="checkbox" label="Active" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

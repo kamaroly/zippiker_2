@@ -1,0 +1,60 @@
+<div>
+  <.form
+    for={@form}
+    id="deal-form"
+    phx-change="validate"
+    phx-submit="save"
+    phx-target={@myself}
+    class="space-y-4"
+  >
+    <.input
+      field={@form[:title]}
+      label="Deal name"
+      placeholder="Annual subscription"
+      phx-mounted={JS.focus()}
+    />
+    <div class="grid gap-4 sm:grid-cols-2">
+      <.input
+        name={@form[:amount].name}
+        id={@form[:amount].id}
+        value={money_input(@form[:amount].value)}
+        errors={Enum.map(@form[:amount].errors, &translate_error/1)}
+        type="number"
+        step="any"
+        min="0"
+        label={"Value (#{@current_organization.currency})"}
+      />
+      <.input field={@form[:expected_close_on]} type="date" label="Expected close" />
+      <.input field={@form[:stage_id]} type="select" label="Stage" options={@stages} />
+      <.input
+        field={@form[:owner_id]}
+        type="select"
+        label="Owner"
+        prompt="—"
+        options={@members}
+      />
+      <.party_picker
+        field={@form[:party_id]}
+        kind={:person}
+        label="Contact"
+        current_user={@current_user}
+        current_organization={@current_organization}
+      />
+      <.party_picker
+        field={@form[:company_id]}
+        kind={:organization}
+        label="Company"
+        current_user={@current_user}
+        current_organization={@current_organization}
+      />
+    </div>
+    <.input :if={@deal && @deal.status == :lost} field={@form[:lost_reason]} label="Lost reason" />
+    <.input field={@form[:description]} type="textarea" label="Description" />
+
+    <.custom_field_inputs form={@form} definitions={@definitions} />
+
+    <div class="flex justify-end pt-2">
+      <.button type="submit" variant="primary" phx-disable-with="Saving…">Save deal</.button>
+    </div>
+  </.form>
+</div>

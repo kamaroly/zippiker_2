@@ -1,0 +1,185 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:accounting}
+>
+  <.header>
+    Accounting
+    <:subtitle>
+      Your books update themselves as you invoice and get paid. Record expenses here.
+    </:subtitle>
+    <:actions>
+      <.button :if={@overview.set_up?} navigate={~p"/accounting/reports"}>
+        <.icon name="hero-chart-bar-micro" /> Reports
+      </.button>
+      <.button
+        :if={@overview.set_up?}
+        patch={~p"/accounting/expense"}
+        variant="primary"
+        id="record-expense"
+      >
+        <.icon name="hero-plus-micro" /> Expense
+      </.button>
+    </:actions>
+  </.header>
+
+  <%= if @overview.set_up? do %>
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <.stat
+        id="stat-cash"
+        label="Cash & bank"
+        value={amount(@overview.cash, @current_organization.currency)}
+        icon="hero-banknotes"
+      >
+        cash, bank and mobile money
+      </.stat>
+      <.stat
+        id="stat-receivable"
+        label="Customers owe you"
+        value={amount(@overview.receivable, @current_organization.currency)}
+        icon="hero-inbox-arrow-down"
+      >
+        accounts receivable
+      </.stat>
+      <.stat
+        id="stat-payable"
+        label="You owe suppliers"
+        value={amount(@overview.payable, @current_organization.currency)}
+        icon="hero-document-minus"
+      >
+        plus {amount(@overview.tax_payable, @current_organization.currency)} sales tax collected
+      </.stat>
+      <.stat
+        id="stat-net"
+        label="Profit this month"
+        value={amount(@overview.net_this_month, @current_organization.currency)}
+        icon="hero-arrow-trending-up"
+      >
+        {amount(@overview.income_this_month, @current_organization.currency)} in · {amount(
+          @overview.expenses_this_month,
+          @current_organization.currency
+        )} out
+      </.stat>
+    </div>
+
+    <div class="mt-4 grid gap-4 lg:grid-cols-3">
+      <.card title="Income vs expenses" class="lg:col-span-2">
+        <:action><span class="text-muted">Last 6 months</span></:action>
+        <.income_expense_chart trend={@overview.trend} currency={@current_organization.currency} />
+      </.card>
+
+      <.card title="Latest entries" padded={false}>
+        <:action>
+          <.link navigate={~p"/accounting/journal"} class="text-muted hover:text-ink">Journal →</.link>
+        </:action>
+        <ul id="recent-entries" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+          <li
+            id="recent-entries-empty"
+            class="hidden py-6 text-center text-sm text-muted only:block"
+          >
+            No entries yet.
+          </li>
+          <li :for={{id, entry} <- @streams.entries} id={id}>
+            <.link
+              navigate={~p"/accounting/journal/#{entry}"}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm text-ink">{entry.memo || entry.number}</p>
+                <p class="text-xs text-muted">{entry.number} · {Format.date(entry.date)}</p>
+              </div>
+              <span class="tabular text-sm font-medium text-ink">
+                {amount(entry.total, @current_organization.currency)}
+              </span>
+            </.link>
+          </li>
+        </ul>
+      </.card>
+    </div>
+  <% else %>
+    <div
+      id="accounting-setup"
+      class="mx-auto max-w-xl rounded-2xl border border-line bg-surface p-8 text-center shadow-card"
+    >
+      <span class="mx-auto flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+        <.icon name="hero-calculator" class="size-6" />
+      </span>
+      <h2 class="mt-4 text-lg font-semibold text-ink">Set up your books</h2>
+      <p class="mt-2 text-sm text-muted">
+        We'll create a standard chart of accounts and post every invoice and payment you've
+        already recorded. From then on, sales post to the books automatically.
+      </p>
+      <.button
+        :if={admin?(assigns)}
+        phx-click="setup"
+        variant="primary"
+        class="mt-6"
+        id="setup-books"
+        phx-disable-with="Setting up…"
+      >
+        Set up accounting
+      </.button>
+      <p :if={!admin?(assigns)} class="mt-6 text-sm text-muted">
+        Ask a workspace admin to set up accounting.
+      </p>
+    </div>
+  <% end %>
+
+  <.modal
+    :if={@expense_form}
+    id="expense-modal"
+    show
+    title="Record an expense"
+    on_cancel={JS.patch(~p"/accounting")}
+  >
+    <.form
+      for={@expense_form}
+      id="expense-form"
+      phx-change="validate_expense"
+      phx-submit="save_expense"
+      class="space-y-4"
+    >
+      <.input
+        field={@expense_form[:memo]}
+        label="What was it for?"
+        placeholder="October office rent"
+        phx-mounted={JS.focus()}
+      />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@expense_form[:amount]}
+          type="number"
+          step="any"
+          min="0"
+          label={"Amount (#{@current_organization.currency})"}
+        />
+        <.input field={@expense_form[:date]} type="date" label="Date paid" />
+        <.input
+          field={@expense_form[:expense_account_id]}
+          type="select"
+          label="Category"
+          prompt="Choose…"
+          options={@expense_options}
+        />
+        <.input
+          field={@expense_form[:paid_from_account_id]}
+          type="select"
+          label="Paid from"
+          prompt="Choose…"
+          options={@paid_from_options}
+        />
+      </div>
+      <.party_picker
+        field={@expense_form[:party_id]}
+        label="Supplier (optional)"
+        current_user={@current_user}
+        current_organization={@current_organization}
+      />
+      <.error :for={{_field, {msg, _}} <- @expense_form.errors}>{msg}</.error>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Record expense</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

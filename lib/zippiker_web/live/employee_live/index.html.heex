@@ -1,0 +1,123 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:employees}
+>
+  <.header>
+    Employees
+    <:subtitle>Everyone who works with you, who they report to, and who's away.</:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        navigate={~p"/hr/employees/new"}
+        variant="primary"
+        id="new-employee"
+      >
+        <.icon name="hero-plus-micro" /> Employee
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <.stat
+      id="stat-headcount"
+      label="Headcount"
+      value={to_string(@summary.headcount)}
+      icon="hero-users"
+    >
+      {Format.count(@summary.departments, "department")}
+    </.stat>
+    <.stat
+      id="stat-new-hires"
+      label="New hires"
+      value={to_string(@summary.new_hires_30d)}
+      icon="hero-sparkles"
+    >
+      last 30 days
+    </.stat>
+    <.stat
+      id="stat-off-today"
+      label="Off today"
+      value={to_string(@summary.off_today)}
+      icon="hero-sun"
+    />
+    <.link navigate={~p"/hr/leave?view=approve"} class="block">
+      <.stat
+        id="stat-pending-leave"
+        label="Leave to approve"
+        value={to_string(@summary.pending_requests)}
+        icon="hero-inbox"
+      >
+        pending requests
+      </.stat>
+    </.link>
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-2">
+      <.search_box id="employee-search" value={@query} placeholder="Search name, email, title…" />
+      <form :if={@departments != []} id="department-filter" phx-change="department">
+        <select
+          name="department"
+          class="h-9 rounded-lg border border-line bg-surface px-3 text-sm text-ink shadow-card focus:border-brand focus:outline-none"
+        >
+          <option value="">All departments</option>
+          <option
+            :for={department <- @departments}
+            value={department.id}
+            selected={@department && @department.id == department.id}
+          >
+            {department.name}
+          </option>
+        </select>
+      </form>
+    </div>
+    <.segmented
+      current={@status}
+      options={[
+        {"Current", :active, employees_path(assigns, %{status: nil})},
+        {"Former", :terminated, employees_path(assigns, %{status: "terminated"})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="employees"
+    rows={@streams.employees}
+    row_click={fn {_id, employee} -> JS.navigate(~p"/hr/employees/#{employee}") end}
+  >
+    <:col :let={{_id, employee}} label="Name">
+      <span class="flex items-center gap-3">
+        <.avatar name={employee.name} size="sm" />
+        <span class="min-w-0">
+          <span class="flex items-center gap-2 font-medium text-ink">
+            {employee.name}
+            <.badge :if={employee.on_leave_today?} color={:amber}>Away</.badge>
+          </span>
+          <span class="block truncate text-xs text-muted">{employee.email}</span>
+        </span>
+      </span>
+    </:col>
+    <:col :let={{_id, employee}} label="Role">{employee.job_title}</:col>
+    <:col :let={{_id, employee}} label="Department" class="hidden md:table-cell">
+      {employee.department && employee.department.name}
+    </:col>
+    <:col :let={{_id, employee}} label="Reports to" class="hidden lg:table-cell">
+      {employee.manager && employee.manager.name}
+    </:col>
+    <:col :let={{_id, employee}} label="Since" class="hidden md:table-cell">
+      {Format.date(employee.hire_date)}
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-identification"
+        title={if(@query != "", do: "No matches", else: "No employees yet")}
+      >
+        Add your team to manage reporting lines and leave.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&employees_path(assigns, %{page: &1})} />
+</Layouts.app>

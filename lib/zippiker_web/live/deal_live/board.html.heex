@@ -1,0 +1,56 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:deals}
+  wide
+>
+  <.header>
+    Deals
+    <:subtitle>
+      <span class="tabular font-medium text-ink">{Format.money(@open_value)}</span>
+      open across {Format.count(@open_count, "deal")} · drag cards to move them between stages
+    </:subtitle>
+    <:actions>
+      <.segmented
+        :if={length(@pipelines) > 1}
+        current={@pipeline.id}
+        options={Enum.map(@pipelines, &{&1.name, &1.id, ~p"/deals?pipeline=#{&1.id}"})}
+      />
+      <.button patch={~p"/deals/new"} variant="primary" id="new-deal"><.icon name="hero-plus-micro" />
+      Deal</.button>
+    </:actions>
+  </.header>
+
+  <div
+    id="board"
+    phx-hook="Board"
+    class="-mx-4 flex gap-3 overflow-x-auto px-4 pb-6 sm:-mx-8 sm:px-8"
+  >
+    <.live_component
+      :for={stage <- @stages}
+      module={Column}
+      id={"stage-#{stage.id}"}
+      stage={stage}
+      deals={@deals_by_stage && Map.get(@deals_by_stage, stage.id, [])}
+    />
+  </div>
+
+  <.modal
+    :if={@live_action == :new}
+    id="deal-modal"
+    show
+    title="New deal"
+    on_cancel={JS.patch(~p"/deals")}
+    size="lg"
+  >
+    <.live_component
+      module={ZippikerWeb.DealLive.FormComponent}
+      id="new-deal-form"
+      deal={nil}
+      stage_id={@new_stage_id || first_open_stage_id(@stages)}
+      current_user={@current_user}
+      current_organization={@current_organization}
+    />
+  </.modal>
+</Layouts.app>

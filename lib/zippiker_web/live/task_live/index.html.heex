@@ -1,0 +1,105 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:tasks}
+>
+  <.header>
+    Tasks
+    <:subtitle>{@count} {if @view == :completed, do: "completed", else: "to do"}</:subtitle>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.segmented
+      current={@view}
+      options={
+        for {label, view} <- [
+              {"All open", :open},
+              {"Today", :today},
+              {"Overdue", :overdue},
+              {"Upcoming", :upcoming},
+              {"Done", :completed}
+            ],
+            do: {label, view, tasks_path(view, @everyone?)}
+      }
+    />
+    <.segmented
+      current={@everyone?}
+      options={[
+        {"Mine", false, tasks_path(@view, false)},
+        {"Everyone", true, tasks_path(@view, true)}
+      ]}
+    />
+  </div>
+
+  <.card padded={false}>
+    <.form
+      for={@form}
+      id="task-form"
+      phx-submit="add"
+      class="flex flex-wrap gap-2 border-b border-line p-4"
+    >
+      <div class="min-w-56 flex-1">
+        <.input field={@form[:title]} placeholder="What needs doing?" />
+      </div>
+      <div class="w-40"><.input field={@form[:due_on]} type="date" /></div>
+      <div class="w-44">
+        <.input field={@form[:assignee_id]} type="select" options={@members} />
+      </div>
+      <.button type="submit" variant="primary">Add task</.button>
+    </.form>
+
+    <ul id="tasks" phx-update="stream" class="divide-y divide-line">
+      <li id="tasks-empty" class="hidden only:block">
+        <.empty_state icon="hero-check-circle" title="Nothing here">
+          You're all caught up.
+        </.empty_state>
+      </li>
+      <li
+        :for={{dom_id, task} <- @streams.tasks}
+        id={dom_id}
+        class="flex items-center gap-3 px-5 py-3"
+      >
+        <.task_check task={task} target={nil} />
+        <div class="min-w-0 flex-1">
+          <p class={[
+            "truncate text-sm",
+            task.done? && "text-muted line-through",
+            !task.done? && "text-ink"
+          ]}>
+            {task.title}
+          </p>
+          <p :if={related(task)} class="truncate text-xs text-muted">
+            <.link navigate={elem(related(task), 1)} class="hover:text-ink hover:underline">{elem(
+              related(task),
+              0
+            )}</.link>
+          </p>
+        </div>
+        <.badge :if={task.priority == :high} color={:rose}>High</.badge>
+        <span :if={@everyone?} class="hidden sm:inline">
+          <.avatar :if={task.assignee} name={Format.user_name(task.assignee)} size="xs" />
+        </span>
+        <span
+          :if={task.due_on}
+          class={[
+            "w-20 text-right text-xs",
+            task.overdue? && "font-medium text-danger",
+            !task.overdue? && "text-muted"
+          ]}
+        >
+          {Format.due(task.due_on)}
+        </span>
+        <button
+          phx-click="delete"
+          phx-value-id={task.id}
+          data-confirm="Delete this task?"
+          class="rounded p-1 text-muted transition hover:text-danger"
+          title="Delete"
+        >
+          <.icon name="hero-trash" class="size-4" />
+        </button>
+      </li>
+    </ul>
+  </.card>
+</Layouts.app>

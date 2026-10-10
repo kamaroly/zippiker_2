@@ -1,0 +1,88 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:leads}
+>
+  <.header>
+    Leads
+    <:subtitle>Prospects to qualify. Convert the good ones into contacts and deals.</:subtitle>
+    <:actions>
+      <.button patch={~p"/leads/new"} variant="primary" id="new-lead"><.icon name="hero-plus-micro" />
+      Lead</.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="lead-search" value={@query} placeholder="Search leads…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"Active", nil, leads_path(%{q: @query, cf: @cf})},
+        {"New", :new, leads_path(%{q: @query, status: :new, cf: @cf})},
+        {"Contacted", :contacted, leads_path(%{q: @query, status: :contacted, cf: @cf})},
+        {"Qualified", :qualified, leads_path(%{q: @query, status: :qualified, cf: @cf})},
+        {"Converted", :converted, leads_path(%{q: @query, status: :converted, cf: @cf})},
+        {"All", :all, leads_path(%{q: @query, status: :all, cf: @cf})}
+      ]}
+    />
+  </div>
+
+  <div class="mb-4">
+    <.custom_field_filters id="lead-filters" definitions={@filters} values={@cf} />
+  </div>
+
+  <.table
+    id="leads"
+    rows={@streams.leads}
+    row_click={fn {_id, lead} -> JS.navigate(~p"/leads/#{lead}") end}
+  >
+    <:col :let={{_id, lead}} label="Name">
+      <div class="flex items-center gap-3">
+        <.avatar name={lead.name} size="sm" />
+        <div class="min-w-0">
+          <p class="truncate font-medium text-ink">{lead.name}</p>
+          <p :if={lead.email} class="truncate text-xs text-muted">{lead.email}</p>
+        </div>
+      </div>
+    </:col>
+    <:col :let={{_id, lead}} label="Company">{lead.company_name}</:col>
+    <:col :let={{_id, lead}} label="Status"><.lead_status status={lead.status} /></:col>
+    <:col :let={{_id, lead}} label="Source" class="hidden md:table-cell">
+      {Format.humanize(lead.source)}
+    </:col>
+    <:col :let={{_id, lead}} label="Owner" class="hidden lg:table-cell">
+      {Format.user_name(lead.owner)}
+    </:col>
+    <:col :let={{_id, lead}} label="Added" class="hidden lg:table-cell">
+      {Format.ago(lead.inserted_at)}
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-inbox-arrow-down"
+        title={if(@query != "", do: "No matches", else: "Inbox zero")}
+      >
+        {if @query != "", do: "Try a different search.", else: "New leads will show up here."}
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&leads_path(%{q: @query, status: @status, page: &1, cf: @cf})} />
+
+  <.modal
+    :if={@live_action == :new}
+    id="lead-modal"
+    show
+    title="New lead"
+    on_cancel={JS.patch(~p"/leads")}
+    size="lg"
+  >
+    <.live_component
+      module={ZippikerWeb.LeadLive.FormComponent}
+      id="new-lead-form"
+      lead={nil}
+      current_user={@current_user}
+      current_organization={@current_organization}
+    />
+  </.modal>
+</Layouts.app>

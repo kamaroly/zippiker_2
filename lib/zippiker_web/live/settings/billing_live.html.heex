@@ -1,0 +1,191 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:billing}
+>
+  <.header>
+    Plan & billing
+    <:subtitle>Your Zippiker subscription, seats and invoices.</:subtitle>
+  </.header>
+
+  <%= if @subscription do %>
+    <div class="grid gap-4 lg:grid-cols-[1fr_340px]">
+      <div class="space-y-4">
+        <.card id="current-plan">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-medium text-muted">Current plan</p>
+              <p class="mt-1 flex items-center gap-2 text-2xl font-semibold tracking-tight text-ink">
+                {@subscription.plan.name}
+                <.subscription_status status={@subscription.status} />
+              </p>
+              <p :if={@subscription.plan.description} class="mt-1 text-sm text-muted">
+                {@subscription.plan.description}
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="tabular text-2xl font-semibold tracking-tight text-ink">
+                {amount(monthly(@subscription.plan, @seats), @subscription.plan.currency)}
+              </p>
+              <p class="text-xs text-muted">
+                per month · {amount(
+                  @subscription.plan.price_per_seat,
+                  @subscription.plan.currency
+                )} × {Format.count(
+                  max(@seats, 1),
+                  "seat"
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <div class="mb-1.5 flex justify-between text-sm">
+              <span class="text-ink-soft">Seats</span>
+              <span class="tabular text-ink">
+                {@seats} / {@subscription.plan.seat_limit || "∞"}
+              </span>
+            </div>
+            <div class="h-1.5 overflow-hidden rounded-full bg-canvas">
+              <div
+                class={[
+                  "h-full rounded-full transition-all",
+                  seat_percent(@seats, @current_organization.seat_limit) >= 100 && "bg-danger",
+                  seat_percent(@seats, @current_organization.seat_limit) < 100 && "bg-brand"
+                ]}
+                style={"width: #{seat_percent(@seats, @current_organization.seat_limit)}%"}
+              />
+            </div>
+          </div>
+
+          <dl class="mt-6 grid gap-4 text-sm sm:grid-cols-3">
+            <div :if={@subscription.status == :trialing}>
+              <dt class="text-xs text-muted">Trial ends</dt>
+              <dd class="mt-0.5 font-medium text-ink">
+                {Format.date(@subscription.trial_ends_on)}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">Current period</dt>
+              <dd class="mt-0.5 font-medium text-ink">
+                {Format.date(@subscription.current_period_start)} – {Format.date(
+                  @subscription.current_period_end
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">Modules</dt>
+              <dd class="mt-0.5 flex flex-wrap gap-1">
+                <.badge :for={module <- @current_organization.enabled_modules}>
+                  {ZippikerWeb.Modules.name(module)}
+                </.badge>
+              </dd>
+            </div>
+          </dl>
+        </.card>
+
+        <div>
+          <h2 class="mb-3 text-sm font-semibold text-ink">Plans</h2>
+          <div id="plans" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div
+              :for={plan <- @plans}
+              id={"plan-#{plan.id}"}
+              class={[
+                "flex flex-col rounded-2xl border bg-surface p-5 shadow-card transition",
+                plan.id == @subscription.plan_id && "border-brand ring-3 ring-brand/15",
+                plan.id != @subscription.plan_id && "border-line hover:border-line-strong"
+              ]}
+            >
+              <p class="font-semibold text-ink">{plan.name}</p>
+              <p class="mt-1 text-xs text-muted">{plan.description}</p>
+              <p class="mt-4">
+                <span class="tabular text-2xl font-semibold tracking-tight text-ink">
+                  {amount(plan.price_per_seat, plan.currency)}
+                </span>
+                <span class="text-xs text-muted">/ seat / month</span>
+              </p>
+              <ul class="mt-4 flex-1 space-y-1.5 text-sm text-ink-soft">
+                <li class="flex items-center gap-2">
+                  <.icon name="hero-users-micro" class="size-4 text-muted" />
+                  {if plan.seat_limit,
+                    do: "Up to #{plan.seat_limit} seats",
+                    else: "Unlimited seats"}
+                </li>
+                <li :for={module <- plan.modules} class="flex items-center gap-2">
+                  <.icon name="hero-check-micro" class="size-4 text-success" />
+                  {ZippikerWeb.Modules.name(module)}
+                </li>
+              </ul>
+              <.button
+                :if={plan.id != @subscription.plan_id}
+                phx-click="request_plan"
+                phx-value-id={plan.id}
+                id={"request-plan-#{plan.id}"}
+                class="mt-5"
+              >
+                Request this plan
+              </.button>
+              <p
+                :if={plan.id == @subscription.plan_id}
+                class="mt-5 text-center text-sm font-medium text-brand"
+              >
+                Your plan
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="space-y-4">
+        <.card title="Billing contact">
+          <.form
+            for={@form}
+            id="billing-form"
+            phx-change="validate"
+            phx-submit="save"
+            class="space-y-3"
+          >
+            <.input
+              field={@form[:billing_email]}
+              type="email"
+              label="Invoices go to"
+              placeholder="accounts@yourcompany.com"
+            />
+            <.button type="submit" size="sm" phx-disable-with="Saving…">Save</.button>
+          </.form>
+        </.card>
+
+        <.card title="Invoices" padded={false}>
+          <ul id="billing-invoices" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+            <li id="billing-invoices-empty" class="hidden py-4 text-sm text-muted only:block">
+              No invoices yet.
+            </li>
+            <li
+              :for={{id, invoice} <- @streams.invoices}
+              id={id}
+              class="flex items-center gap-3 py-2.5"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-ink">{invoice.number}</p>
+                <p class="text-xs text-muted">
+                  {Format.date(invoice.period_start)} – {Format.date(invoice.period_end)}
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="tabular text-sm font-medium text-ink">
+                  {amount(invoice.amount, invoice.currency)}
+                </p>
+                <.billing_status status={invoice.status} />
+              </div>
+            </li>
+          </ul>
+        </.card>
+      </aside>
+    </div>
+  <% else %>
+    <.empty_state icon="hero-lock-closed" title="Admins only">
+      Ask a workspace owner or admin about your plan and billing.
+    </.empty_state>
+  <% end %>
+</Layouts.app>

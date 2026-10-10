@@ -1,0 +1,103 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={if(@kind == :person, do: :contacts, else: :companies)}
+>
+  <.header>
+    {@page_title}
+    <:subtitle>
+      {if @kind == :person,
+        do: "Everyone you work with.",
+        else: "The organizations you do business with."}
+    </:subtitle>
+    <:actions>
+      <.button patch={new_path(@kind)} variant="primary" id="new-party">
+        <.icon name="hero-plus-micro" /> {if @kind == :person, do: "Contact", else: "Company"}
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box
+      id="party-search"
+      value={@query}
+      placeholder={"Search #{String.downcase(@page_title)}…"}
+    />
+    <.segmented
+      current={@role}
+      options={[
+        {"All", nil, list_path(@kind, %{q: @query, cf: @cf})},
+        {"Customers", :customer, list_path(@kind, %{q: @query, role: :customer, cf: @cf})},
+        {"Prospects", :lead, list_path(@kind, %{q: @query, role: :lead, cf: @cf})},
+        {"Suppliers", :supplier, list_path(@kind, %{q: @query, role: :supplier, cf: @cf})}
+      ]}
+    />
+  </div>
+
+  <div class="mb-4">
+    <.custom_field_filters id="party-filters" definitions={@filters} values={@cf} />
+  </div>
+
+  <.table
+    id="parties"
+    rows={@streams.parties}
+    row_click={fn {_id, party} -> JS.navigate(show_path(party)) end}
+  >
+    <:col :let={{_id, party}} label="Name">
+      <div class="flex items-center gap-3">
+        <.avatar name={party.name} size="sm" square={party.kind == :organization} />
+        <div class="min-w-0">
+          <p class="truncate font-medium text-ink">{party.name}</p>
+          <p :if={party.email} class="truncate text-xs text-muted">{party.email}</p>
+        </div>
+      </div>
+    </:col>
+    <:col :let={{_id, party}} :if={@kind == :person} label="Company">
+      {party.employer && party.employer.name}
+    </:col>
+    <:col :let={{_id, party}} :if={@kind == :person} label="Title">{party.job_title}</:col>
+    <:col :let={{_id, party}} :if={@kind == :organization} label="Industry">
+      {party.industry}
+    </:col>
+    <:col :let={{_id, party}} label="Phone" class="hidden md:table-cell">{party.phone}</:col>
+    <:col :let={{_id, party}} label="Roles" class="hidden lg:table-cell">
+      <.roles roles={party.roles} />
+    </:col>
+    <:col :let={{_id, party}} label="Owner" class="hidden lg:table-cell">
+      <span :if={party.owner} class="flex items-center gap-2">
+        <.avatar name={Format.user_name(party.owner)} size="xs" />{Format.user_name(party.owner)}
+      </span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon={if(@kind == :person, do: "hero-users", else: "hero-building-office-2")}
+        title={if(@query != "", do: "No matches", else: "Nothing here yet")}
+      >
+        {if @query != "",
+          do: "Try a different search.",
+          else: "Add your first one to get started."}
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&list_path(@kind, %{q: @query, role: @role, cf: @cf, page: &1})} />
+
+  <.modal
+    :if={@live_action in [:new_contact, :new_company]}
+    id="party-modal"
+    show
+    title={if(@kind == :person, do: "New contact", else: "New company")}
+    on_cancel={JS.patch(list_path(@kind, %{}))}
+    size="lg"
+  >
+    <.live_component
+      module={ZippikerWeb.PartyLive.FormComponent}
+      id="new-party-form"
+      party={nil}
+      kind={@kind}
+      current_user={@current_user}
+      current_organization={@current_organization}
+    />
+  </.modal>
+</Layouts.app>

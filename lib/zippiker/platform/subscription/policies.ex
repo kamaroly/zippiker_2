@@ -1,0 +1,24 @@
+defmodule Zippiker.Platform.Subscription.Policies do
+  use Spark.Dsl.Fragment, of: Ash.Resource, authorizers: [Ash.Policy.Authorizer]
+
+  alias Zippiker.Accounts.Checks.ActorIsSuperAdmin
+
+  policies do
+    bypass ActorIsSuperAdmin do
+      authorize_if always()
+    end
+
+    policy action(:ensure) do
+      authorize_if Zippiker.Platform.Checks.ActorAdminsOrganization
+    end
+
+    policy action([:read, :update_billing_details]) do
+      authorize_if expr(
+                     exists(
+                       organization.memberships,
+                       user_id == ^actor(:id) and role in [:owner, :admin]
+                     )
+                   )
+    end
+  end
+end

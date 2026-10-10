@@ -1,0 +1,60 @@
+<Layouts.centered flash={@flash}>
+  <%!-- Submitted automatically once a workspace is created or joined, to make it current. --%>
+  <.form
+    :if={@switch_to}
+    for={%{}}
+    id="switch-form"
+    action={~p"/workspaces/#{@switch_to}/switch"}
+    method="post"
+    phx-trigger-action
+  >
+  </.form>
+
+  <.card :if={@invitations != []} class="mb-4" title="You're invited">
+    <ul id="my-invitations" class="divide-y divide-line">
+      <li
+        :for={invitation <- @invitations}
+        id={"invitation-#{invitation.id}"}
+        class="flex items-center gap-3 py-3"
+      >
+        <.avatar name={invitation.organization.name} size="sm" square />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-semibold text-ink">{invitation.organization.name}</p>
+          <p class="text-xs text-muted">
+            Invited by {Format.user_name(invitation.invited_by)} as {invitation.role}
+          </p>
+        </div>
+        <.button phx-click="join" phx-value-id={invitation.id} variant="primary" size="sm">Join</.button>
+      </li>
+    </ul>
+  </.card>
+
+  <.card>
+    <div class="mb-6">
+      <h1 class="text-xl font-semibold tracking-tight">
+        {if @first?, do: "Set up your workspace", else: "Create another workspace"}
+      </h1>
+      <p class="mt-1 text-sm text-muted">
+        A workspace holds your contacts, deals, invoices and settings.
+      </p>
+    </div>
+    <.form for={@form} id="onboarding-form" phx-submit="save" class="space-y-4">
+      <.input field={@form[:name]} label="Your name" placeholder="Ada Lovelace" required />
+      <.input field={@form[:workspace]} label="Company name" placeholder="Acme Inc" required />
+      <.input
+        field={@form[:currency]}
+        type="select"
+        label="Reporting currency"
+        options={@currencies}
+        hint="Deal values, quotes and invoices use this currency."
+      />
+      <.button type="submit" variant="primary" class="w-full" phx-disable-with="Creating…">
+        Create workspace <.icon name="hero-arrow-right-micro" class="size-4" />
+      </.button>
+    </.form>
+  </.card>
+
+  <p :if={!@first?} class="mt-4 text-center text-sm">
+    <.link navigate={~p"/"} class="text-muted hover:text-ink">← Back to my workspace</.link>
+  </p>
+</Layouts.centered>

@@ -1,0 +1,122 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:accounts}
+>
+  <.header>
+    Chart of accounts
+    <:subtitle>
+      Every amount in your books lands in one of these. Accounts marked
+      <span class="font-medium text-ink-soft">Auto</span>
+      are used by invoices and payments.
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns) and not @empty?}
+        patch={~p"/accounting/accounts/new"}
+        variant="primary"
+        id="new-account"
+      >
+        <.icon name="hero-plus-micro" /> Account
+      </.button>
+    </:actions>
+  </.header>
+
+  <.empty_state :if={@empty?} icon="hero-list-bullet" title="No accounts yet">
+    Set up accounting from the overview to get a ready-made chart.
+    <:action><.button navigate={~p"/accounting"}>Go to overview</.button></:action>
+  </.empty_state>
+
+  <div :if={not @empty?} class="space-y-4">
+    <.card :for={type <- @types} padded={false}>
+      <div class="flex items-center gap-2 px-5 pt-4 pb-2">
+        <.account_type type={type} />
+        <span class="text-xs text-muted">
+          {if type in [:asset, :expense], do: "grows with debits", else: "grows with credits"}
+        </span>
+      </div>
+      <table class="w-full text-sm">
+        <tbody id={"accounts-#{type}"} phx-update="stream" class="divide-y divide-line">
+          <tr id={"accounts-#{type}-empty"} class="hidden only:table-row">
+            <td class="px-5 py-3 text-muted">No accounts of this type.</td>
+          </tr>
+          <tr
+            :for={{id, account} <- @streams[type]}
+            id={id}
+            class={["group transition hover:bg-canvas", !account.active? && "opacity-50"]}
+          >
+            <td class="tabular w-24 px-5 py-2.5 text-muted">{account.code}</td>
+            <td class="py-2.5">
+              <.link
+                navigate={~p"/accounting/accounts/#{account}"}
+                class="font-medium text-ink hover:underline"
+              >
+                {account.name}
+              </.link>
+              <.badge :if={account.system_key} class="ml-2">Auto</.badge>
+              <.badge :if={!account.active?} class="ml-2">Inactive</.badge>
+            </td>
+            <td class="tabular px-5 py-2.5 text-right font-medium text-ink">
+              {amount(account.balance, @current_organization.currency)}
+            </td>
+            <td class="w-32 pr-5 text-right">
+              <span
+                :if={admin?(assigns)}
+                class="flex justify-end gap-3 text-xs opacity-0 transition group-hover:opacity-100"
+              >
+                <.link
+                  patch={~p"/accounting/accounts/#{account}/edit"}
+                  class="text-ink-soft hover:text-ink"
+                >
+                  Edit
+                </.link>
+                <button
+                  :if={!account.system_key and !account.used?}
+                  phx-click="delete"
+                  phx-value-id={account.id}
+                  data-confirm="Delete this account?"
+                  class="text-danger hover:underline"
+                >
+                  Delete
+                </button>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </.card>
+  </div>
+
+  <.modal
+    :if={@form}
+    id="account-modal"
+    show
+    title={if(@account, do: "Edit account", else: "New account")}
+    on_cancel={JS.patch(~p"/accounting/accounts")}
+  >
+    <.form for={@form} id="account-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-[120px_1fr]">
+        <.input field={@form[:code]} label="Code" placeholder="6150" phx-mounted={JS.focus()} />
+        <.input field={@form[:name]} label="Name" placeholder="Insurance" />
+      </div>
+      <.input
+        :if={!@account}
+        field={@form[:type]}
+        type="select"
+        label="Type"
+        options={for type <- @types, do: {Format.humanize(type), type}}
+      />
+      <.input field={@form[:description]} type="textarea" label="Description" />
+      <.input
+        :if={@account}
+        field={@form[:active?]}
+        type="checkbox"
+        label="Active (offered when posting)"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

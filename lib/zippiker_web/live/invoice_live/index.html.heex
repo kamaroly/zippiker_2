@@ -1,0 +1,99 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:invoices}
+>
+  <.header>
+    Invoices
+    <:subtitle>What you've billed and what's still owed.</:subtitle>
+    <:actions>
+      <.button navigate={~p"/invoices/new"} variant="primary" id="new-invoice">
+        <.icon name="hero-plus-micro" /> Invoice
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <.stat
+      id="stat-receivable"
+      label="Outstanding"
+      value={Format.money_short(@summary.receivable)}
+      icon="hero-inbox-stack"
+    >
+      {Format.count(@summary.open_count, "open invoice")}
+    </.stat>
+    <.stat
+      id="stat-overdue"
+      label="Overdue"
+      value={Format.money_short(@summary.overdue)}
+      icon="hero-exclamation-triangle"
+    >
+      {Format.count(@summary.overdue_count, "invoice")}
+    </.stat>
+    <.stat
+      id="stat-invoiced"
+      label="Invoiced this month"
+      value={Format.money_short(@summary.invoiced_this_month)}
+      icon="hero-document-arrow-up"
+    />
+    <.stat
+      id="stat-collected"
+      label="Collected this month"
+      value={Format.money_short(@summary.collected_this_month)}
+      icon="hero-banknotes"
+    />
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="invoice-search" value={@query} placeholder="Search number or customer…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, invoices_path(%{q: @query})},
+        {"Draft", :draft, invoices_path(%{q: @query, status: :draft})},
+        {"Open", :issued, invoices_path(%{q: @query, status: :issued})},
+        {"Overdue", :overdue, invoices_path(%{q: @query, status: :overdue})},
+        {"Paid", :paid, invoices_path(%{q: @query, status: :paid})},
+        {"Void", :void, invoices_path(%{q: @query, status: :void})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="invoices"
+    rows={@streams.invoices}
+    row_click={fn {_id, invoice} -> JS.navigate(~p"/invoices/#{invoice}") end}
+  >
+    <:col :let={{_id, invoice}} label="Number">
+      <span class={[
+        "font-medium",
+        invoice.number && "text-ink",
+        !invoice.number && "text-muted italic"
+      ]}>
+        {invoice.number || "Draft"}
+      </span>
+    </:col>
+    <:col :let={{_id, invoice}} label="Customer">{invoice.customer.name}</:col>
+    <:col :let={{_id, invoice}} label="Status"><.invoice_status invoice={invoice} /></:col>
+    <:col :let={{_id, invoice}} label="Due" class="hidden md:table-cell">
+      <span class={invoice.overdue? && "font-medium text-danger"}>{Format.date(invoice.due_on)}</span>
+    </:col>
+    <:col :let={{_id, invoice}} label="Total" class="text-right">
+      <span class="tabular text-ink">{Format.money(invoice.total)}</span>
+    </:col>
+    <:col :let={{_id, invoice}} label="Due amount" class="hidden text-right lg:table-cell">
+      <span class="tabular font-medium text-ink">{Format.money(invoice.amount_due)}</span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-banknotes"
+        title={if(@query != "", do: "No matches", else: "No invoices yet")}
+      >
+        Invoice an accepted quote, or start a new one.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&invoices_path(%{q: @query, status: @status, page: &1})} />
+</Layouts.app>

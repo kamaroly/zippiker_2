@@ -1,0 +1,61 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:rfqs}
+>
+  <.header>
+    Requests for quotation
+    <:subtitle>
+      Ask suppliers for prices, compare, and turn the best one into a purchase order.
+    </:subtitle>
+    <:actions>
+      <.button navigate={~p"/rfqs/new"} variant="primary" id="new-rfq">
+        <.icon name="hero-plus-micro" /> Request
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="rfq-search" value={@query} placeholder="Search number or supplier…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, rfqs_path(%{q: @query})},
+        {"Draft", :draft, rfqs_path(%{q: @query, status: :draft})},
+        {"Sent", :sent, rfqs_path(%{q: @query, status: :sent})},
+        {"Quoted", :quoted, rfqs_path(%{q: @query, status: :quoted})},
+        {"Accepted", :accepted, rfqs_path(%{q: @query, status: :accepted})},
+        {"Declined", :declined, rfqs_path(%{q: @query, status: :declined})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="rfqs"
+    rows={@streams.rfqs}
+    row_click={fn {_id, rfq} -> JS.navigate(~p"/rfqs/#{rfq}") end}
+  >
+    <:col :let={{_id, rfq}} label="Number">
+      <span class="font-medium text-ink">{rfq.number}</span>
+    </:col>
+    <:col :let={{_id, rfq}} label="Supplier">{rfq.supplier.name}</:col>
+    <:col :let={{_id, rfq}} label="Status"><.rfq_status status={rfq.status} /></:col>
+    <:col :let={{_id, rfq}} label="Reply by" class="hidden md:table-cell">
+      {Format.date(rfq.valid_until)}
+    </:col>
+    <:col :let={{_id, rfq}} label="Total" class="text-right">
+      <span class="tabular font-medium text-ink">{Format.money(rfq.total)}</span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-chat-bubble-left-ellipsis"
+        title={if(@query != "", do: "No matches", else: "No requests yet")}
+      >
+        List what you need and send it to suppliers for prices.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&rfqs_path(%{q: @query, status: @status, page: &1})} />
+</Layouts.app>

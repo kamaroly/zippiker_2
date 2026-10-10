@@ -1,0 +1,64 @@
+<Layouts.platform flash={@flash} current_user={@current_user} active={:users}>
+  <.header>
+    Users
+    <:subtitle>
+      Impersonate someone to see exactly what they see. Every session is logged.
+    </:subtitle>
+  </.header>
+
+  <div class="mb-4">
+    <.search_box id="user-search" value={@query} placeholder="Search email or name…" />
+  </div>
+
+  <.table id="users" rows={@streams.users}>
+    <:col :let={{_id, user}} label="User">
+      <span class="flex items-center gap-2.5">
+        <.avatar name={user.display_name} size="sm" />
+        <span class="min-w-0">
+          <span class="block truncate font-medium text-ink">{user.display_name}</span>
+          <span class="block truncate text-xs text-muted">{user.email}</span>
+        </span>
+      </span>
+    </:col>
+    <:col :let={{_id, user}} label="Workspaces" class="text-right">
+      <span class="tabular">{user.memberships_count}</span>
+    </:col>
+    <:col :let={{_id, user}} label="Access">
+      <.badge :if={user.super_admin?} color={:orange}>Super admin</.badge>
+      <.badge :if={!user.confirmed_at} color={:amber}>Unconfirmed</.badge>
+    </:col>
+    <:col :let={{_id, user}} label="Joined" class="hidden md:table-cell">
+      {Format.date(user.inserted_at)}
+    </:col>
+    <:action :let={{_id, user}}>
+      <span :if={user.id != @current_user.id} class="flex justify-end gap-3 text-xs">
+        <.link
+          :if={!user.super_admin?}
+          href={~p"/platform/users/#{user}/impersonate"}
+          method="post"
+          id={"impersonate-#{user.id}"}
+          data-confirm={"Sign in as #{user.email}? This is logged."}
+          class="font-medium text-ink-soft hover:text-ink"
+        >
+          Impersonate
+        </.link>
+        <button
+          phx-click="toggle_super_admin"
+          phx-value-id={user.id}
+          id={"toggle-admin-#{user.id}"}
+          data-confirm={
+            if(user.super_admin?,
+              do: "Remove super admin access?",
+              else: "Give full platform access to #{user.email}?"
+            )
+          }
+          class="text-muted hover:text-ink"
+        >
+          {if user.super_admin?, do: "Revoke admin", else: "Make admin"}
+        </button>
+      </span>
+    </:action>
+  </.table>
+
+  <.pager page={@page} path={&query_path(~p"/platform/users", %{q: @query, page: &1})} />
+</Layouts.platform>

@@ -1,0 +1,63 @@
+<div id={@id} class="relative">
+  <.label :if={@label} for={"#{@id}-search"}>{@label}</.label>
+  <input type="hidden" name={@name} value={@selected && @selected.id} />
+
+  <div
+    :if={@selected}
+    class="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface px-2 text-sm shadow-card"
+  >
+    <.avatar name={@selected.name} size="xs" square={@selected.kind == :organization} />
+    <span class="flex-1 truncate text-ink">{@selected.name}</span>
+    <button
+      type="button"
+      phx-click="clear"
+      phx-target={@myself}
+      class="rounded p-0.5 text-muted hover:bg-canvas hover:text-ink"
+      aria-label="Clear"
+    >
+      <.icon name="hero-x-mark-micro" class="size-4" />
+    </button>
+  </div>
+
+  <div :if={!@selected}>
+    <div class="relative">
+      <.icon
+        name="hero-magnifying-glass-micro"
+        class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted"
+      />
+      <%!-- No `name`: the search text is never submitted with the form. --%>
+      <input
+        id={"#{@id}-search"}
+        type="text"
+        value={@query}
+        placeholder={@placeholder}
+        autocomplete="off"
+        phx-keyup="search"
+        phx-debounce="200"
+        phx-target={@myself}
+        class="block h-9 w-full rounded-lg border border-line bg-surface pr-3 pl-8 text-sm text-ink shadow-card placeholder:text-muted focus:border-brand focus:ring-3 focus:ring-brand/15 focus:outline-none"
+      />
+    </div>
+    <ul
+      :if={@results != [] or @query != ""}
+      id={"#{@id}-results"}
+      class="absolute inset-x-0 z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-pop"
+    >
+      <li :for={party <- @results}>
+        <button
+          type="button"
+          phx-click="pick"
+          phx-value-id={party.id}
+          phx-target={@myself}
+          class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-canvas"
+        >
+          <.avatar name={party.name} size="xs" square={party.kind == :organization} />
+          <span class="flex-1 truncate text-ink">{party.name}</span>
+          <span class="truncate text-xs text-muted">{party.email}</span>
+        </button>
+      </li>
+      <li :if={@results == []} class="px-2 py-2 text-sm text-muted">No matches</li>
+    </ul>
+  </div>
+  <.error :for={msg <- @errors}>{msg}</.error>
+</div>

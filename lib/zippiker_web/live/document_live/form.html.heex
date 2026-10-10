@@ -1,0 +1,141 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={@config.nav}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={cancel_path(@config, nil)} class="hover:text-ink">{@config.plural}</.link>
+    </:breadcrumb>
+    {@page_title}
+    <:subtitle :if={@kind == :invoice and is_nil(@document)}>
+      Drafts get their number when you issue them.
+    </:subtitle>
+    <:subtitle :if={@kind == :bill and is_nil(@document)}>
+      Enter the supplier's invoice. Nothing is owed until you approve it.
+    </:subtitle>
+  </.header>
+
+  <.form for={@form} id="document-form" phx-change="validate" phx-submit="save" class="space-y-4">
+    <.card>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="sm:col-span-2">
+          <.party_picker
+            field={@form[@config.party]}
+            label={if(@purchase?, do: "Supplier", else: "Customer")}
+            placeholder="Search companies or people…"
+            current_user={@current_user}
+            current_organization={@current_organization}
+          />
+        </div>
+        <div :if={!@purchase?} class="sm:col-span-2">
+          <.party_picker
+            field={@form[:contact_id]}
+            kind={:person}
+            label="Contact (optional)"
+            current_user={@current_user}
+            current_organization={@current_organization}
+          />
+        </div>
+        <div :if={@kind == :bill} class="sm:col-span-2">
+          <.input
+            field={@form[:supplier_reference]}
+            label="Supplier's invoice number"
+            placeholder="e.g. INV-4471"
+          />
+        </div>
+        <div :if={@kind in [:purchase_order, :rfq]} class="hidden lg:col-span-2 lg:block"></div>
+        <.input
+          field={@form[:issued_on]}
+          type="date"
+          label={
+            case @kind do
+              :bill -> "Bill date"
+              :purchase_order -> "Order date"
+              :rfq -> "Request date"
+              :sales_order -> "Order date"
+              _ -> "Issue date"
+            end
+          }
+        />
+        <.input
+          :if={@kind in [:quote, :rfq]}
+          field={@form[:valid_until]}
+          type="date"
+          label={if(@kind == :rfq, do: "Reply by", else: "Valid until")}
+        />
+        <.input
+          :if={@kind in [:invoice, :bill]}
+          field={@form[:due_on]}
+          type="date"
+          label="Due date"
+          hint="Leave empty to use payment terms"
+        />
+        <.input
+          :if={@kind in [:sales_order, :purchase_order]}
+          field={@form[:expected_on]}
+          type="date"
+          label={if(@kind == :sales_order, do: "Delivery date", else: "Expected on")}
+        />
+        <.input
+          :if={@warehouse_options}
+          field={@form[:warehouse_id]}
+          type="select"
+          label="Warehouse"
+          prompt="Default"
+          options={@warehouse_options}
+        />
+        <.input
+          field={@form[:owner_id]}
+          type="select"
+          label="Owner"
+          prompt="—"
+          options={@members}
+        />
+        <input
+          :if={!@purchase?}
+          type="hidden"
+          name={@form[:deal_id].name}
+          value={@form[:deal_id].value}
+        />
+      </div>
+    </.card>
+
+    <.line_items
+      form={@form}
+      products={@product_options}
+      tax_rates={@tax_options}
+      accounts={@account_options}
+      preview={@preview}
+      currency={@current_organization.currency}
+    />
+
+    <.card>
+      <.input
+        field={@form[:notes]}
+        type="textarea"
+        label="Notes"
+        placeholder={
+          case @kind do
+            :quote -> "Scope, assumptions, terms…"
+            :invoice -> "Thank you for your business!"
+            :purchase_order -> "Delivery instructions for the supplier…"
+            :rfq -> "What you need, quantities, delivery requirements…"
+            _ -> "Internal notes"
+          end
+        }
+      />
+      <div :if={@definitions != []} class="mt-5">
+        <.custom_field_inputs form={@form} definitions={@definitions} />
+      </div>
+    </.card>
+
+    <div class="flex justify-end gap-2">
+      <.button navigate={cancel_path(@config, @document)}>Cancel</.button>
+      <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-document">
+        Save {@config.title}
+      </.button>
+    </div>
+  </.form>
+</Layouts.app>

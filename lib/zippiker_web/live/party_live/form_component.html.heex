@@ -1,0 +1,59 @@
+<div>
+  <.form
+    for={@form}
+    id="party-form"
+    phx-change="validate"
+    phx-submit="save"
+    phx-target={@myself}
+    class="space-y-4"
+  >
+    <%= if @kind == :person do %>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:first_name]} label="First name" phx-mounted={JS.focus()} />
+        <.input field={@form[:last_name]} label="Last name" />
+        <.input field={@form[:email]} type="email" label="Email" />
+        <.input field={@form[:phone]} type="tel" label="Phone" />
+        <.input field={@form[:job_title]} label="Job title" />
+        <.party_picker
+          field={@form[:employer_id]}
+          kind={:organization}
+          label="Company"
+          current_user={@current_user}
+          current_organization={@current_organization}
+        />
+      </div>
+    <% else %>
+      <.input field={@form[:name]} label="Company name" phx-mounted={JS.focus()} />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:website]} label="Website" placeholder="https://" />
+        <.input field={@form[:industry]} label="Industry" />
+        <.input field={@form[:email]} type="email" label="Email" />
+        <.input field={@form[:phone]} type="tel" label="Phone" />
+        <.input field={@form[:tax_id]} label="Tax ID" />
+      </div>
+    <% end %>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <.input
+        field={@form[:owner_id]}
+        type="select"
+        label="Owner"
+        prompt="—"
+        options={@members}
+      />
+      <.input
+        name={@form[:tags].name}
+        id={@form[:tags].id}
+        value={Enum.join(List.wrap(@form[:tags].value), ", ")}
+        label="Tags"
+        placeholder="vip, newsletter"
+      />
+    </div>
+    <.input field={@form[:description]} type="textarea" label="Notes" />
+
+    <.custom_field_inputs form={@form} definitions={@definitions} />
+
+    <div class="flex justify-end gap-2 pt-2">
+      <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+    </div>
+  </.form>
+</div>

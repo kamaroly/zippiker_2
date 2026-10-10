@@ -1,0 +1,178 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:stock}
+>
+  <.header>
+    Stock
+    <:subtitle>
+      What's on your shelves, valued at average cost. Purchases, sales and adjustments update it.
+    </:subtitle>
+    <:actions>
+      <.button patch={~p"/inventory/adjust"} variant="primary" id="adjust-stock">
+        <.icon name="hero-adjustments-vertical-micro" /> Adjust stock
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <.stat
+      id="stat-stock-value"
+      label="Stock value"
+      value={amount(@summary.value, @current_organization.currency)}
+      icon="hero-archive-box"
+    >
+      {Format.count(@summary.tracked, "tracked product")}
+    </.stat>
+    <.stat
+      id="stat-low-stock"
+      label="Low stock"
+      value={to_string(@summary.low_stock)}
+      icon="hero-arrow-trending-down"
+    >
+      at or below reorder level
+    </.stat>
+    <.stat
+      id="stat-negative"
+      label="Below zero"
+      value={to_string(@summary.negative)}
+      icon="hero-exclamation-triangle"
+    >
+      sold before it was received
+    </.stat>
+    <.stat
+      id="stat-warehouses"
+      label="Warehouses"
+      value={to_string(length(@warehouses))}
+      icon="hero-building-storefront"
+    />
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="stock-search" value={@query} placeholder="Search product or SKU…" />
+    <.segmented
+      :if={length(@warehouses) > 1}
+      current={@warehouse && @warehouse.id}
+      options={
+        [{"All warehouses", nil, stock_path(@query, nil)}] ++
+          Enum.map(@warehouses, &{&1.name, &1.id, stock_path(@query, &1)})
+      }
+    />
+  </div>
+
+  <div class="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
+    <table class="w-full min-w-[640px] text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-muted">
+          <th class="px-5 py-2.5 font-medium">Product</th>
+          <th class="px-3 py-2.5 text-right font-medium">On hand</th>
+          <th class="px-3 py-2.5 text-right font-medium">Average cost</th>
+          <th class="px-3 py-2.5 text-right font-medium">Value</th>
+          <th class="w-28 px-5 py-2.5"></th>
+        </tr>
+      </thead>
+      <tbody id="stock-levels" phx-update="stream" class="divide-y divide-line">
+        <tr id="stock-levels-empty" class="hidden only:table-row">
+          <td colspan="5" class="px-5 py-10 text-center text-muted">
+            No stock-tracked products yet. Edit a product of type Goods and switch on
+            “Track stock on hand”.
+          </td>
+        </tr>
+        <tr :for={{id, level} <- @streams.levels} id={id} class="group hover:bg-canvas">
+          <td class="px-5 py-3">
+            <.link
+              navigate={~p"/inventory/products/#{level.product}"}
+              class="font-medium text-ink hover:underline"
+            >
+              {level.product.name}
+            </.link>
+            <span :if={level.product.sku} class="ml-1 font-mono text-xs text-muted">
+              {level.product.sku}
+            </span>
+            <.badge :if={level.low_stock?} color={:rose} class="ml-2">Low</.badge>
+          </td>
+          <td class={[
+            "tabular px-3 py-3 text-right font-medium",
+            Decimal.lt?(level.quantity, 0) && "text-danger",
+            !Decimal.lt?(level.quantity, 0) && "text-ink"
+          ]}>
+            {Decimal.normalize(level.quantity)} {level.product.unit}
+          </td>
+          <td class="tabular px-3 py-3 text-right text-ink-soft">
+            {amount(level.product.average_cost, @current_organization.currency)}
+          </td>
+          <td class="tabular px-3 py-3 text-right text-ink">
+            {amount(level.value, @current_organization.currency)}
+          </td>
+          <td class="px-5 py-3 text-right">
+            <.link
+              patch={~p"/inventory/adjust?product_id=#{level.product.id}"}
+              class="text-xs text-muted opacity-0 transition group-hover:opacity-100 hover:text-ink"
+            >
+              Adjust
+            </.link>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <.modal
+    :if={@form}
+    id="adjust-modal"
+    show
+    title="Adjust stock"
+    on_cancel={JS.patch(stock_path(@query, @warehouse))}
+  >
+    <.form
+      for={@form}
+      id="adjust-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="space-y-4"
+    >
+      <.input
+        field={@form[:product_id]}
+        type="select"
+        label="Product"
+        prompt="Choose…"
+        options={@product_options}
+      />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:quantity]}
+          type="number"
+          step="any"
+          label="Change in quantity"
+          hint="+5 found or counted more, −2 damaged or lost"
+        />
+        <.input
+          field={@form[:warehouse_id]}
+          type="select"
+          label="Warehouse"
+          prompt="Default"
+          options={Enum.map(@warehouses, &{&1.name, &1.id})}
+        />
+        <.input field={@form[:date]} type="date" label="Date" />
+        <.input
+          field={@form[:unit_cost]}
+          type="number"
+          step="any"
+          min="0"
+          label="Unit cost (optional)"
+          hint="For additions; defaults to average cost"
+        />
+      </div>
+      <.input
+        field={@form[:memo]}
+        label="Reason"
+        placeholder="Stock count, damaged in transit…"
+      />
+      <.error :for={{_field, {msg, _}} <- @form.errors}>{msg}</.error>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save adjustment</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

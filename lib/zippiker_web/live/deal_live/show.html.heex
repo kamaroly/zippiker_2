@@ -1,0 +1,161 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:deals}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/deals"} class="hover:text-ink">Deals</.link> / {@pipeline.name}
+    </:breadcrumb>
+    {@deal.title}
+    <:subtitle>
+      <span class="flex flex-wrap items-center gap-2">
+        <span class="tabular text-base font-semibold text-ink">{Format.money(@deal.amount)}</span>
+        <.deal_status status={@deal.status} />
+        <span :if={@deal.company}>
+          ·
+          <.link navigate={~p"/companies/#{@deal.company}"} class="text-ink hover:underline">{@deal.company.name}</.link>
+        </span>
+      </span>
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={module?(assigns, :sales)}
+        navigate={~p"/quotes/new?deal_id=#{@deal.id}"}
+        id="quote-deal"
+      >
+        <.icon name="hero-document-text-micro" /> Quote
+      </.button>
+      <.button patch={~p"/deals/#{@deal}/edit"} id="edit-deal"><.icon name="hero-pencil-square-micro" />
+      Edit</.button>
+      <.button
+        phx-click="archive"
+        data-confirm="Archive this deal?"
+        variant="danger"
+        id="archive-deal"
+      >
+        <.icon name="hero-archive-box-micro" /> Archive
+      </.button>
+    </:actions>
+  </.header>
+
+  <nav
+    id="stage-progress"
+    aria-label="Stage"
+    class="mb-6 flex overflow-hidden rounded-xl border border-line bg-surface shadow-card"
+  >
+    <button
+      :for={stage <- @pipeline.stages}
+      id={"move-#{stage.id}"}
+      phx-click="move"
+      phx-value-stage={stage.id}
+      class={[
+        "flex-1 border-r border-line px-3 py-2.5 text-xs font-medium transition last:border-r-0",
+        stage.id == @deal.stage_id && stage.kind == :won && "bg-success text-white",
+        stage.id == @deal.stage_id && stage.kind == :lost && "bg-danger text-white",
+        stage.id == @deal.stage_id && stage.kind == :open && "bg-brand text-brand-ink",
+        stage.id != @deal.stage_id && reached?(stage, @deal, @pipeline) &&
+          "bg-brand-soft text-brand",
+        stage.id != @deal.stage_id && !reached?(stage, @deal, @pipeline) &&
+          "text-muted hover:bg-canvas hover:text-ink"
+      ]}
+    >
+      {stage.name}
+    </button>
+  </nav>
+
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="space-y-4">
+      <.card title="Details">
+        <.list>
+          <:item title="Stage"><.stage_badge stage={@deal.stage} /></:item>
+          <:item title="Probability">{@deal.probability}%</:item>
+          <:item title="Expected close">
+            <span class={@deal.overdue? && "font-medium text-danger"}>{Format.date(
+              @deal.expected_close_on
+            )}</span>
+          </:item>
+          <:item :if={@deal.closed_at} title="Closed">{Format.date(@deal.closed_at)}</:item>
+          <:item :if={@deal.lost_reason} title="Lost reason">{@deal.lost_reason}</:item>
+          <:item title="Contact">
+            <.link
+              :if={@deal.party}
+              navigate={~p"/contacts/#{@deal.party}"}
+              class="hover:underline"
+            >{@deal.party.name}</.link>
+            <span :if={!@deal.party}>—</span>
+          </:item>
+          <:item title="Owner">{Format.user_name(@deal.owner)}</:item>
+          <:item :if={@deal.lead} title="From lead">
+            <.link navigate={~p"/leads/#{@deal.lead}"} class="hover:underline">{@deal.lead.name}</.link>
+          </:item>
+        </.list>
+        <p :if={@deal.description} class="mt-4 text-sm whitespace-pre-line text-ink-soft">
+          {@deal.description}
+        </p>
+      </.card>
+      <.card :if={@definitions != []} title="Custom fields">
+        <.custom_field_values values={@deal.custom_fields} definitions={@definitions} />
+      </.card>
+      <.card :if={module?(assigns, :sales)} title="Quotes & invoices" padded={false}>
+        <:action>
+          <.link navigate={~p"/quotes/new?deal_id=#{@deal.id}"} class="text-muted hover:text-ink">New quote →</.link>
+        </:action>
+        <ul id="deal-documents" class="divide-y divide-line px-5 pb-2">
+          <li :for={quote <- @quotes} id={"quote-#{quote.id}"}>
+            <.link
+              navigate={~p"/quotes/#{quote}"}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <.icon name="hero-document-text" class="size-4 text-muted" />
+              <span class="flex-1 truncate text-sm text-ink">{quote.number}</span>
+              <.quote_status status={quote.status} />
+              <span class="tabular text-sm font-medium text-ink">{Format.money(quote.total)}</span>
+            </.link>
+          </li>
+          <li :for={invoice <- @invoices} id={"invoice-#{invoice.id}"}>
+            <.link
+              navigate={~p"/invoices/#{invoice}"}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <.icon name="hero-banknotes" class="size-4 text-muted" />
+              <span class="flex-1 truncate text-sm text-ink">{invoice.number || "Draft invoice"}</span>
+              <.invoice_status invoice={invoice} />
+              <span class="tabular text-sm font-medium text-ink">{Format.money(invoice.total)}</span>
+            </.link>
+          </li>
+        </ul>
+        <p :if={@quotes == [] and @invoices == []} class="px-5 pb-5 text-sm text-muted">
+          Send a quote when the deal is ready.
+        </p>
+      </.card>
+    </div>
+    <div class="lg:col-span-2">
+      <.live_component
+        module={ZippikerWeb.Components.ActivityPanel}
+        id="activity"
+        scope={%{deal_id: @deal.id}}
+        current_user={@current_user}
+        current_organization={@current_organization}
+      />
+    </div>
+  </div>
+
+  <.modal
+    :if={@live_action == :edit}
+    id="deal-modal"
+    show
+    title="Edit deal"
+    on_cancel={JS.patch(~p"/deals/#{@deal}")}
+    size="lg"
+  >
+    <.live_component
+      module={ZippikerWeb.DealLive.FormComponent}
+      id="edit-deal-form"
+      deal={@deal}
+      current_user={@current_user}
+      current_organization={@current_organization}
+    />
+  </.modal>
+</Layouts.app>

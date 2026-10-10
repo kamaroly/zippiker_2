@@ -1,0 +1,55 @@
+<Layouts.platform flash={@flash} current_user={@current_user} active={:teams}>
+  <.header>
+    Workspaces
+    <:subtitle>Open one to manage its plan, modules and billing, or to step inside.</:subtitle>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="team-search" value={@query} placeholder="Search workspaces…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, teams_path(%{q: @query})},
+        {"Trial", :trialing, teams_path(%{q: @query, status: :trialing})},
+        {"Active", :active, teams_path(%{q: @query, status: :active})},
+        {"Past due", :past_due, teams_path(%{q: @query, status: :past_due})},
+        {"Canceled", :canceled, teams_path(%{q: @query, status: :canceled})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="teams"
+    rows={@streams.teams}
+    row_click={fn {_id, team} -> JS.navigate(~p"/platform/teams/#{team}") end}
+  >
+    <:col :let={{_id, team}} label="Workspace">
+      <span class="flex items-center gap-2.5">
+        <.avatar name={team.name} size="sm" square />
+        <span class="font-medium text-ink">{team.name}</span>
+      </span>
+    </:col>
+    <:col :let={{_id, team}} label="Plan">
+      {if subscription(team), do: subscription(team).plan.name, else: "—"}
+    </:col>
+    <:col :let={{_id, team}} label="Status">
+      <.subscription_status :if={subscription(team)} status={subscription(team).status} />
+    </:col>
+    <:col :let={{_id, team}} label="Members" class="text-right">
+      <span class="tabular">{team.members_count}</span>
+    </:col>
+    <:col :let={{_id, team}} label="Modules" class="hidden lg:table-cell">
+      <span class="flex flex-wrap gap-1">
+        <.badge :for={module <- team.enabled_modules}>{ZippikerWeb.Modules.name(module)}</.badge>
+      </span>
+    </:col>
+    <:col :let={{_id, team}} label="Created" class="hidden md:table-cell">
+      {Format.date(team.inserted_at)}
+    </:col>
+    <:empty>
+      <.empty_state icon="hero-building-office-2" title="No workspaces found" />
+    </:empty>
+  </.table>
+
+  <.pager :if={@page} page={@page} path={&teams_path(%{q: @query, page: &1})} />
+</Layouts.platform>

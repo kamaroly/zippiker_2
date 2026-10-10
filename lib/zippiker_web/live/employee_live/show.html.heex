@@ -1,0 +1,217 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:employees}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/hr/employees"} class="hover:text-ink">Employees</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      <.avatar name={@employee.name} />
+      {@employee.name}
+      <.badge :if={@employee.status == :terminated} color={:slate}>Former employee</.badge>
+      <.badge :if={@employee.on_leave_today?} color={:amber}>Away today</.badge>
+    </span>
+    <:subtitle>
+      {@employee.job_title || "No title"}
+      <span :if={@employee.department}>· {@employee.department.name}</span>
+      · {@employee.employee_number}
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={@employee.status == :active}
+        navigate={~p"/hr/leave/new?employee_id=#{@employee.id}"}
+        id="request-leave-for"
+      >
+        <.icon name="hero-sun-micro" /> Request leave
+      </.button>
+      <.button
+        :if={admin?(assigns)}
+        navigate={~p"/hr/employees/#{@employee}/edit"}
+        variant="primary"
+        id="edit-employee"
+      >
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_320px]">
+    <div class="space-y-4">
+      <.card title="Leave this year" padded={false}>
+        <div
+          id="leave-balances"
+          class="grid gap-px overflow-hidden rounded-b-2xl bg-line sm:grid-cols-3"
+        >
+          <div :for={balance <- @balances} class="bg-surface px-5 py-4">
+            <.leave_type_badge type={balance.leave_type} />
+            <p class="tabular mt-2 text-2xl font-semibold tracking-tight text-ink">
+              {if balance.left, do: Decimal.normalize(balance.left), else: "∞"}
+              <span class="text-sm font-normal text-muted">days left</span>
+            </p>
+            <p class="mt-0.5 text-xs text-muted">
+              <span :if={Decimal.gt?(balance.carried_over, 0)}>
+                incl. {Decimal.normalize(balance.carried_over)} carried over ·
+              </span>
+              {Decimal.normalize(balance.taken)} taken
+              <span :if={Decimal.gt?(balance.pending, 0)}>
+                · {Decimal.normalize(balance.pending)} pending
+              </span>
+              <span :if={balance.allowance}>· of {Decimal.normalize(balance.allowance)}</span>
+            </p>
+          </div>
+          <p :if={@balances == []} class="bg-surface px-5 py-4 text-sm text-muted sm:col-span-3">
+            No leave available. Admins set this up under People → Leave policies.
+          </p>
+        </div>
+      </.card>
+
+      <.card title="Leave history" padded={false}>
+        <ul id="employee-leave" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+          <li id="employee-leave-empty" class="hidden py-4 text-sm text-muted only:block">
+            No leave requested yet.
+          </li>
+          <li
+            :for={{id, request} <- @streams.requests}
+            id={id}
+            class="flex items-center gap-3 py-2.5"
+          >
+            <.leave_type_badge type={request.leave_type} />
+            <span class="min-w-0 flex-1 truncate text-sm text-ink">{period(request)}</span>
+            <span class="tabular text-xs text-muted">{Decimal.normalize(request.days)} d</span>
+            <.leave_status status={request.status} />
+          </li>
+        </ul>
+      </.card>
+
+      <.card :if={visible?(@employee.salary)} title="Pay & personal" id="employee-private">
+        <.list>
+          <:item title="Salary">
+            <%= if @employee.salary do %>
+              {amount(@employee.salary, @current_organization.currency)} per {per(
+                @employee.pay_frequency
+              )}
+            <% else %>
+              —
+            <% end %>
+          </:item>
+          <:item title="Date of birth">{Format.date(@employee.date_of_birth)}</:item>
+          <:item title="National ID">{@employee.national_id || "—"}</:item>
+          <:item title="Emergency contact">
+            {@employee.emergency_contact_name || "—"}
+            <span :if={@employee.emergency_contact_phone} class="text-muted">
+              · {@employee.emergency_contact_phone}
+            </span>
+          </:item>
+        </.list>
+      </.card>
+
+      <.card :if={@definitions != []} title="More">
+        <.custom_field_values values={@employee.custom_fields} definitions={@definitions} />
+      </.card>
+    </div>
+
+    <aside class="space-y-4">
+      <.card title="Job">
+        <.list>
+          <:item title="Contract">{Format.humanize(@employee.employment_type)}</:item>
+          <:item title="Started">{Format.date(@employee.hire_date)}</:item>
+          <:item title="Leave policy">
+            <.link navigate={~p"/hr/leave-policies"} class="hover:underline">
+              {(@employee.leave_policy && @employee.leave_policy.name) || "Default"}
+            </.link>
+          </:item>
+          <:item :if={@employee.termination_date} title="Left">
+            {Format.date(@employee.termination_date)}
+            <span :if={@employee.termination_reason} class="block text-xs text-muted">
+              {@employee.termination_reason}
+            </span>
+          </:item>
+          <:item title="Email">{@employee.email || "—"}</:item>
+          <:item title="Phone">{@employee.phone || "—"}</:item>
+          <:item title="Login">
+            {if @employee.user, do: @employee.user.email, else: "Not linked"}
+          </:item>
+        </.list>
+      </.card>
+
+      <.card title="Reporting">
+        <p class="text-xs text-muted">Reports to</p>
+        <.link
+          :if={@employee.manager}
+          navigate={~p"/hr/employees/#{@employee.manager}"}
+          class="mt-1 flex items-center gap-2 text-sm font-medium text-ink hover:underline"
+        >
+          <.avatar name={@employee.manager.name} size="xs" /> {@employee.manager.name}
+        </.link>
+        <p :if={!@employee.manager} class="mt-1 text-sm text-ink-soft">Nobody (top level)</p>
+
+        <p class="mt-4 text-xs text-muted">
+          {Format.count(length(@employee.direct_reports), "direct report")}
+        </p>
+        <ul id="direct-reports" class="mt-1 space-y-1">
+          <li :for={report <- @employee.direct_reports} id={"report-#{report.id}"}>
+            <.link
+              navigate={~p"/hr/employees/#{report}"}
+              class="flex items-center gap-2 text-sm text-ink hover:underline"
+            >
+              <.avatar name={report.name} size="xs" /> {report.name}
+            </.link>
+          </li>
+        </ul>
+      </.card>
+
+      <div :if={admin?(assigns)} class="flex flex-col gap-2">
+        <.button
+          :if={@employee.status == :active}
+          patch={~p"/hr/employees/#{@employee}/terminate"}
+          variant="danger"
+          id="terminate-employee"
+        >
+          Mark as left
+        </.button>
+        <.button
+          :if={@employee.status == :terminated}
+          phx-click="rehire"
+          data-confirm="Rehire this person?"
+          id="rehire-employee"
+        >
+          Rehire
+        </.button>
+      </div>
+    </aside>
+  </div>
+
+  <.modal
+    :if={@terminating?}
+    id="terminate-modal"
+    show
+    title={"#{@employee.name} is leaving"}
+    on_cancel={JS.patch(~p"/hr/employees/#{@employee}")}
+  >
+    <form id="termination-form" phx-submit="terminate" class="space-y-4">
+      <.input
+        type="date"
+        name="termination[termination_date]"
+        id="termination-date"
+        value={Date.utc_today()}
+        label="Last day"
+      />
+      <.input
+        type="textarea"
+        name="termination[termination_reason]"
+        id="termination-reason"
+        value=""
+        label="Reason (internal)"
+      />
+      <p class="text-xs text-muted">
+        They stay in the directory under “Former”, with their history.
+      </p>
+      <div class="flex justify-end">
+        <.button type="submit" variant="danger" phx-disable-with="Saving…">Confirm</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

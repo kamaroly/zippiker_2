@@ -1,0 +1,61 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:quotes}
+>
+  <.header>
+    Quotes
+    <:subtitle>Proposals you've sent. Accepted quotes become invoices in one click.</:subtitle>
+    <:actions>
+      <.button navigate={~p"/quotes/new"} variant="primary" id="new-quote">
+        <.icon name="hero-plus-micro" /> Quote
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="quote-search" value={@query} placeholder="Search number or customer…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, quotes_path(%{q: @query})},
+        {"Draft", :draft, quotes_path(%{q: @query, status: :draft})},
+        {"Sent", :sent, quotes_path(%{q: @query, status: :sent})},
+        {"Accepted", :accepted, quotes_path(%{q: @query, status: :accepted})},
+        {"Declined", :declined, quotes_path(%{q: @query, status: :declined})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="quotes"
+    rows={@streams.quotes}
+    row_click={fn {_id, quote} -> JS.navigate(~p"/quotes/#{quote}") end}
+  >
+    <:col :let={{_id, quote}} label="Number">
+      <span class="font-medium text-ink">{quote.number}</span>
+    </:col>
+    <:col :let={{_id, quote}} label="Customer">{quote.customer.name}</:col>
+    <:col :let={{_id, quote}} label="Status"><.quote_status status={quote.status} /></:col>
+    <:col :let={{_id, quote}} label="Issued" class="hidden md:table-cell">
+      {Format.date(quote.issued_on)}
+    </:col>
+    <:col :let={{_id, quote}} label="Valid until" class="hidden lg:table-cell">
+      {Format.date(quote.valid_until)}
+    </:col>
+    <:col :let={{_id, quote}} label="Total" class="text-right">
+      <span class="tabular font-medium text-ink">{Format.money(quote.total)}</span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-document-text"
+        title={if(@query != "", do: "No matches", else: "No quotes yet")}
+      >
+        Create one from scratch, or from a deal.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&quotes_path(%{q: @query, status: @status, page: &1})} />
+</Layouts.app>

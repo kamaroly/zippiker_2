@@ -1,0 +1,120 @@
+<p>
+  The Sales module turns a deal into money: quote it, invoice it, record the payment. Every
+  document is numbered, printable and linked to the customer.
+</p>
+
+<h2>Before you start</h2>
+<ul>
+  <li>
+    <strong>Taxes</strong>
+    — add the rates you charge (e.g. VAT 18%) under <.link navigate="/settings/taxes">Settings → Taxes</.link>.
+  </li>
+  <li>
+    <strong>Products</strong>
+    — add what you sell under <.link navigate="/products">Products</.link>,
+    with a price, unit and default tax. Picking a product on a document line fills everything in.
+  </li>
+</ul>
+
+<h2>Quotes</h2>
+<ol>
+  <li>
+    From a deal click <strong>Quote</strong>, or go to <.link navigate="/quotes/new">Quotes → + Quote</.link>.
+  </li>
+  <li>
+    Add lines: product (optional), description, quantity, price, discount and tax. Totals update as you type.
+  </li>
+  <li>
+    Save, then <strong>Print / PDF</strong> to send it, and click <strong>Mark sent</strong>.
+  </li>
+  <li>
+    When the customer answers, click <strong>Accept</strong>
+    (the linked deal is won) or <strong>Mark declined</strong>. Changed your mind?
+    <strong>Back to draft</strong>
+    reopens it.
+  </li>
+</ol>
+
+<h2>Sales orders</h2>
+<p>
+  When you sell goods you deliver later, turn the accepted quote into an order with
+  <strong>Create order</strong>
+  (or start one under <.link navigate="/orders">Orders</.link>).
+</p>
+<ol>
+  <li><strong>Confirm</strong> the order once the customer commits.</li>
+  <li>
+    <strong>Deliver</strong>
+    when the goods leave. Enter the quantities going out now: you can deliver
+    in several parts, and the order shows <em>Partially delivered</em>
+    until everything has gone.
+    Each delivery gets a <strong>delivery note</strong>
+    (<code>DO-…</code>) to print and have the
+    customer sign; add the carrier's tracking number if you have one.
+  </li>
+  <li>
+    <strong>Create invoice</strong>
+    to bill it. Already invoiced? The order shows <em>Invoiced</em>.
+  </li>
+</ol>
+<.callout>
+  You can also invoice an order before everything is delivered: issuing the invoice delivers whatever
+  is left. Goods are never taken out twice.
+</.callout>
+
+<h2>Invoices</h2>
+<p>
+  On an accepted quote, click <strong>Create invoice</strong>
+  to copy it into a draft invoice, or create
+  one from scratch under <.link navigate="/invoices">Invoices</.link>.
+</p>
+<ul>
+  <li><strong>Draft</strong> invoices can be edited freely and have no number yet.</li>
+  <li>
+    <strong>Issue</strong>
+    gives the invoice its number and due date (from your payment terms) and records
+    the sale in your books. Issued invoices can't be edited.
+  </li>
+  <li>
+    Made a mistake? An admin can <strong>void</strong>
+    an unpaid invoice (its number stays used, and the
+    books are corrected automatically). Then issue a new one.
+  </li>
+</ul>
+
+<h2>Getting paid</h2>
+<p>
+  On an issued invoice click <strong>Record payment</strong>, enter the amount, date and method (bank,
+  card, cash, mobile money…). Part payments are fine: the invoice shows <em>Partially paid</em>
+  until the
+  balance reaches zero, then <em>Paid</em>. Past their due date, unpaid invoices show as
+  <em>Overdue</em>
+  and are counted on the dashboard.
+</p>
+
+<h2>Starting from a customer, or a copy</h2>
+<p>
+  On any contact or company page, the <strong>New</strong>
+  menu creates a quote, sales order or invoice
+  (and, for suppliers, a request for quotation, purchase order or bill) with the party already filled in.
+  Every document also has <strong>Duplicate</strong>: a new draft with the same party, lines and notes,
+  ready to adjust.
+</p>
+
+<h2>Printing and PDF</h2>
+<p>
+  On an order or invoice, <strong>Print</strong>
+  prints the document and <strong>Delivery note</strong>
+  (next to it) prints its delivery note, or all of them, one per page, when it shipped in parts.
+</p>
+<p>
+  <strong>Print / PDF</strong>
+  opens a clean, paper-style version. Use your browser's print dialog and
+  choose <em>Save as PDF</em>
+  to email it.
+</p>
+<.callout>
+  Every issued invoice and every payment is posted to
+  <.link navigate="/help/accounting">Accounting</.link>
+  automatically, so your revenue, receivables and cash are always up to date.
+</.callout>

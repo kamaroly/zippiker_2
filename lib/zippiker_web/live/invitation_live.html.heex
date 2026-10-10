@@ -1,0 +1,44 @@
+<Layouts.centered flash={@flash}>
+  <.form
+    :if={@switch_to}
+    for={%{}}
+    id="switch-form"
+    action={~p"/workspaces/#{@switch_to}/switch"}
+    method="post"
+    phx-trigger-action
+  >
+  </.form>
+
+  <.card :if={@invitation}>
+    <div class="flex flex-col items-center text-center">
+      <.avatar name={@invitation.organization.name} size="lg" square />
+      <h1 class="mt-4 text-xl font-semibold tracking-tight">
+        Join {@invitation.organization.name}
+      </h1>
+      <p class="mt-1 text-sm text-muted">
+        {Format.user_name(@invitation.invited_by)} invited
+        <span class="font-medium text-ink">{@invitation.email}</span>
+        as {@invitation.role}.
+      </p>
+      <p :if={@invitation.accepted_at} class="mt-4 text-sm text-warning">
+        This invitation was already used.
+      </p>
+      <.button
+        :if={!@invitation.accepted_at}
+        id="accept-invitation"
+        phx-click="accept"
+        variant="primary"
+        class="mt-6 w-full"
+      >
+        Accept invitation
+      </.button>
+      <p class="mt-4 text-xs text-muted">Signed in as {@current_user.email}</p>
+    </div>
+  </.card>
+
+  <.card :if={!@invitation}>
+    <.empty_state icon="hero-envelope-open" title="Invitation not found">
+      The link may be mistyped or the invitation was revoked.
+    </.empty_state>
+  </.card>
+</Layouts.centered>

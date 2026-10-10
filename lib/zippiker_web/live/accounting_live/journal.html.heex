@@ -1,0 +1,71 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:journal}
+>
+  <.header>
+    Journal
+    <:subtitle>
+      Every debit and credit, in order. Entries are never edited — reverse them instead.
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        navigate={~p"/accounting/journal/new"}
+        variant="primary"
+        id="new-entry"
+      >
+        <.icon name="hero-plus-micro" /> Journal entry
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="journal-search" value={@query} placeholder="Search number or memo…" />
+    <.segmented
+      current={@source}
+      options={[
+        {"All", nil, journal_path(%{q: @query})},
+        {"Manual", :manual, journal_path(%{q: @query, source: :manual})},
+        {"Expenses", :expense, journal_path(%{q: @query, source: :expense})},
+        {"Invoices", :invoice, journal_path(%{q: @query, source: :invoice})},
+        {"Payments", :payment, journal_path(%{q: @query, source: :payment})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="journal-entries"
+    rows={@streams.entries}
+    row_click={fn {_id, entry} -> JS.navigate(~p"/accounting/journal/#{entry}") end}
+  >
+    <:col :let={{_id, entry}} label="Number">
+      <span class="font-medium text-ink">{entry.number}</span>
+    </:col>
+    <:col :let={{_id, entry}} label="Date">{Format.date(entry.date)}</:col>
+    <:col :let={{_id, entry}} label="Memo">
+      <span class={["text-ink-soft", entry.reversal && "line-through decoration-muted"]}>
+        {entry.memo}
+      </span>
+    </:col>
+    <:col :let={{_id, entry}} label="Source" class="hidden md:table-cell">
+      <.entry_source entry={entry} />
+    </:col>
+    <:col :let={{_id, entry}} label="Amount" class="text-right">
+      <span class="tabular font-medium text-ink">
+        {amount(entry.total, @current_organization.currency)}
+      </span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-book-open"
+        title={if(@query != "", do: "No matches", else: "No entries yet")}
+      >
+        Issue an invoice, record a payment or an expense, and it shows up here.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&journal_path(%{q: @query, source: @source, page: &1})} />
+</Layouts.app>

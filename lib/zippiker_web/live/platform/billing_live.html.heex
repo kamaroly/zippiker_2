@@ -1,0 +1,56 @@
+<Layouts.platform flash={@flash} current_user={@current_user} active={:billing}>
+  <.header>
+    Billing
+    <:subtitle>
+      Invoices Zippiker sends its workspaces. Bill a period from the workspace page.
+    </:subtitle>
+  </.header>
+
+  <div class="mb-4">
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, billing_path(%{})},
+        {"Open", :open, billing_path(%{status: :open})},
+        {"Paid", :paid, billing_path(%{status: :paid})},
+        {"Void", :void, billing_path(%{status: :void})}
+      ]}
+    />
+  </div>
+
+  <.table id="billing-invoices" rows={@streams.invoices}>
+    <:col :let={{_id, invoice}} label="Number">
+      <span class="font-medium text-ink">{invoice.number}</span>
+    </:col>
+    <:col :let={{_id, invoice}} label="Workspace">
+      <.link navigate={~p"/platform/teams/#{invoice.organization_id}"} class="hover:underline">
+        {invoice.organization.name}
+      </.link>
+    </:col>
+    <:col :let={{_id, invoice}} label="Period" class="hidden md:table-cell">
+      {Format.date(invoice.period_start)} – {Format.date(invoice.period_end)}
+    </:col>
+    <:col :let={{_id, invoice}} label="Due">{Format.date(invoice.due_on)}</:col>
+    <:col :let={{_id, invoice}} label="Status"><.billing_status status={invoice.status} /></:col>
+    <:col :let={{_id, invoice}} label="Amount" class="text-right">
+      <span class="tabular font-medium text-ink">{amount(invoice.amount, invoice.currency)}</span>
+    </:col>
+    <:action :let={{_id, invoice}}>
+      <button
+        :if={invoice.status == :open}
+        phx-click="mark_paid"
+        phx-value-id={invoice.id}
+        class="text-xs font-medium text-success hover:underline"
+      >
+        Mark paid
+      </button>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-document-text" title="No invoices">
+        Bill a workspace's current period from its page.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&billing_path(%{status: @status, page: &1})} />
+</Layouts.platform>

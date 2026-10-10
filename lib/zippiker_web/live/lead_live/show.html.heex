@@ -1,0 +1,137 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:leads}
+>
+  <.header>
+    <:breadcrumb><.link navigate={~p"/leads"} class="hover:text-ink">Leads</.link></:breadcrumb>
+    <span class="flex items-center gap-3">
+      <.avatar name={@lead.name} size="lg" />
+      <span>
+        <span class="block">{@lead.name}</span>
+        <span class="mt-1 flex items-center gap-2 text-sm font-normal text-muted">
+          <span :if={@lead.company_name}>{@lead.company_name}</span>
+          <.lead_status status={@lead.status} />
+        </span>
+      </span>
+    </span>
+    <:actions>
+      <%= if @lead.status != :converted do %>
+        <.button patch={~p"/leads/#{@lead}/edit"} id="edit-lead"><.icon name="hero-pencil-square-micro" />
+        Edit</.button>
+        <.button patch={~p"/leads/#{@lead}/convert"} variant="primary" id="convert-lead">
+          <.icon name="hero-arrow-path-rounded-square-micro" /> Convert
+        </.button>
+      <% end %>
+    </:actions>
+  </.header>
+
+  <div
+    :if={@lead.status == :converted}
+    id="converted-banner"
+    class="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-brand-soft px-5 py-3 text-sm text-ink"
+  >
+    <.icon name="hero-check-badge" class="size-5 text-brand" />
+    Converted {Format.date(@lead.converted_at)} into
+    <.link :if={@lead.party} navigate={~p"/contacts/#{@lead.party}"} class="font-medium underline">{@lead.party.name}</.link>
+    <span :if={@lead.company}>
+      at
+      <.link navigate={~p"/companies/#{@lead.company}"} class="font-medium underline">{@lead.company.name}</.link>
+    </span>
+    <span :if={@lead.deal}>
+      · deal
+      <.link navigate={~p"/deals/#{@lead.deal}"} class="font-medium underline">{@lead.deal.title}</.link>
+    </span>
+  </div>
+
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="space-y-4">
+      <.card title="Details">
+        <.list>
+          <:item :if={@lead.email} title="Email">
+            <a href={"mailto:#{@lead.email}"} class="hover:underline">{@lead.email}</a>
+          </:item>
+          <:item :if={@lead.phone} title="Phone">{@lead.phone}</:item>
+          <:item :if={@lead.job_title} title="Job title">{@lead.job_title}</:item>
+          <:item title="Source">{Format.humanize(@lead.source)}</:item>
+          <:item title="Owner">{Format.user_name(@lead.owner)}</:item>
+          <:item title="Added">{Format.date(@lead.inserted_at)}</:item>
+        </.list>
+        <p :if={@lead.notes} class="mt-4 text-sm whitespace-pre-line text-ink-soft">
+          {@lead.notes}
+        </p>
+      </.card>
+      <.card :if={@definitions != []} title="Custom fields">
+        <.custom_field_values values={@lead.custom_fields} definitions={@definitions} />
+      </.card>
+    </div>
+    <div class="lg:col-span-2">
+      <.live_component
+        module={ZippikerWeb.Components.ActivityPanel}
+        id="activity"
+        scope={%{lead_id: @lead.id}}
+        current_user={@current_user}
+        current_organization={@current_organization}
+      />
+    </div>
+  </div>
+
+  <.modal
+    :if={@live_action == :edit}
+    id="lead-modal"
+    show
+    title="Edit lead"
+    on_cancel={JS.patch(~p"/leads/#{@lead}")}
+    size="lg"
+  >
+    <.live_component
+      module={ZippikerWeb.LeadLive.FormComponent}
+      id="edit-lead-form"
+      lead={@lead}
+      current_user={@current_user}
+      current_organization={@current_organization}
+    />
+  </.modal>
+
+  <.modal
+    :if={@live_action == :convert}
+    id="convert-modal"
+    show
+    title="Convert lead"
+    on_cancel={JS.patch(~p"/leads/#{@lead}")}
+  >
+    <p class="mb-4 text-sm text-muted">
+      Creates the contact <span class="font-medium text-ink">{@lead.name}</span>
+      <span :if={@lead.company_name}>
+        at <span class="font-medium text-ink">{@lead.company_name}</span> (matched if it already exists)
+      </span>.
+      Activity and tasks move along with them.
+    </p>
+    <.form
+      for={@convert_form}
+      id="convert-form"
+      phx-change="validate_convert"
+      phx-submit="convert"
+      class="space-y-4"
+    >
+      <.input field={@convert_form[:create_deal?]} type="checkbox" label="Also create a deal" />
+      <div :if={@create_deal?} class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@convert_form[:deal_title]}
+          label="Deal name"
+          placeholder={"#{@lead.company_name || @lead.name} deal"}
+        />
+        <.input
+          field={@convert_form[:deal_amount]}
+          type="number"
+          step="any"
+          label={"Value (#{@current_organization.currency})"}
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Converting…">Convert lead</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

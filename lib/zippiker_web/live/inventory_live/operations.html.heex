@@ -1,0 +1,58 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:stock_operations}
+>
+  <.header>
+    Stock movements
+    <:subtitle>Every time goods came in, went out or were corrected.</:subtitle>
+  </.header>
+
+  <div class="mb-4">
+    <.segmented
+      current={@kind}
+      options={[
+        {"All", nil, operations_path(%{})},
+        {"Receipts", :receipt, operations_path(%{kind: :receipt})},
+        {"Deliveries", :delivery, operations_path(%{kind: :delivery})},
+        {"Adjustments", :adjustment, operations_path(%{kind: :adjustment})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="stock-operations"
+    rows={@streams.operations}
+    row_click={fn {_id, operation} -> JS.navigate(~p"/inventory/operations/#{operation}") end}
+  >
+    <:col :let={{_id, operation}} label="Number">
+      <span class={[
+        "font-medium text-ink",
+        operation.reversal && "line-through decoration-muted"
+      ]}>
+        {operation.number}
+      </span>
+    </:col>
+    <:col :let={{_id, operation}} label="Type"><.operation_kind operation={operation} /></:col>
+    <:col :let={{_id, operation}} label="Date">{Format.date(operation.date)}</:col>
+    <:col :let={{_id, operation}} label="Reference" class="hidden md:table-cell">
+      <span class="text-ink-soft">{operation.source_label || operation.memo}</span>
+    </:col>
+    <:col :let={{_id, operation}} label="Warehouse" class="hidden lg:table-cell">
+      {operation.warehouse.name}
+    </:col>
+    <:col :let={{_id, operation}} label="Value" class="text-right">
+      <span class="tabular font-medium text-ink">
+        {amount(operation.total_value, @current_organization.currency)}
+      </span>
+    </:col>
+    <:empty>
+      <.empty_state icon="hero-arrows-right-left" title="No movements yet">
+        Receive a purchase order, deliver a sale or adjust stock.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&operations_path(%{kind: @kind, page: &1})} />
+</Layouts.app>

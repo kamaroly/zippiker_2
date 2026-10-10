@@ -1,0 +1,115 @@
+<%= if @print? do %>
+  <div class="min-h-screen bg-canvas px-4 py-6 print:bg-white print:p-0">
+    <div class="mx-auto mb-4 flex max-w-[820px] items-center justify-between print:hidden">
+      <.link navigate={~p"/deliveries/#{@note}"} class="text-sm text-muted hover:text-ink">
+        ← Back
+      </.link>
+      <.button phx-click={JS.dispatch("zippiker:print")} variant="primary" id="print-button">
+        <.icon name="hero-printer-micro" /> Print / Save as PDF
+      </.button>
+    </div>
+    <.delivery_paper note={@note} />
+  </div>
+<% else %>
+  <Layouts.app
+    flash={@flash}
+    current_user={@current_user}
+    current_organization={@current_organization}
+    active={:deliveries}
+  >
+    <.header>
+      <:breadcrumb>
+        <.link navigate={~p"/deliveries"} class="hover:text-ink">Delivery notes</.link>
+      </:breadcrumb>
+      <span class="flex items-center gap-3">
+        {@note.number} <.delivery_status status={@note.status} />
+      </span>
+      <:subtitle>{@note.customer.name} · shipped {Format.date(@note.shipped_on)}</:subtitle>
+      <:actions>
+        <.button navigate={~p"/deliveries/#{@note}/print"} id="print-dn">
+          <.icon name="hero-printer-micro" /> Print note
+        </.button>
+        <.button
+          :if={@note.status == :shipped}
+          patch={~p"/deliveries/#{@note}/confirm"}
+          variant="primary"
+          id="confirm-delivery"
+        >
+          <.icon name="hero-check-badge-micro" /> Mark delivered
+        </.button>
+      </:actions>
+    </.header>
+
+    <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+      <.delivery_paper note={@note} />
+
+      <aside class="space-y-4">
+        <.card :if={@note.status == :delivered} title="Proof of delivery">
+          <.list>
+            <:item title="Delivered">{Format.date(@note.delivered_on)}</:item>
+            <:item title="Signed by">{@note.received_by_name || "—"}</:item>
+          </.list>
+        </.card>
+        <.card title="Details">
+          <.list>
+            <:item :if={@note.sales_order} title="Order">
+              <.link navigate={~p"/orders/#{@note.sales_order}"} class="hover:underline">
+                {@note.sales_order.number}
+              </.link>
+            </:item>
+            <:item :if={@note.invoice} title="Invoice">
+              <.link navigate={~p"/invoices/#{@note.invoice}"} class="hover:underline">
+                {@note.invoice.number}
+              </.link>
+            </:item>
+            <:item title="Carrier">{@note.carrier || "—"}</:item>
+            <:item title="Tracking">{@note.tracking_number || "—"}</:item>
+            <:item title="From">{(@note.warehouse && @note.warehouse.name) || "—"}</:item>
+            <:item :if={@note.stock_operation} title="Stock movement">
+              <.link
+                navigate={~p"/inventory/operations/#{@note.stock_operation}"}
+                class="hover:underline"
+              >
+                {@note.stock_operation.number}
+              </.link>
+            </:item>
+            <:item title="Shipped by">{Format.user_name(@note.shipped_by)}</:item>
+          </.list>
+        </.card>
+        <p :if={@note.status == :cancelled} class="px-1 text-xs text-muted">
+          Cancelled because the invoice that shipped these goods was voided; the stock was returned.
+        </p>
+      </aside>
+    </div>
+
+    <.modal
+      :if={@confirming?}
+      id="confirm-modal"
+      show
+      title="Mark as delivered"
+      on_cancel={JS.patch(~p"/deliveries/#{@note}")}
+    >
+      <form id="confirm-form" phx-submit="confirm" class="space-y-4">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <.input
+            name="confirmation[received_by_name]"
+            id="received-by"
+            value=""
+            label="Received by"
+            placeholder="Name on the signed note"
+          />
+          <.input
+            type="date"
+            name="confirmation[delivered_on]"
+            id="delivered-on"
+            value={Date.utc_today()}
+            label="Delivered on"
+          />
+        </div>
+        <div class="flex justify-end">
+          <.button type="submit" variant="primary" phx-disable-with="Saving…">Confirm</.button>
+        </div>
+      </form>
+    </.modal>
+  </Layouts.app>
+<% end %>

@@ -1,0 +1,166 @@
+/* Zippiker design system: calm, warm neutrals with a single orange accent. */
+
+@import "tailwindcss" source(none);
+@source "../../deps/ash_authentication_phoenix";
+@import "phoenix-colocated/zippiker/colocated.css";
+@source "../css";
+@source "../js";
+@source "../../lib/zippiker_web";
+/* Required for Tailwind to automatically pick up changes in colocated CSS files in dev */
+@source "../../_build/dev/phoenix-colocated/zippiker/*/";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* Theme tokens. Components only use these, so light/dark is a variable swap. */
+:root {
+  color-scheme: light;
+  --canvas: #f6f5f2;
+  --surface: #ffffff;
+  --surface-muted: #faf9f7;
+  --line: #e9e6e0;
+  --line-strong: #d9d5cd;
+  --ink: #1d1b18;
+  --ink-soft: #46423c;
+  --muted: #7a756d;
+  --brand: #ff692d;
+  --brand-ink: #ffffff;
+  --brand-soft: #fff0e9;
+  --success: #1f9d6b;
+  --success-soft: #e7f6ef;
+  --danger: #d9443c;
+  --danger-soft: #fdecea;
+  --warning: #c98a12;
+  --warning-soft: #fdf5e3;
+  --info: #3b6fd8;
+  --info-soft: #eaf0fc;
+  --shadow: 0 1px 2px rgb(29 27 24 / 0.04), 0 1px 1px rgb(29 27 24 / 0.02);
+  --shadow-lg: 0 12px 32px -8px rgb(29 27 24 / 0.18), 0 2px 6px rgb(29 27 24 / 0.06);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #0f1012;
+  --surface: #17181b;
+  --surface-muted: #1c1d21;
+  --line: #26282d;
+  --line-strong: #34363c;
+  --ink: #ededee;
+  --ink-soft: #c9c9cc;
+  --muted: #8d8e94;
+  --brand: #ff7a42;
+  --brand-ink: #ffffff;
+  --brand-soft: #2c1a12;
+  --success: #3cc28c;
+  --success-soft: #11261d;
+  --danger: #f06a62;
+  --danger-soft: #2c1513;
+  --warning: #e0a73a;
+  --warning-soft: #2a2110;
+  --info: #6f9bf0;
+  --info-soft: #141e33;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+}
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Use the data attribute for dark mode  */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session], [data-phx-teleported-src] { display: contents }
+
+html, body {
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Board drag & drop feedback */
+.deal-card.dragging { opacity: 0.4; }
+.board-column.drop-target { background: var(--brand-soft); }
+
+/* Subtle page entrance */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-rise { animation: rise 220ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise { animation: none; }
+}
+
+/* Help center articles */
+.help-prose { color: var(--ink-soft); font-size: 0.9375rem; line-height: 1.7; }
+.help-prose > * + * { margin-top: 1rem; }
+.help-prose h2 { margin-top: 2.25rem; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+.help-prose h3 { margin-top: 1.75rem; font-size: 1rem; font-weight: 600; color: var(--ink); }
+.help-prose h2 + *, .help-prose h3 + * { margin-top: 0.5rem; }
+.help-prose strong { font-weight: 600; color: var(--ink); }
+.help-prose a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; transition: text-decoration-color 150ms; }
+.help-prose a:hover { text-decoration-color: var(--brand); }
+.help-prose ul, .help-prose ol { padding-left: 1.25rem; }
+.help-prose ul { list-style: disc; }
+.help-prose ol { list-style: decimal; }
+.help-prose li + li { margin-top: 0.375rem; }
+.help-prose li::marker { color: var(--muted); }
+.help-prose code { border-radius: 0.375rem; background: var(--canvas); padding: 0.125rem 0.375rem; font-size: 0.85em; color: var(--ink); }
+.help-prose table { width: 100%; overflow: hidden; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 0.75rem; background: var(--surface); font-size: 0.875rem; }
+.help-prose th { background: var(--surface-muted); padding: 0.625rem 0.875rem; text-align: left; font-weight: 600; color: var(--ink); }
+.help-prose td { border-top: 1px solid var(--line); padding: 0.625rem 0.875rem; vertical-align: top; }
+.help-prose td:first-child { white-space: nowrap; font-weight: 500; color: var(--ink); }
+.help-callout { display: flex; gap: 0.75rem; border-radius: 0.875rem; background: var(--brand-soft); padding: 0.875rem 1rem; color: var(--ink-soft); }
+.help-callout > svg, .help-callout > span:first-child { color: var(--brand); }
+.help-callout-warning { background: var(--warning-soft); }
+.help-callout-warning > span:first-child { color: var(--warning); }
+
+/* Org chart: nested lists drawn as a tree with connector lines. */
+.org-tree, .org-children { display: flex; justify-content: center; gap: 1rem; padding-top: 1.5rem; position: relative; }
+.org-tree { padding-top: 0; }
+.org-node { display: flex; flex-direction: column; align-items: center; position: relative; padding-top: 1.5rem; }
+.org-tree > .org-node { padding-top: 0; }
+.org-node::before, .org-node::after { content: ""; position: absolute; top: 0; width: 50%; height: 1.5rem; border-top: 1px solid var(--line-strong); }
+.org-node::before { right: 50%; }
+.org-node::after { left: 50%; border-left: 1px solid var(--line-strong); }
+.org-node:only-child::before, .org-node:only-child::after { border-top: 0; }
+.org-node:first-child::before, .org-node:last-child::after { border-top: 0; }
+.org-node:last-child::before { border-right: 1px solid var(--line-strong); border-top-right-radius: 0.5rem; }
+.org-node:first-child::after { border-top-left-radius: 0.5rem; }
+.org-node:only-child::after { border-top-left-radius: 0; }
+.org-tree > .org-node::before, .org-tree > .org-node::after { display: none; }
+.org-children::before { content: ""; position: absolute; top: 0; left: 50%; height: 1.5rem; border-left: 1px solid var(--line-strong); }
+.org-children > .org-node:only-child { padding-top: 1.5rem; }

@@ -1,0 +1,87 @@
+<Layouts.platform flash={@flash} current_user={@current_user} active={:overview}>
+  <.header>
+    Platform overview
+    <:subtitle>Every workspace on Zippiker at a glance.</:subtitle>
+  </.header>
+
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <.stat
+      id="stat-teams"
+      label="Workspaces"
+      value={to_string(@overview.organizations)}
+      icon="hero-building-office-2"
+    >
+      {@overview.new_organizations_30d} new in 30 days
+    </.stat>
+    <.stat id="stat-users" label="Users" value={to_string(@overview.users)} icon="hero-users" />
+    <.stat
+      id="stat-mrr"
+      label="Monthly recurring revenue"
+      value={amount(@overview.mrr, "USD")}
+      icon="hero-arrow-trending-up"
+    >
+      trials and active subscriptions
+    </.stat>
+    <.stat
+      id="stat-open-invoices"
+      label="Unpaid platform invoices"
+      value={amount(@overview.open_invoices_amount, "USD")}
+      icon="hero-document-text"
+    >
+      {Format.count(@overview.open_invoices_count, "invoice")}
+    </.stat>
+  </div>
+
+  <div id="status-breakdown" class="mt-4 flex flex-wrap gap-2">
+    <.link
+      :for={status <- [:trialing, :active, :past_due, :canceled]}
+      navigate={~p"/platform/teams?status=#{status}"}
+      class="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm shadow-card transition hover:border-line-strong"
+    >
+      <.subscription_status status={status} />
+      <span class="tabular font-semibold text-ink">{Map.get(@overview.by_status, status, 0)}</span>
+    </.link>
+  </div>
+
+  <div class="mt-4 grid gap-4 lg:grid-cols-2">
+    <.card title="Newest workspaces" padded={false}>
+      <:action>
+        <.link navigate={~p"/platform/teams"} class="text-muted hover:text-ink">All →</.link>
+      </:action>
+      <ul id="recent-teams" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+        <li :for={{id, team} <- @streams.teams} id={id}>
+          <.link
+            navigate={~p"/platform/teams/#{team}"}
+            class="flex items-center gap-3 py-2.5 hover:opacity-80"
+          >
+            <.avatar name={team.name} size="sm" square />
+            <span class="min-w-0 flex-1 truncate text-sm font-medium text-ink">{team.name}</span>
+            <span class="text-xs text-muted">{Format.count(team.members_count, "member")}</span>
+            <span class="text-xs text-muted">{Format.ago(team.inserted_at)}</span>
+          </.link>
+        </li>
+      </ul>
+    </.card>
+
+    <.card title="Audit log" padded={false}>
+      <ul id="audit-events" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+        <li id="audit-events-empty" class="hidden py-6 text-center text-sm text-muted only:block">
+          Nothing logged yet.
+        </li>
+        <li :for={{id, event} <- @streams.events} id={id} class="flex gap-3 py-2.5">
+          <span class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-canvas text-muted">
+            <.icon name="hero-shield-check-micro" class="size-3.5" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm text-ink">{event.summary}</p>
+            <p class="text-xs text-muted">
+              {Format.user_name(event.actor)}
+              <span :if={event.organization}>· {event.organization.name}</span>
+              · {Format.ago(event.inserted_at)}
+            </p>
+          </div>
+        </li>
+      </ul>
+    </.card>
+  </div>
+</Layouts.platform>

@@ -1,0 +1,112 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:help}
+>
+  <%= if @article do %>
+    <div class="grid gap-8 lg:grid-cols-[220px_1fr]">
+      <nav id="help-nav" class="hidden lg:block" aria-label="Help articles">
+        <.link
+          navigate={~p"/help"}
+          class="mb-3 block text-xs font-medium text-muted hover:text-ink"
+        >
+          ← Help center
+        </.link>
+        <ul class="space-y-0.5">
+          <li :for={item <- ZippikerWeb.HelpArticles.articles()}>
+            <.link
+              navigate={~p"/help/#{item.slug}"}
+              class={[
+                "block rounded-lg px-3 py-1.5 text-sm transition",
+                item.slug == @article.slug && "bg-surface font-semibold text-ink shadow-card",
+                item.slug != @article.slug && "text-ink-soft hover:text-ink"
+              ]}
+            >
+              {item.title}
+            </.link>
+          </li>
+        </ul>
+      </nav>
+
+      <article id={"article-#{@article.slug}"} class="min-w-0">
+        <p class="text-xs font-medium tracking-wider text-brand uppercase">{@article.section}</p>
+        <h1 class="mt-1 text-3xl font-semibold tracking-tight text-ink">{@article.title}</h1>
+        <p class="mt-2 text-base text-muted">{@article.summary}</p>
+        <div class="help-prose mt-8 max-w-3xl">{@article.render.(%{})}</div>
+
+        <div class="mt-12 grid max-w-3xl gap-3 border-t border-line pt-6 sm:grid-cols-2">
+          <.link
+            :if={@previous}
+            navigate={~p"/help/#{@previous.slug}"}
+            class="rounded-xl border border-line bg-surface p-4 shadow-card transition hover:border-line-strong"
+          >
+            <span class="text-xs text-muted">← Previous</span>
+            <span class="block font-medium text-ink">{@previous.title}</span>
+          </.link>
+          <.link
+            :if={@next}
+            navigate={~p"/help/#{@next.slug}"}
+            class="rounded-xl border border-line bg-surface p-4 text-right shadow-card transition hover:border-line-strong sm:col-start-2"
+          >
+            <span class="text-xs text-muted">Next →</span>
+            <span class="block font-medium text-ink">{@next.title}</span>
+          </.link>
+        </div>
+      </article>
+    </div>
+  <% else %>
+    <div class="mx-auto max-w-4xl">
+      <div class="py-6 text-center">
+        <h1 class="text-3xl font-semibold tracking-tight text-ink">How can we help?</h1>
+        <p class="mt-2 text-muted">Guides for everything in Zippiker, written for humans.</p>
+        <form
+          id="help-search"
+          phx-change="search"
+          phx-submit="search"
+          class="relative mx-auto mt-6 max-w-md"
+        >
+          <.icon
+            name="hero-magnifying-glass"
+            class="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted"
+          />
+          <input
+            type="search"
+            name="q"
+            value={@query}
+            placeholder="Search the guides…"
+            phx-debounce="150"
+            autocomplete="off"
+            class="h-12 w-full rounded-xl border border-line bg-surface pr-4 pl-11 text-ink shadow-card placeholder:text-muted focus:border-brand focus:ring-3 focus:ring-brand/15 focus:outline-none"
+          />
+        </form>
+      </div>
+
+      <div id="help-articles" class="mt-6 grid gap-4 sm:grid-cols-2">
+        <.link
+          :for={article <- @articles}
+          id={"help-#{article.slug}"}
+          navigate={~p"/help/#{article.slug}"}
+          class="group flex gap-4 rounded-2xl border border-line bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:shadow-pop"
+        >
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
+            <.icon name={article.icon} class="size-5" />
+          </span>
+          <span>
+            <span class="text-[11px] font-medium tracking-wider text-muted uppercase">
+              {article.section}
+            </span>
+            <span class="block font-semibold text-ink group-hover:text-brand">{article.title}</span>
+            <span class="mt-1 block text-sm text-muted">{article.summary}</span>
+          </span>
+        </.link>
+      </div>
+      <p :if={@articles == []} class="mt-10 text-center text-sm text-muted">
+        Nothing matches “{@query}”. Try another word, or browse the <.link
+          navigate={~p"/help/faq"}
+          class="text-ink underline"
+        >questions & answers</.link>.
+      </p>
+    </div>
+  <% end %>
+</Layouts.app>

@@ -1,0 +1,73 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:accounts}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/accounting/accounts"} class="hover:text-ink">Chart of accounts</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      <span class="tabular text-muted">{@account.code}</span> {@account.name}
+      <.account_type type={@account.type} />
+    </span>
+    <:subtitle>
+      {Format.count(@count, "posting")} · balance
+      <span class="tabular font-medium text-ink">
+        {amount(@account.balance, @current_organization.currency)}
+      </span>
+    </:subtitle>
+  </.header>
+
+  <p :if={@account.description} class="-mt-3 mb-4 max-w-2xl text-sm text-muted">
+    {@account.description}
+  </p>
+
+  <div class="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
+    <table class="w-full min-w-[720px] text-sm">
+      <thead>
+        <tr class="border-b border-line text-left text-xs text-muted">
+          <th class="px-5 py-2.5 font-medium">Date</th>
+          <th class="px-3 py-2.5 font-medium">Entry</th>
+          <th class="px-3 py-2.5 font-medium">Description</th>
+          <th class="px-3 py-2.5 text-right font-medium">Debit</th>
+          <th class="px-3 py-2.5 text-right font-medium">Credit</th>
+          <th class="px-5 py-2.5 text-right font-medium">Balance</th>
+        </tr>
+      </thead>
+      <tbody id="ledger-lines" phx-update="stream" class="divide-y divide-line">
+        <tr id="ledger-lines-empty" class="hidden only:table-row">
+          <td colspan="6" class="px-5 py-10 text-center text-muted">
+            Nothing has been posted to this account yet.
+          </td>
+        </tr>
+        <tr :for={{id, line} <- @streams.lines} id={id} class="hover:bg-canvas">
+          <td class="px-5 py-2.5 whitespace-nowrap text-muted">{Format.date(line.date)}</td>
+          <td class="px-3 py-2.5">
+            <.link
+              navigate={~p"/accounting/journal/#{line.journal_entry_id}"}
+              class="font-medium text-ink hover:underline"
+            >
+              {line.journal_entry.number}
+            </.link>
+          </td>
+          <td class="px-3 py-2.5 text-ink-soft">
+            {line.description || line.journal_entry.memo}
+            <span :if={line.party} class="text-muted">· {line.party.name}</span>
+          </td>
+          <td class="tabular px-3 py-2.5 text-right">
+            {if Decimal.gt?(line.debit, 0), do: amount(line.debit, @current_organization.currency)}
+          </td>
+          <td class="tabular px-3 py-2.5 text-right">
+            {if Decimal.gt?(line.credit, 0),
+              do: amount(line.credit, @current_organization.currency)}
+          </td>
+          <td class="tabular px-5 py-2.5 text-right font-medium text-ink">
+            {amount(line.__metadata__.running, @current_organization.currency)}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</Layouts.app>

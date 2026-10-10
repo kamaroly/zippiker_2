@@ -1,0 +1,192 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:leave}
+>
+  <.header>
+    Leave
+    <:subtitle>Request time off, see who's away, and decide on your team's requests.</:subtitle>
+    <:actions>
+      <.button
+        :if={@me || admin?(assigns)}
+        patch={~p"/hr/leave/new"}
+        variant="primary"
+        id="new-leave"
+      >
+        <.icon name="hero-plus-micro" /> Request leave
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_320px]">
+    <div>
+      <div class="mb-4">
+        <.segmented
+          current={@view}
+          options={
+            if(@me, do: [{"My requests", "mine", ~p"/hr/leave?view=mine"}], else: []) ++
+              [
+                {"To approve", "approve", ~p"/hr/leave?view=approve"},
+                {"Everyone", "all", ~p"/hr/leave?view=all"}
+              ]
+          }
+        />
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+        <ul id="leave-requests" phx-update="stream" class="divide-y divide-line">
+          <li
+            id="leave-requests-empty"
+            class="hidden px-5 py-10 text-center text-sm text-muted only:block"
+          >
+            {case @view do
+              "approve" -> "Nothing waiting for your decision."
+              "mine" -> "You haven't requested any leave yet."
+              _ -> "No leave requests yet."
+            end}
+          </li>
+          <li
+            :for={{id, request} <- @streams.requests}
+            id={id}
+            class="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3"
+          >
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              <.avatar name={request.employee.name} size="sm" />
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-ink">
+                  {request.employee.name}
+                  <span class="font-normal text-muted">· {period(request)}</span>
+                </p>
+                <p class="truncate text-xs text-muted">
+                  {Decimal.normalize(request.days)} working days
+                  <span :if={request.reason}>· {request.reason}</span>
+                  <span :if={request.decision_note}>· “{request.decision_note}”</span>
+                </p>
+              </div>
+            </div>
+            <.leave_type_badge type={request.leave_type} />
+            <.leave_status status={request.status} />
+            <div class="flex items-center gap-2">
+              <.button
+                :if={can_decide?(request, assigns)}
+                phx-click="decide"
+                phx-value-id={request.id}
+                phx-value-decision="approve"
+                size="sm"
+                variant="primary"
+                id={"approve-#{request.id}"}
+              >
+                Approve
+              </.button>
+              <.button
+                :if={can_decide?(request, assigns)}
+                phx-click="decide"
+                phx-value-id={request.id}
+                phx-value-decision="reject"
+                size="sm"
+                id={"reject-#{request.id}"}
+              >
+                Reject
+              </.button>
+              <button
+                :if={can_cancel?(request, assigns) and not can_decide?(request, assigns)}
+                phx-click="cancel"
+                phx-value-id={request.id}
+                data-confirm="Cancel this leave?"
+                class="text-xs text-muted hover:text-danger"
+                id={"cancel-#{request.id}"}
+              >
+                Cancel
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <aside>
+      <.card title="Away in the next 30 days" padded={false}>
+        <ul id="away-soon" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={request <- @away}
+            id={"away-#{request.id}"}
+            class="flex items-center gap-3 py-2.5"
+          >
+            <.avatar name={request.employee.name} size="xs" />
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm text-ink">{request.employee.name}</p>
+              <p class="text-xs text-muted">{period(request)}</p>
+            </div>
+            <span
+              class={["size-2 rounded-full", dot_color(request.leave_type.color)]}
+              title={request.leave_type.name}
+            />
+          </li>
+        </ul>
+        <p :if={@away == []} class="px-5 pb-5 text-sm text-muted">Everyone's around.</p>
+      </.card>
+    </aside>
+  </div>
+
+  <.modal
+    :if={@form}
+    id="leave-modal"
+    show
+    title="Request leave"
+    on_cancel={JS.patch(~p"/hr/leave?view=#{@view}")}
+  >
+    <%= if @me || admin?(assigns) do %>
+      <.form for={@form} id="leave-form" phx-change="validate" phx-submit="save" class="space-y-4">
+        <.input
+          :if={admin?(assigns)}
+          field={@form[:employee_id]}
+          type="select"
+          label="For"
+          prompt="Choose…"
+          options={@employee_options}
+        />
+        <input
+          :if={!admin?(assigns)}
+          type="hidden"
+          name={@form[:employee_id].name}
+          value={@form[:employee_id].value}
+        />
+        <.input
+          field={@form[:leave_type_id]}
+          type="select"
+          label="Type"
+          options={Enum.map(@leave_types, &{&1.name, &1.id})}
+        />
+        <div class="grid gap-4 sm:grid-cols-2">
+          <.input field={@form[:start_date]} type="date" label="From" />
+          <.input field={@form[:end_date]} type="date" label="To (inclusive)" />
+        </div>
+        <div
+          id="leave-preview"
+          class="flex flex-wrap gap-x-6 gap-y-1 rounded-xl bg-canvas px-4 py-3 text-sm"
+        >
+          <span>
+            <span class="tabular font-semibold text-ink">{@days || "–"}</span>
+            <span class="text-muted">working days</span>
+          </span>
+          <span :if={@balance}>
+            <span class="tabular font-semibold text-ink">
+              {if @balance.left, do: Decimal.normalize(@balance.left), else: "No limit"}
+            </span>
+            <span :if={@balance.left} class="text-muted">left this year</span>
+          </span>
+        </div>
+        <.input field={@form[:reason]} type="textarea" label="Note (optional)" />
+        <.error :for={{_field, {msg, _}} <- @form.errors}>{msg}</.error>
+        <div class="flex justify-end">
+          <.button type="submit" variant="primary" phx-disable-with="Sending…">Send request</.button>
+        </div>
+      </.form>
+    <% else %>
+      <p class="text-sm text-muted">
+        Your login isn't linked to an employee record yet. Ask a workspace admin to link it.
+      </p>
+    <% end %>
+  </.modal>
+</Layouts.app>

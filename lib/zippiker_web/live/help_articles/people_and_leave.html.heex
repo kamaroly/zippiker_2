@@ -1,0 +1,99 @@
+<p>
+  The People section keeps your team in one place: who they are, what they do, who they report to,
+  and when they're away.
+</p>
+
+<h2>Adding employees</h2>
+<p>
+  Admins click <strong>+ Employee</strong>
+  under <.link navigate="/hr/employees">Employees</.link>. Fill in
+  the person, their job (title, department, start date, contract) and who they <strong>report to</strong>.
+  Each employee gets a number (<code>EMP-0001</code>) and also appears in your <.link navigate="/contacts">contacts</.link>, tagged <em>employee</em>.
+</p>
+<ul>
+  <li>
+    <strong>Workspace login</strong>: link the employee to their Zippiker user so they can request leave
+    and approve their team's requests. (Invite them first under <.link navigate="/settings/workspace">Settings → Workspace</.link>.)
+  </li>
+  <li>
+    <strong>Pay &amp; personal details</strong>
+    (salary, date of birth, ID, emergency contact) are visible
+    only to admins and to the employee themselves.
+  </li>
+  <li>
+    When someone leaves, open their page and click <strong>Mark as left</strong>. They move to
+    <em>Former</em>
+    with their history kept, and can be rehired.
+  </li>
+</ul>
+
+<h2>Departments and the org chart</h2>
+<p>
+  Group people under <.link navigate="/hr/departments">Departments</.link>
+  (each can have a head and sit
+  inside another). The <.link navigate="/hr/org-chart">Org chart</.link>
+  draws everyone from the top down,
+  using <em>Reports to</em>. Zippiker stops you from creating loops where someone ends up managing
+  their own manager.
+</p>
+
+<h2>Leave types</h2>
+<p>
+  Admins set them up under <.link navigate="/hr/leave-types">Settings → Leave types</.link>:
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Setting</th><th>What it does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Days per year</td><td>
+        The allowance, in working days per calendar year. Empty means no limit.
+      </td>
+    </tr>
+    <tr>
+      <td>Paid</td><td>Marks paid vs unpaid leave (for payroll later).</td>
+    </tr>
+    <tr>
+      <td>Needs approval</td><td>
+        Off: requests are approved straight away (handy for sick leave).
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Requesting time off</h2>
+<ol>
+  <li>
+    Go to <.link navigate="/hr/leave">Leave</.link> and click <strong>Request leave</strong>.
+  </li>
+  <li>
+    Pick the type and dates. Zippiker counts the <strong>working days</strong>
+    (Monday to Friday) and shows
+    how many you have left this year.
+  </li>
+  <li>Your manager sees it under <strong>To approve</strong> and approves or rejects it.</li>
+</ol>
+<p>
+  Requests that overlap one you already have, or that go over your allowance, are refused with a clear
+  message. You can cancel your own request at any time; days come back to your balance.
+</p>
+
+<h2>Who decides</h2>
+<ul>
+  <li>
+    The employee's <strong>manager</strong> (the person they report to, if linked to a login).
+  </li>
+  <li>Any workspace <strong>admin</strong>, for example for people without a manager.</li>
+  <li>Never the person who asked: nobody approves their own leave.</li>
+</ul>
+<.callout>
+  The right side of the Leave page shows who's away in the next 30 days, and employees on leave
+  today get an <em>Away</em> badge in the directory.
+</.callout>
+<.callout kind={:warning}>
+  Public holidays aren't deducted yet: if a holiday falls inside your leave, shorten the request or
+  ask an admin to adjust.
+</.callout>

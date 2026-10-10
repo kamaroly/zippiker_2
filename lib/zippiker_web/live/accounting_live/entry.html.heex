@@ -1,0 +1,129 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:journal}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/accounting/journal"} class="hover:text-ink">Journal</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">{@entry.number} <.entry_source entry={@entry} /></span>
+    <:subtitle>{Format.date(@entry.date)} · {@entry.memo}</:subtitle>
+    <:actions>
+      <.button
+        :if={reversible?(@entry, assigns)}
+        phx-click="reverse"
+        id="reverse-entry"
+        data-confirm="Post a reversal dated today? The original stays in the journal."
+      >
+        <.icon name="hero-arrow-uturn-left-micro" /> Reverse
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <div class="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
+      <table id="entry-lines" class="w-full min-w-[600px] text-sm">
+        <thead>
+          <tr class="border-b border-line text-left text-xs text-muted">
+            <th class="px-5 py-2.5 font-medium">Account</th>
+            <th class="px-3 py-2.5 font-medium">Description</th>
+            <th class="px-3 py-2.5 text-right font-medium">Debit</th>
+            <th class="px-5 py-2.5 text-right font-medium">Credit</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          <tr :for={line <- @entry.lines} id={"line-#{line.id}"}>
+            <td class={["px-5 py-3", Decimal.gt?(line.credit, 0) && "pl-10"]}>
+              <.link
+                navigate={~p"/accounting/accounts/#{line.account}"}
+                class="font-medium text-ink hover:underline"
+              >
+                {line.account.name}
+              </.link>
+              <span class="tabular ml-1 text-xs text-muted">{line.account.code}</span>
+            </td>
+            <td class="px-3 py-3 text-ink-soft">
+              {line.description}
+              <span :if={line.party} class="text-muted">· {line.party.name}</span>
+            </td>
+            <td class="tabular px-3 py-3 text-right">
+              {if Decimal.gt?(line.debit, 0),
+                do: amount(line.debit, @current_organization.currency)}
+            </td>
+            <td class="tabular px-5 py-3 text-right">
+              {if Decimal.gt?(line.credit, 0),
+                do: amount(line.credit, @current_organization.currency)}
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="border-t border-line font-semibold text-ink">
+            <td class="px-5 py-3" colspan="2">Total</td>
+            <td class="tabular px-3 py-3 text-right">
+              {amount(@entry.total, @current_organization.currency)}
+            </td>
+            <td class="tabular px-5 py-3 text-right">
+              {amount(@entry.total, @current_organization.currency)}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <aside class="space-y-4">
+      <.card title="Details">
+        <.list>
+          <:item title="Legal entity">{@entry.legal_entity.name}</:item>
+          <:item :if={@entry.source_label} title="Document">
+            <.link
+              :if={source_path(@entry)}
+              navigate={source_path(@entry)}
+              class="hover:underline"
+            >
+              {@entry.source_label}
+            </.link>
+            <span :if={!source_path(@entry)}>{@entry.source_label}</span>
+          </:item>
+          <:item title="Posted by">
+            {if @entry.posted_by, do: Format.user_name(@entry.posted_by), else: "Automatic"}
+          </:item>
+          <:item title="Recorded">{Format.date(@entry.inserted_at)}</:item>
+        </.list>
+      </.card>
+
+      <div
+        :if={@entry.reversal}
+        id="reversed-note"
+        class="rounded-2xl border border-line bg-surface-muted p-4 text-sm text-ink-soft"
+      >
+        Reversed by
+        <.link
+          navigate={~p"/accounting/journal/#{@entry.reversal}"}
+          class="font-medium text-ink hover:underline"
+        >
+          {@entry.reversal.number}
+        </.link>
+        on {Format.date(@entry.reversal.date)}.
+      </div>
+      <div
+        :if={@entry.reversal_of}
+        class="rounded-2xl border border-line bg-surface-muted p-4 text-sm text-ink-soft"
+      >
+        Reverses <.link
+          navigate={~p"/accounting/journal/#{@entry.reversal_of}"}
+          class="font-medium text-ink hover:underline"
+        >
+          {@entry.reversal_of.number}
+        </.link>.
+      </div>
+      <p
+        :if={@entry.source in [:invoice, :payment] and is_nil(@entry.reversal_of_id)}
+        class="px-1 text-xs text-muted"
+      >
+        Posted automatically. To undo it, void the invoice or remove the payment.
+      </p>
+    </aside>
+  </div>
+</Layouts.app>

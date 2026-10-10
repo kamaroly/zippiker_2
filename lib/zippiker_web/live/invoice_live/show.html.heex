@@ -1,0 +1,200 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:invoices}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/invoices"} class="hover:text-ink">Invoices</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      {@invoice.number || "Draft invoice"} <.invoice_status invoice={@invoice} />
+    </span>
+    <:subtitle>{@invoice.customer.name} · {Format.money(@invoice.total)}</:subtitle>
+    <:actions>
+      <.print_buttons
+        id="print-invoice"
+        document={~p"/invoices/#{@invoice}/print"}
+        notes={@deliveries}
+        kind={:delivery}
+      />
+      <.button navigate={~p"/invoices/new?copy=#{@invoice.id}"} id="duplicate-invoice">
+        <.icon name="hero-document-duplicate-micro" /> Duplicate
+      </.button>
+      <.button
+        :if={@invoice.status == :draft}
+        navigate={~p"/invoices/#{@invoice}/edit"}
+        id="edit-invoice"
+      >
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+      <.button
+        :if={@invoice.status == :draft}
+        phx-click="issue"
+        variant="primary"
+        id="issue-invoice"
+        data-confirm="Issue this invoice? It gets a number and can no longer be edited."
+      >
+        <.icon name="hero-paper-airplane-micro" /> Issue
+      </.button>
+      <.button
+        :if={@invoice.status == :issued}
+        patch={~p"/invoices/#{@invoice}/payment"}
+        variant="primary"
+        id="record-payment"
+      >
+        <.icon name="hero-banknotes-micro" /> Record payment
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <.paper document={@invoice} kind={:invoice} />
+
+    <aside class="space-y-4">
+      <.card>
+        <p class="text-xs font-medium text-muted">Amount due</p>
+        <p class={[
+          "tabular mt-1 text-2xl font-semibold tracking-tight",
+          @invoice.overdue? && "text-danger"
+        ]}>
+          {Format.money(@invoice.amount_due)}
+        </p>
+        <p :if={@invoice.due_on} class="mt-1 text-xs text-muted">
+          {if @invoice.overdue?, do: "Was due", else: "Due"} {Format.date(@invoice.due_on)}
+        </p>
+      </.card>
+
+      <.card title="Payments" padded={false}>
+        <ul id="payments" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={payment <- @invoice.payments}
+            id={"payment-#{payment.id}"}
+            class="group flex items-center gap-3 py-2.5"
+          >
+            <span class="flex size-7 items-center justify-center rounded-full bg-success-soft text-success">
+              <.icon name="hero-check-micro" class="size-4" />
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="tabular text-sm font-medium text-ink">{Format.money(payment.amount)}</p>
+              <p class="truncate text-xs text-muted">
+                {Format.date(payment.paid_on)} · {Format.humanize(payment.method)}
+                <span :if={payment.reference}>· {payment.reference}</span>
+              </p>
+            </div>
+            <button
+              :if={@invoice.status != :void}
+              phx-click="delete_payment"
+              phx-value-id={payment.id}
+              data-confirm="Remove this payment?"
+              class="rounded p-1 text-muted opacity-0 transition group-hover:opacity-100 hover:text-danger"
+              title="Remove"
+            >
+              <.icon name="hero-trash" class="size-4" />
+            </button>
+          </li>
+        </ul>
+        <p :if={@invoice.payments == []} class="px-5 pb-5 text-sm text-muted">No payments yet.</p>
+      </.card>
+
+      <.card :if={@deliveries != []} title="Delivery notes" padded={false}>
+        <ul id="invoice-deliveries" class="divide-y divide-line px-5 pb-2">
+          <li :for={delivery <- @deliveries} id={"delivery-#{delivery.id}"}>
+            <.link
+              navigate={~p"/deliveries/#{delivery}"}
+              class="flex items-center justify-between gap-2 py-2.5 text-sm hover:opacity-80"
+            >
+              <span class="font-medium text-ink">{delivery.number}</span>
+              <.delivery_status status={delivery.status} />
+            </.link>
+          </li>
+        </ul>
+      </.card>
+
+      <.card title="Details">
+        <.list>
+          <:item title="Customer">
+            <.link
+              navigate={
+                if(@invoice.customer.kind == :person,
+                  do: ~p"/contacts/#{@invoice.customer}",
+                  else: ~p"/companies/#{@invoice.customer}"
+                )
+              }
+              class="hover:underline"
+            >
+              {@invoice.customer.name}
+            </.link>
+          </:item>
+          <:item :if={@invoice.quote} title="Quote">
+            <.link navigate={~p"/quotes/#{@invoice.quote}"} class="hover:underline">{@invoice.quote.number}</.link>
+          </:item>
+          <:item :if={@invoice.sales_order} title="Order">
+            <.link navigate={~p"/orders/#{@invoice.sales_order}"} class="hover:underline">
+              {@invoice.sales_order.number}
+            </.link>
+          </:item>
+          <:item :if={@invoice.deal} title="Deal">
+            <.link navigate={~p"/deals/#{@invoice.deal}"} class="hover:underline">{@invoice.deal.title}</.link>
+          </:item>
+          <:item title="Owner">{Format.user_name(@invoice.owner)}</:item>
+        </.list>
+      </.card>
+
+      <div class="flex flex-col gap-2">
+        <.button
+          :if={@invoice.status == :issued and admin?(assigns)}
+          phx-click="void"
+          data-confirm="Void this invoice? Its number stays used."
+          variant="danger"
+        >
+          Void invoice
+        </.button>
+        <.button
+          :if={@invoice.status == :draft}
+          phx-click="delete"
+          data-confirm="Delete this draft?"
+          variant="danger"
+        >
+          Delete draft
+        </.button>
+      </div>
+    </aside>
+  </div>
+
+  <.modal
+    :if={@payment_form}
+    id="payment-modal"
+    show
+    title="Record payment"
+    on_cancel={JS.patch(~p"/invoices/#{@invoice}")}
+  >
+    <.form for={@payment_form} id="payment-form" phx-submit="save_payment" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          name={@payment_form[:amount].name}
+          id={@payment_form[:amount].id}
+          value={money_input(@payment_form[:amount].value)}
+          errors={Enum.map(@payment_form[:amount].errors, &translate_error/1)}
+          type="number"
+          step="any"
+          min="0"
+          label={"Amount (#{@invoice.currency})"}
+          phx-mounted={JS.focus()}
+        />
+        <.input field={@payment_form[:paid_on]} type="date" label="Received on" />
+        <.input field={@payment_form[:method]} type="select" label="Method" options={@methods} />
+        <.input
+          field={@payment_form[:reference]}
+          label="Reference"
+          placeholder="Bank ref, receipt no."
+        />
+      </div>
+      <.error :for={{_field, {msg, _}} <- @payment_form.errors}>{msg}</.error>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save payment</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

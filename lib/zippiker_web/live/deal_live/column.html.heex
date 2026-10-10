@@ -1,0 +1,79 @@
+<section
+  id={@id}
+  data-stage-id={@stage.id}
+  class={[
+    "board-column flex w-72 shrink-0 flex-col rounded-2xl bg-surface-muted/60 p-2 ring-1 ring-line transition-colors",
+    @stage.kind != :open && "opacity-90"
+  ]}
+>
+  <header class="flex items-center justify-between px-2 pt-1 pb-3">
+    <div class="flex items-center gap-2">
+      <span class={["size-2 rounded-full", dot_color(@stage.color)]} />
+      <h2 class="text-sm font-semibold text-ink">{@stage.name}</h2>
+      <span
+        :if={@stage.kind == :open}
+        class="rounded-full bg-surface px-1.5 text-xs text-muted ring-1 ring-line"
+      >
+        {@stage.deals_count}
+      </span>
+    </div>
+    <span :if={@stage.kind == :open} class="tabular text-xs text-muted">
+      {Format.money_short(@stage.deals_amount)}
+    </span>
+  </header>
+
+  <div
+    id={"#{@id}-deals"}
+    phx-update="stream"
+    data-deal-list
+    class="flex min-h-24 flex-1 flex-col gap-2"
+  >
+    <div
+      id={"#{@id}-empty"}
+      class="hidden rounded-xl border border-dashed border-line-strong px-3 py-6 text-center text-xs text-muted only:block"
+    >
+      Drop deals here
+    </div>
+    <article
+      :for={{dom_id, deal} <- @streams.deals}
+      id={dom_id}
+      data-deal-id={deal.id}
+      data-position={deal.position}
+      draggable="true"
+      class="deal-card group cursor-grab rounded-xl border border-line bg-surface p-3 shadow-card transition hover:-translate-y-px hover:border-line-strong hover:shadow-pop active:cursor-grabbing"
+    >
+      <.link
+        navigate={~p"/deals/#{deal}"}
+        class="block text-sm font-medium text-ink hover:underline"
+      >
+        {deal.title}
+      </.link>
+      <p :if={deal.company || deal.party} class="mt-0.5 truncate text-xs text-muted">
+        {(deal.company && deal.company.name) || deal.party.name}
+      </p>
+      <div class="mt-3 flex items-center justify-between">
+        <span class="tabular text-sm font-semibold text-ink">{Format.money_short(deal.amount)}</span>
+        <span class="flex items-center gap-2">
+          <span
+            :if={deal.expected_close_on}
+            class={[
+              "text-xs",
+              deal.overdue? && "font-medium text-danger",
+              !deal.overdue? && "text-muted"
+            ]}
+          >
+            {Format.due(deal.expected_close_on)}
+          </span>
+          <.avatar :if={deal.owner} name={Format.user_name(deal.owner)} size="xs" />
+        </span>
+      </div>
+    </article>
+  </div>
+
+  <.link
+    patch={~p"/deals/new?stage=#{@stage.id}"}
+    class="mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted transition hover:bg-surface hover:text-ink"
+  >
+    <.icon name="hero-plus-micro" /> Add deal
+  </.link>
+</section>

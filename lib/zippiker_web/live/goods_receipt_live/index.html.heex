@@ -1,0 +1,64 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:goods_receipts}
+>
+  <.header>
+    Goods received
+    <:subtitle>
+      A note for every delivery from a supplier. Receive goods from a purchase order to create one.
+    </:subtitle>
+    <:actions>
+      <.button navigate={~p"/purchase-orders?status=open"} variant="primary" id="receive-goods">
+        <.icon name="hero-inbox-arrow-down-micro" /> Receive goods
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4">
+    <.search_box
+      id="grn-search"
+      value={@query}
+      placeholder="Search number, supplier, PO or reference…"
+    />
+  </div>
+
+  <.table
+    id="goods-receipts"
+    rows={@streams.notes}
+    row_click={fn {_id, note} -> JS.navigate(~p"/goods-receipts/#{note}") end}
+  >
+    <:col :let={{_id, note}} label="Number">
+      <span class={["font-medium text-ink", note.status == :cancelled && "line-through"]}>
+        {note.number}
+      </span>
+    </:col>
+    <:col :let={{_id, note}} label="Received">{Format.date(note.received_on)}</:col>
+    <:col :let={{_id, note}} label="Supplier">{note.supplier.name}</:col>
+    <:col :let={{_id, note}} label="Purchase order" class="hidden md:table-cell">
+      {note.purchase_order && note.purchase_order.number}
+    </:col>
+    <:col :let={{_id, note}} label="Supplier ref." class="hidden md:table-cell">
+      <span class="text-ink-soft">{note.supplier_reference}</span>
+    </:col>
+    <:col :let={{_id, note}} label="Warehouse" class="hidden lg:table-cell">
+      {note.warehouse && note.warehouse.name}
+    </:col>
+    <:col :let={{_id, note}} label="Status">
+      <.badge color={if(note.status == :received, do: :emerald, else: :slate)}>
+        {Format.humanize(note.status)}
+      </.badge>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-inbox-arrow-down"
+        title={if(@query != "", do: "No matches", else: "Nothing received yet")}
+      >
+        Open a purchase order and click Receive when the goods arrive.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&query_path(~p"/goods-receipts", %{q: @query, page: &1})} />
+</Layouts.app>

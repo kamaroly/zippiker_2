@@ -1,0 +1,178 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:reports}
+>
+  <.header>
+    Reports
+    <:subtitle>Straight from the journal, always up to date.</:subtitle>
+    <:actions>
+      <.button phx-click={JS.dispatch("zippiker:print")} id="print-report">
+        <.icon name="hero-printer-micro" /> Print / PDF
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-end justify-between gap-3 print:hidden">
+    <.segmented
+      current={@report}
+      options={[
+        {"Profit & loss", "profit_and_loss", report_path("profit_and_loss", @from, @to)},
+        {"Balance sheet", "balance_sheet", report_path("balance_sheet", @from, @to)},
+        {"Trial balance", "trial_balance", report_path("trial_balance", @from, @to)}
+      ]}
+    />
+    <form id="report-dates" phx-change="dates" class="flex items-end gap-2">
+      <.input
+        :if={@report == "profit_and_loss"}
+        type="date"
+        name="from"
+        id="report-from"
+        value={@from}
+        label="From"
+      />
+      <.input
+        type="date"
+        name="to"
+        id="report-to"
+        value={@to}
+        label={if(@report == "profit_and_loss", do: "To", else: "As of")}
+      />
+    </form>
+  </div>
+
+  <div
+    id={"report-#{@report}"}
+    class="mx-auto max-w-3xl rounded-2xl border border-line bg-surface shadow-card print:border-0 print:shadow-none"
+  >
+    <div class="border-b border-line px-5 py-4">
+      <p class="text-xs text-muted">{@current_organization.name}</p>
+      <h2 class="text-lg font-semibold text-ink">{title(@report)}</h2>
+      <p class="text-xs text-muted">
+        <%= if @report == "profit_and_loss" do %>
+          {Format.date(@from)} – {Format.date(@to)}
+        <% else %>
+          As of {Format.date(@to)}
+        <% end %>
+      </p>
+    </div>
+
+    <%= case @report do %>
+      <% "profit_and_loss" -> %>
+        <.statement_section
+          id="pl-income"
+          title="Income"
+          rows={@data.income}
+          total_label="Total income"
+          total={@data.income_total}
+          currency={@current_organization.currency}
+        />
+        <.statement_section
+          id="pl-expenses"
+          title="Expenses"
+          rows={@data.expenses}
+          total_label="Total expenses"
+          total={@data.expense_total}
+          currency={@current_organization.currency}
+        />
+        <div
+          id="pl-net"
+          class={[
+            "flex items-center justify-between border-t border-line px-5 py-4 text-base font-semibold",
+            Decimal.lt?(@data.net, 0) && "text-danger",
+            !Decimal.lt?(@data.net, 0) && "text-ink"
+          ]}
+        >
+          <span>{if Decimal.lt?(@data.net, 0), do: "Net loss", else: "Net profit"}</span>
+          <span class="tabular">{amount(@data.net, @current_organization.currency)}</span>
+        </div>
+      <% "balance_sheet" -> %>
+        <.statement_section
+          id="bs-assets"
+          title="Assets"
+          rows={@data.assets}
+          total_label="Total assets"
+          total={@data.assets_total}
+          currency={@current_organization.currency}
+        />
+        <.statement_section
+          id="bs-liabilities"
+          title="Liabilities"
+          rows={@data.liabilities}
+          total_label="Total liabilities"
+          total={@data.liabilities_total}
+          currency={@current_organization.currency}
+        />
+        <.statement_section
+          id="bs-equity"
+          title="Equity"
+          rows={@data.equity}
+          total_label="Total equity"
+          total={@data.equity_total}
+          currency={@current_organization.currency}
+        >
+          <:extra>
+            <div class="flex items-center justify-between gap-4 px-5 py-1.5 text-sm">
+              <span class="text-ink-soft">Current earnings</span>
+              <span class="tabular text-ink">
+                {amount(@data.earnings, @current_organization.currency)}
+              </span>
+            </div>
+          </:extra>
+        </.statement_section>
+        <div class="flex items-center justify-between border-t border-line px-5 py-4 text-sm">
+          <span class="font-semibold text-ink">Liabilities + equity</span>
+          <span class="flex items-center gap-2">
+            <.badge :if={@data.balanced?} color={:emerald}>Balanced</.badge>
+            <.badge :if={!@data.balanced?} color={:rose}>Out of balance</.badge>
+            <span class="tabular font-semibold text-ink">
+              {amount(
+                Decimal.add(@data.liabilities_total, @data.equity_total),
+                @current_organization.currency
+              )}
+            </span>
+          </span>
+        </div>
+      <% "trial_balance" -> %>
+        <table id="tb-rows" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs text-muted">
+              <th class="px-5 py-2.5 font-medium">Account</th>
+              <th class="px-3 py-2.5 text-right font-medium">Debit</th>
+              <th class="px-5 py-2.5 text-right font-medium">Credit</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            <tr :for={row <- @data.rows} id={"tb-#{row.account.id}"}>
+              <td class="px-5 py-2">
+                <span class="tabular mr-2 text-xs text-muted">{row.account.code}</span>{row.account.name}
+              </td>
+              <td class="tabular px-3 py-2 text-right">
+                {if Decimal.gt?(row.debit, 0),
+                  do: amount(row.debit, @current_organization.currency)}
+              </td>
+              <td class="tabular px-5 py-2 text-right">
+                {if Decimal.gt?(row.credit, 0),
+                  do: amount(row.credit, @current_organization.currency)}
+              </td>
+            </tr>
+            <tr :if={@data.rows == []}>
+              <td colspan="3" class="px-5 py-8 text-center text-muted">Nothing posted yet.</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="border-t border-line font-semibold text-ink">
+              <td class="px-5 py-3">Totals</td>
+              <td class="tabular px-3 py-3 text-right">
+                {amount(@data.debit, @current_organization.currency)}
+              </td>
+              <td class="tabular px-5 py-3 text-right">
+                {amount(@data.credit, @current_organization.currency)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+    <% end %>
+  </div>
+</Layouts.app>

@@ -1,0 +1,255 @@
+<Layouts.platform flash={@flash} current_user={@current_user} active={:teams}>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/platform/teams"} class="hover:text-ink">Workspaces</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      <.avatar name={@team.name} square /> {@team.name}
+      <.subscription_status status={@subscription.status} />
+    </span>
+    <:subtitle>
+      {Format.count(@team.members_count, "member")} · {@team.currency} · created {Format.date(
+        @team.inserted_at
+      )}
+    </:subtitle>
+    <:actions>
+      <.button
+        href={~p"/platform/teams/#{@team}/access"}
+        method="post"
+        variant="primary"
+        id="open-workspace"
+      >
+        <.icon name="hero-arrow-right-end-on-rectangle-micro" /> Open workspace
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_340px]">
+    <div class="space-y-4">
+      <.card title="Subscription" id="subscription-card">
+        <:action>
+          <.link
+            patch={~p"/platform/teams/#{@team}/subscription"}
+            id="edit-subscription"
+            class="text-muted hover:text-ink"
+          >
+            Change →
+          </.link>
+        </:action>
+        <dl class="grid gap-4 text-sm sm:grid-cols-4">
+          <div>
+            <dt class="text-xs text-muted">Plan</dt>
+            <dd class="mt-0.5 font-medium text-ink">{@subscription.plan.name}</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-muted">Monthly</dt>
+            <dd class="tabular mt-0.5 font-medium text-ink">
+              {amount(
+                Decimal.mult(@subscription.plan.price_per_seat, max(@team.members_count, 1)),
+                @subscription.plan.currency
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs text-muted">Current period</dt>
+            <dd class="mt-0.5 text-ink">
+              {Format.date(@subscription.current_period_start)} – {Format.date(
+                @subscription.current_period_end
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs text-muted">
+              {if @subscription.status == :trialing, do: "Trial ends", else: "Billing email"}
+            </dt>
+            <dd class="mt-0.5 truncate text-ink">
+              {if @subscription.status == :trialing,
+                do: Format.date(@subscription.trial_ends_on),
+                else: @subscription.billing_email || "—"}
+            </dd>
+          </div>
+        </dl>
+        <p :if={@subscription.notes} class="mt-4 rounded-lg bg-canvas p-3 text-sm text-ink-soft">
+          {@subscription.notes}
+        </p>
+      </.card>
+
+      <.card title="Platform invoices" padded={false}>
+        <:action>
+          <button
+            phx-click="generate_invoice"
+            id="generate-invoice"
+            data-confirm="Bill the current period and move the subscription to the next one?"
+            class="text-muted hover:text-ink"
+          >
+            Bill current period →
+          </button>
+        </:action>
+        <table class="w-full text-sm">
+          <tbody id="team-invoices" phx-update="stream" class="divide-y divide-line">
+            <tr id="team-invoices-empty" class="hidden only:table-row">
+              <td class="px-5 py-4 text-muted">No invoices yet.</td>
+            </tr>
+            <tr :for={{id, invoice} <- @streams.invoices} id={id} class="group">
+              <td class="px-5 py-2.5 font-medium text-ink">{invoice.number}</td>
+              <td class="py-2.5 text-muted">
+                {Format.date(invoice.period_start)} – {Format.date(invoice.period_end)} · {invoice.seats} × {invoice.plan_name}
+              </td>
+              <td class="tabular py-2.5 text-right text-ink">
+                {amount(invoice.amount, invoice.currency)}
+              </td>
+              <td class="px-3 py-2.5"><.billing_status status={invoice.status} /></td>
+              <td class="pr-5 text-right text-xs whitespace-nowrap">
+                <span :if={invoice.status == :open} class="flex justify-end gap-3">
+                  <button
+                    phx-click="mark_paid"
+                    phx-value-id={invoice.id}
+                    class="text-success hover:underline"
+                  >
+                    Mark paid
+                  </button>
+                  <button
+                    phx-click="void_invoice"
+                    phx-value-id={invoice.id}
+                    data-confirm="Void this invoice?"
+                    class="text-danger hover:underline"
+                  >
+                    Void
+                  </button>
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </.card>
+
+      <.card title="Members" padded={false}>
+        <ul id="team-members" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={{id, member} <- @streams.members}
+            id={id}
+            class="flex items-center gap-3 py-2.5"
+          >
+            <.avatar name={Format.user_name(member.user)} size="sm" />
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-ink">{Format.user_name(member.user)}</p>
+              <p class="truncate text-xs text-muted">{member.user.email}</p>
+            </div>
+            <.badge>{Format.humanize(member.role)}</.badge>
+            <.link
+              :if={!member.user.super_admin?}
+              href={~p"/platform/users/#{member.user_id}/impersonate"}
+              method="post"
+              id={"impersonate-#{member.user_id}"}
+              data-confirm={"Sign in as #{member.user.email}? This is logged."}
+              class="text-xs font-medium text-ink-soft hover:text-ink"
+            >
+              Impersonate
+            </.link>
+          </li>
+        </ul>
+      </.card>
+    </div>
+
+    <aside class="space-y-4">
+      <.card title="Modules & seats">
+        <form id="limits-form" phx-submit="save_limits" class="space-y-3">
+          <label
+            :for={module <- ZippikerWeb.Modules.all()}
+            class="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-3 transition hover:border-line-strong has-checked:border-brand has-checked:bg-brand-soft/40"
+          >
+            <input
+              type="checkbox"
+              name="modules[]"
+              value={module.key}
+              checked={module.key in @team.enabled_modules}
+              class="mt-0.5 size-4 rounded border-line-strong text-brand focus:ring-brand/30"
+            />
+            <span>
+              <span class="block text-sm font-medium text-ink">{module.name}</span>
+              <span class="block text-xs text-muted">{module.description}</span>
+            </span>
+          </label>
+          <.input
+            type="number"
+            name="seat_limit"
+            id="seat-limit"
+            min="1"
+            value={@team.seat_limit}
+            label="Seat limit"
+            placeholder="Unlimited"
+          />
+          <p class="text-xs text-muted">
+            Changing the plan resets these to the plan's defaults.
+          </p>
+          <.button type="submit" size="sm" phx-disable-with="Saving…">Save</.button>
+        </form>
+      </.card>
+
+      <.card title="Usage">
+        <dl class="space-y-2 text-sm">
+          <div :for={{label, count} <- @usage} class="flex justify-between">
+            <dt class="text-muted">{label}</dt>
+            <dd class="tabular font-medium text-ink">{count}</dd>
+          </div>
+        </dl>
+      </.card>
+
+      <.card title="Activity" padded={false}>
+        <ul id="team-events" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+          <li id="team-events-empty" class="hidden py-4 text-sm text-muted only:block">
+            Nothing logged yet.
+          </li>
+          <li :for={{id, event} <- @streams.events} id={id} class="py-2.5">
+            <p class="text-sm text-ink">{event.summary}</p>
+            <p class="text-xs text-muted">
+              {Format.user_name(event.actor)} · {Format.ago(event.inserted_at)}
+            </p>
+          </li>
+        </ul>
+      </.card>
+    </aside>
+  </div>
+
+  <.modal
+    :if={@form}
+    id="subscription-modal"
+    show
+    title="Change subscription"
+    on_cancel={JS.patch(~p"/platform/teams/#{@team}")}
+  >
+    <.form
+      for={@form}
+      id="subscription-form"
+      phx-change="validate"
+      phx-submit="save_subscription"
+      class="space-y-4"
+    >
+      <.input field={@form[:plan_id]} type="select" label="Plan" options={@plan_options} />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:status]}
+          type="select"
+          label="Status"
+          options={[
+            {"Trial", :trialing},
+            {"Active", :active},
+            {"Past due", :past_due},
+            {"Canceled", :canceled}
+          ]}
+        />
+        <.input field={@form[:trial_ends_on]} type="date" label="Trial ends" />
+        <.input field={@form[:current_period_end]} type="date" label="Current period ends" />
+      </div>
+      <.input
+        field={@form[:notes]}
+        type="textarea"
+        label="Internal notes"
+        placeholder="Discount agreed, contact person…"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.platform>

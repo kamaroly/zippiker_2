@@ -1,0 +1,82 @@
+<p>
+  Purchasing covers everything you buy: order from a supplier, receive what arrives, enter the
+  supplier's invoice (a <strong>bill</strong>) and pay it. Suppliers are ordinary companies or
+  contacts; they're tagged <em>supplier</em> the first time you buy from them.
+</p>
+
+<h2>Requests for quotation</h2>
+<p>
+  Not sure of the price yet? Send a <strong>request for quotation</strong>
+  (<code>RFQ-…</code>) from <.link navigate="/rfqs">Requests for quotation</.link>
+  or from the supplier's page (<strong>New → Request
+  for quotation</strong>). Print it or save it as PDF to send. When the supplier answers, edit the lines
+  with their prices and click <strong>Supplier replied</strong>; then
+  <strong>Create purchase order</strong>
+  turns it into an order at those prices.
+</p>
+
+<h2>Purchase orders</h2>
+<ol>
+  <li>
+    Go to <.link navigate="/purchase-orders/new">Purchase orders → + Purchase order</.link>, pick the
+    supplier and add lines. Picking a product fills in its <strong>purchase cost</strong>.
+  </li>
+  <li><strong>Print / PDF</strong> to send it, then <strong>Mark ordered</strong>.</li>
+  <li>
+    When goods arrive, click <strong>Receive</strong>. Enter what actually came and the supplier's
+    delivery note number: deliveries can arrive in several parts, and the order shows
+    <em>Partially received</em>
+    until everything is in. Stock-tracked products go straight into the
+    warehouse, and each receipt gets a printable <strong>goods received note</strong>
+    (<code>GRN-…</code>) under <em>Receipts</em>
+    for whoever checked the goods to sign.
+  </li>
+</ol>
+
+<.callout>
+  The <strong>Print</strong>
+  menu on a purchase order (and on its bill) prints the order or any of its
+  goods received notes, one at a time or all together.
+</.callout>
+
+<h2>Bills</h2>
+<p>
+  A bill is the supplier's invoice to you. Create it from a purchase order with <strong>Enter bill</strong>, or enter one directly under
+  <.link navigate="/bills/new">Bills</.link>
+  (rent, utilities, software…).
+</p>
+<ul>
+  <li>Type the <strong>supplier's invoice number</strong> so you can find it later.</li>
+  <li>
+    For lines that aren't products, pick the <strong>account</strong>
+    they belong to (rent, marketing…).
+    Leave it empty to file them under <em>Other expenses</em>.
+  </li>
+  <li>
+    An admin <strong>approves</strong>
+    the bill when it's correct. Only then is it owed and payable.
+    Drafts can be edited or deleted freely.
+  </li>
+  <li>
+    Stock bought on a bill without a purchase order arrives in the default warehouse when the bill is
+    approved.
+  </li>
+</ul>
+
+<h2>Paying suppliers</h2>
+<p>
+  On an approved bill, click <strong>Record payment</strong>. Partial payments are fine; the bill shows
+  <em>Paid</em>
+  once nothing is left. Bills past their due date show as <em>Overdue</em>.
+  <.link navigate="/bills">Bills</.link>
+  shows what you owe, what's due this week and what's late.
+</p>
+
+<.callout>
+  The price on the bill doesn't match the order? Just correct the bill before approving it.
+  Zippiker books the difference to cost of sales, so your stock keeps the value it arrived with.
+</.callout>
+<.callout kind={:warning}>
+  An approved bill can't be edited. If it's wrong and unpaid, an admin can void it; the books and any
+  stock it brought in are corrected automatically.
+</.callout>

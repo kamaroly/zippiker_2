@@ -1,0 +1,65 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:sales_orders}
+>
+  <.header>
+    Orders
+    <:subtitle>Confirmed sales to deliver and invoice.</:subtitle>
+    <:actions>
+      <.button navigate={~p"/orders/new"} variant="primary" id="new-order">
+        <.icon name="hero-plus-micro" /> Order
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="order-search" value={@query} placeholder="Search number or customer…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, orders_path(%{q: @query})},
+        {"Draft", :draft, orders_path(%{q: @query, status: :draft})},
+        {"To deliver", :confirmed, orders_path(%{q: @query, status: :confirmed})},
+        {"Part delivered", :partially_delivered,
+         orders_path(%{q: @query, status: :partially_delivered})},
+        {"Delivered", :delivered, orders_path(%{q: @query, status: :delivered})},
+        {"Cancelled", :cancelled, orders_path(%{q: @query, status: :cancelled})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="orders"
+    rows={@streams.orders}
+    row_click={fn {_id, order} -> JS.navigate(~p"/orders/#{order}") end}
+  >
+    <:col :let={{_id, order}} label="Number">
+      <span class="font-medium text-ink">{order.number}</span>
+    </:col>
+    <:col :let={{_id, order}} label="Customer">{order.customer.name}</:col>
+    <:col :let={{_id, order}} label="Status">
+      <span class="flex items-center gap-1.5">
+        <.order_status status={order.status} />
+        <.badge :if={order.invoice} color={:violet}>Invoiced</.badge>
+      </span>
+    </:col>
+    <:col :let={{_id, order}} label="Delivery" class="hidden md:table-cell">
+      {Format.date(order.expected_on)}
+    </:col>
+    <:col :let={{_id, order}} label="Total" class="text-right">
+      <span class="tabular font-medium text-ink">{Format.money(order.total)}</span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-clipboard-document-check"
+        title={if(@query != "", do: "No matches", else: "No orders yet")}
+      >
+        Turn an accepted quote into an order, or start one here.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&orders_path(%{q: @query, status: @status, page: &1})} />
+</Layouts.app>

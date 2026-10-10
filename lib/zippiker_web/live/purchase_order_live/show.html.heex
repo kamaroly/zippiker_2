@@ -1,0 +1,204 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:purchase_orders}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/purchase-orders"} class="hover:text-ink">Purchase orders</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      {@order.number} <.purchase_order_status status={@order.status} />
+    </span>
+    <:subtitle>{@order.supplier.name} · {Format.money(@order.total)}</:subtitle>
+    <:actions>
+      <.print_buttons
+        id="print-po"
+        document={~p"/purchase-orders/#{@order}/print"}
+        notes={@receipts}
+        kind={:goods_receipt}
+      />
+      <.button navigate={~p"/purchase-orders/new?copy=#{@order.id}"} id="duplicate-po">
+        <.icon name="hero-document-duplicate-micro" /> Duplicate
+      </.button>
+      <.button
+        :if={@order.status in [:draft, :ordered]}
+        navigate={~p"/purchase-orders/#{@order}/edit"}
+        id="edit-po"
+      >
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+      <.button
+        :if={@order.status == :draft}
+        phx-click="transition"
+        phx-value-to="ordered"
+        variant="primary"
+        id="place-po"
+      >
+        <.icon name="hero-paper-airplane-micro" /> Mark ordered
+      </.button>
+      <.button
+        :if={@order.status in [:ordered, :partially_received]}
+        patch={~p"/purchase-orders/#{@order}/receive"}
+        variant="primary"
+        id="receive-po"
+      >
+        <.icon name="hero-inbox-arrow-down-micro" /> Receive
+      </.button>
+      <.button
+        :if={@order.status in [:ordered, :partially_received, :received] and is_nil(@order.bill)}
+        phx-click="bill"
+        id="bill-po"
+      >
+        <.icon name="hero-document-minus-micro" /> Enter bill
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <.paper document={@order} kind={:purchase_order} />
+
+    <aside class="space-y-4">
+      <.card title="Receiving" padded={false}>
+        <ul id="po-receiving" class="divide-y divide-line px-5 pb-3">
+          <li :for={line <- @order.lines} id={"po-line-#{line.id}"} class="py-2.5">
+            <div class="flex justify-between gap-3 text-sm">
+              <span class="truncate text-ink">{line.description}</span>
+              <span class="tabular shrink-0 text-muted">
+                {Decimal.normalize(line.received_quantity)} / {Decimal.normalize(line.quantity)}
+              </span>
+            </div>
+            <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-canvas">
+              <div
+                class="h-full rounded-full bg-success transition-all"
+                style={"width: #{if Decimal.gt?(line.quantity, 0), do: min(100, round(Decimal.to_float(line.received_quantity) / Decimal.to_float(line.quantity) * 100)), else: 0}%"}
+              />
+            </div>
+          </li>
+        </ul>
+      </.card>
+
+      <.card :if={@receipts != []} title="Receipts" padded={false}>
+        <ul id="po-receipts" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={receipt <- @receipts}
+            id={"receipt-#{receipt.id}"}
+            class="flex items-center gap-3 py-2.5 text-sm"
+          >
+            <.link
+              navigate={~p"/goods-receipts/#{receipt}"}
+              class="min-w-0 flex-1 hover:opacity-80"
+            >
+              <span class="block font-medium text-ink">{receipt.number}</span>
+              <span class="block truncate text-xs text-muted">
+                {Format.date(receipt.received_on)}<span :if={receipt.supplier_reference}> · {receipt.supplier_reference}</span>
+              </span>
+            </.link>
+            <.link
+              navigate={~p"/goods-receipts/#{receipt}/print"}
+              class="rounded p-1 text-muted hover:text-ink"
+              title="Print goods received note"
+              id={"print-receipt-#{receipt.id}"}
+            >
+              <.icon name="hero-printer" class="size-4" />
+            </.link>
+          </li>
+        </ul>
+      </.card>
+
+      <.card title="Details">
+        <.list>
+          <:item title="Supplier">
+            <.link navigate={~p"/companies/#{@order.supplier}"} class="hover:underline">
+              {@order.supplier.name}
+            </.link>
+          </:item>
+          <:item :if={@order.rfq} title="Quotation request">
+            <.link navigate={~p"/rfqs/#{@order.rfq}"} class="hover:underline">{@order.rfq.number}</.link>
+          </:item>
+          <:item :if={@order.bill} title="Bill">
+            <.link navigate={~p"/bills/#{@order.bill}"} class="hover:underline">{@order.bill.number}</.link>
+          </:item>
+          <:item title="Expected">{Format.date(@order.expected_on)}</:item>
+          <:item title="Deliver to">
+            {(@order.warehouse && @order.warehouse.name) || "Default warehouse"}
+          </:item>
+          <:item title="Owner">{Format.user_name(@order.owner)}</:item>
+        </.list>
+      </.card>
+
+      <.button
+        :if={@order.status in [:draft, :ordered]}
+        phx-click="transition"
+        phx-value-to="cancelled"
+        data-confirm="Cancel this purchase order?"
+        variant="danger"
+        class="w-full"
+      >
+        Cancel order
+      </.button>
+    </aside>
+  </div>
+
+  <.modal
+    :if={@receiving?}
+    id="receive-modal"
+    show
+    title="Receive goods"
+    on_cancel={JS.patch(~p"/purchase-orders/#{@order}")}
+  >
+    <form id="receive-form" phx-submit="receive" class="space-y-4">
+      <p class="text-sm text-muted">
+        Enter what arrived. Stock-tracked products go into <strong class="text-ink">
+          {(@order.warehouse && @order.warehouse.name) || "the default warehouse"}
+        </strong>.
+      </p>
+      <div class="divide-y divide-line rounded-xl border border-line">
+        <div
+          :for={line <- @order.lines}
+          :if={Decimal.gt?(remaining(line), 0)}
+          class="flex items-center gap-4 px-4 py-3"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium text-ink">{line.description}</p>
+            <p class="text-xs text-muted">
+              {Decimal.normalize(remaining(line))} {line.unit} still to come
+              <span :if={line.product && line.product.track_inventory?}>· stocked</span>
+            </p>
+          </div>
+          <div class="w-28">
+            <.input
+              type="number"
+              step="any"
+              min="0"
+              max={Decimal.to_string(remaining(line), :normal)}
+              name={"receive[quantities][#{line.id}]"}
+              id={"receive-qty-#{line.id}"}
+              value={Decimal.to_string(remaining(line), :normal)}
+            />
+          </div>
+        </div>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          type="date"
+          name="receive[date]"
+          id="receive-date"
+          value={Date.utc_today()}
+          label="Received on"
+        />
+        <.input
+          name="receive[reference]"
+          id="receive-reference"
+          value=""
+          label="Supplier's delivery note"
+          placeholder="Optional"
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Receiving…">Receive</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

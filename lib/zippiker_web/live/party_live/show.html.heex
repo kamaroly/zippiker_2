@@ -1,0 +1,359 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={if(@party.kind == :person, do: :contacts, else: :companies)}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={back_path(@party)} class="hover:text-ink">
+        {if @party.kind == :person, do: "Contacts", else: "Companies"}
+      </.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      <.avatar name={@party.name} size="lg" square={@party.kind == :organization} />
+      <span class="min-w-0">
+        <span class="block truncate">{@party.name}</span>
+        <span class="mt-1 flex items-center gap-2 text-sm font-normal text-muted">
+          <span :if={@party.job_title}>{@party.job_title}</span>
+          <span :if={@party.employer}>
+            at
+            <.link navigate={~p"/companies/#{@party.employer}"} class="text-ink hover:underline">{@party.employer.name}</.link>
+          </span>
+          <.roles roles={@party.roles} />
+        </span>
+      </span>
+    </span>
+    <:actions>
+      <details
+        :if={module?(assigns, :sales) or module?(assigns, :purchasing)}
+        id="party-transactions"
+        class="relative"
+      >
+        <summary class="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-medium text-brand-ink shadow-card transition hover:brightness-105 [&::-webkit-details-marker]:hidden">
+          <.icon name="hero-plus-micro" class="size-4" /> New
+          <.icon name="hero-chevron-down-micro" class="size-4" />
+        </summary>
+        <div class="absolute right-0 z-40 mt-1 w-60 rounded-xl border border-line bg-surface p-1 shadow-pop">
+          <%= if module?(assigns, :sales) do %>
+            <p class="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-muted uppercase">
+              Sell to {@party.name}
+            </p>
+            <.link
+              :for={
+                {label, icon, path} <- [
+                  {"Quote", "hero-document-text", ~p"/quotes/new?customer_id=#{@party.id}"},
+                  {"Sales order", "hero-clipboard-document-check",
+                   ~p"/orders/new?customer_id=#{@party.id}"},
+                  {"Invoice", "hero-banknotes", ~p"/invoices/new?customer_id=#{@party.id}"}
+                ]
+              }
+              navigate={path}
+              class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-canvas hover:text-ink"
+            >
+              <.icon name={icon} class="size-4 text-muted" /> {label}
+            </.link>
+          <% end %>
+          <%= if module?(assigns, :purchasing) do %>
+            <p class="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-muted uppercase">
+              Buy from {@party.name}
+            </p>
+            <.link
+              :for={
+                {label, icon, path} <- [
+                  {"Request for quotation", "hero-chat-bubble-left-ellipsis",
+                   ~p"/rfqs/new?supplier_id=#{@party.id}"},
+                  {"Purchase order", "hero-shopping-cart",
+                   ~p"/purchase-orders/new?supplier_id=#{@party.id}"},
+                  {"Bill", "hero-document-minus", ~p"/bills/new?supplier_id=#{@party.id}"}
+                ]
+              }
+              navigate={path}
+              class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-canvas hover:text-ink"
+            >
+              <.icon name={icon} class="size-4 text-muted" /> {label}
+            </.link>
+          <% end %>
+        </div>
+      </details>
+      <.button patch={edit_path(@party)} id="edit-party"><.icon name="hero-pencil-square-micro" />
+      Edit</.button>
+      <.button
+        phx-click="archive"
+        data-confirm="Archive this record?"
+        variant="danger"
+        id="archive-party"
+      >
+        <.icon name="hero-archive-box-micro" /> Archive
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="space-y-4">
+      <.card title="Details">
+        <.list>
+          <:item :if={@party.email} title="Email">
+            <a href={"mailto:#{@party.email}"} class="hover:underline">{@party.email}</a>
+          </:item>
+          <:item :if={@party.phone} title="Phone">
+            <a href={"tel:#{@party.phone}"} class="hover:underline">{@party.phone}</a>
+          </:item>
+          <:item :if={@party.website} title="Website">
+            <a href={@party.website} target="_blank" rel="noopener" class="hover:underline">{@party.website}</a>
+          </:item>
+          <:item :if={@party.industry} title="Industry">{@party.industry}</:item>
+          <:item :if={@party.tax_id} title="Tax ID">{@party.tax_id}</:item>
+          <:item title="Owner">{Format.user_name(@party.owner)}</:item>
+          <:item :if={@party.tags != []} title="Tags">
+            <span class="flex flex-wrap gap-1"><.badge :for={tag <- @party.tags}>{tag}</.badge></span>
+          </:item>
+          <:item title="Added">{Format.date(@party.inserted_at)}</:item>
+        </.list>
+        <p :if={@party.description} class="mt-4 text-sm whitespace-pre-line text-ink-soft">
+          {@party.description}
+        </p>
+      </.card>
+
+      <.card title="Addresses" padded={false}>
+        <:action>
+          <button id="add-address" phx-click="new_address" class="text-muted hover:text-ink">Add →</button>
+        </:action>
+        <ul id="addresses" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={address <- @addresses}
+            id={"address-#{address.id}"}
+            class="group flex gap-3 py-3 text-sm"
+          >
+            <.icon name="hero-map-pin" class="mt-0.5 size-4 shrink-0 text-muted" />
+            <div class="min-w-0 flex-1 text-ink-soft">
+              <p class="text-xs font-medium text-muted">{Format.humanize(address.kind)}</p>
+              <p>{address.line1}</p>
+              <p :if={address.line2}>{address.line2}</p>
+              <p>
+                {Enum.reject([address.city, address.region, address.postal_code], &is_nil/1)
+                |> Enum.join(", ")}
+              </p>
+              <p :if={address.country}>{address.country}</p>
+            </div>
+            <div class="flex h-fit gap-2 text-xs opacity-0 transition group-hover:opacity-100">
+              <button
+                phx-click="edit_address"
+                phx-value-id={address.id}
+                class="text-ink-soft hover:text-ink"
+              >Edit</button>
+              <button
+                phx-click="delete_address"
+                phx-value-id={address.id}
+                data-confirm="Delete this address?"
+                class="text-danger hover:underline"
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        </ul>
+        <p :if={@addresses == []} class="px-5 pb-5 text-sm text-muted">No address yet.</p>
+      </.card>
+
+      <.card :if={@definitions != []} title="Custom fields">
+        <.custom_field_values values={@party.custom_fields} definitions={@definitions} />
+      </.card>
+
+      <.card :if={@party.kind == :organization} title="People" padded={false}>
+        <:action>
+          <.link navigate={~p"/contacts/new"} class="text-muted hover:text-ink">Add →</.link>
+        </:action>
+        <ul id="company-people" class="divide-y divide-line px-5 pb-2">
+          <li :for={person <- @people} id={"person-#{person.id}"}>
+            <.link
+              navigate={~p"/contacts/#{person}"}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <.avatar name={person.name} size="sm" />
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-ink">{person.name}</p>
+                <p class="truncate text-xs text-muted">{person.job_title || person.email}</p>
+              </div>
+            </.link>
+          </li>
+        </ul>
+        <p :if={@people == []} class="px-5 pb-5 text-sm text-muted">No people linked yet.</p>
+      </.card>
+
+      <.card :if={module?(assigns, :crm)} title="Deals" padded={false}>
+        <:action>
+          <.link navigate={~p"/deals/new"} class="text-muted hover:text-ink">New →</.link>
+        </:action>
+        <ul id="party-deals" class="divide-y divide-line px-5 pb-2">
+          <li :for={deal <- @deals} id={"deal-#{deal.id}"}>
+            <.link
+              navigate={~p"/deals/#{deal}"}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-ink">{deal.title}</p>
+                <div class="mt-1"><.stage_badge stage={deal.stage} /></div>
+              </div>
+              <span class="tabular text-sm font-medium text-ink">{Format.money(deal.amount)}</span>
+            </.link>
+          </li>
+        </ul>
+        <p :if={@deals == []} class="px-5 pb-5 text-sm text-muted">No deals yet.</p>
+      </.card>
+
+      <.card
+        :if={
+          module?(assigns, :sales) and (@quotes != [] or @sales_orders != [] or @invoices != [])
+        }
+        title="Sales"
+        padded={false}
+      >
+        <ul id="party-sales" class="divide-y divide-line px-5 pb-2">
+          <.transaction_row
+            :for={quote <- @quotes}
+            id={"quote-#{quote.id}"}
+            icon="hero-document-text"
+            label={quote.number}
+            path={~p"/quotes/#{quote}"}
+            total={quote.total}
+          >
+            <.quote_status status={quote.status} />
+          </.transaction_row>
+          <.transaction_row
+            :for={order <- @sales_orders}
+            id={"order-#{order.id}"}
+            icon="hero-clipboard-document-check"
+            label={order.number}
+            path={~p"/orders/#{order}"}
+            total={order.total}
+          >
+            <.order_status status={order.status} />
+          </.transaction_row>
+          <.transaction_row
+            :for={invoice <- @invoices}
+            id={"invoice-#{invoice.id}"}
+            icon="hero-banknotes"
+            label={invoice.number || "Draft invoice"}
+            path={~p"/invoices/#{invoice}"}
+            total={invoice.total}
+          >
+            <.invoice_status invoice={invoice} />
+          </.transaction_row>
+        </ul>
+      </.card>
+
+      <.card
+        :if={
+          module?(assigns, :purchasing) and
+            (@rfqs != [] or @purchase_orders != [] or @bills != [])
+        }
+        title="Purchases"
+        padded={false}
+      >
+        <ul id="party-purchases" class="divide-y divide-line px-5 pb-2">
+          <.transaction_row
+            :for={rfq <- @rfqs}
+            id={"rfq-#{rfq.id}"}
+            icon="hero-chat-bubble-left-ellipsis"
+            label={rfq.number}
+            path={~p"/rfqs/#{rfq}"}
+            total={rfq.total}
+          >
+            <.rfq_status status={rfq.status} />
+          </.transaction_row>
+          <.transaction_row
+            :for={order <- @purchase_orders}
+            id={"po-#{order.id}"}
+            icon="hero-shopping-cart"
+            label={order.number}
+            path={~p"/purchase-orders/#{order}"}
+            total={order.total}
+          >
+            <.purchase_order_status status={order.status} />
+          </.transaction_row>
+          <.transaction_row
+            :for={bill <- @bills}
+            id={"bill-#{bill.id}"}
+            icon="hero-document-minus"
+            label={bill.number}
+            path={~p"/bills/#{bill}"}
+            total={bill.total}
+          >
+            <.bill_status bill={bill} />
+          </.transaction_row>
+        </ul>
+      </.card>
+    </div>
+
+    <div class="lg:col-span-2">
+      <.live_component
+        module={ZippikerWeb.Components.ActivityPanel}
+        id="activity"
+        scope={%{party_id: @party.id}}
+        current_user={@current_user}
+        current_organization={@current_organization}
+      />
+    </div>
+  </div>
+
+  <.modal
+    :if={@live_action == :edit}
+    id="party-modal"
+    show
+    title={"Edit #{@party.name}"}
+    on_cancel={JS.patch(Index.show_path(@party))}
+    size="lg"
+  >
+    <.live_component
+      module={ZippikerWeb.PartyLive.FormComponent}
+      id="edit-party-form"
+      party={@party}
+      current_user={@current_user}
+      current_organization={@current_organization}
+    />
+  </.modal>
+  <.modal
+    :if={@address_form}
+    id="address-modal"
+    show
+    title="Address"
+    on_cancel={JS.push("cancel_address")}
+  >
+    <.form
+      for={@address_form}
+      id="address-form"
+      phx-change="validate_address"
+      phx-submit="save_address"
+      class="space-y-4"
+    >
+      <.input
+        field={@address_form[:kind]}
+        type="select"
+        label="Type"
+        options={[
+          {"Main", "main"},
+          {"Billing", "billing"},
+          {"Shipping", "shipping"},
+          {"Other", "other"}
+        ]}
+      />
+      <.input field={@address_form[:line1]} label="Street address" phx-mounted={JS.focus()} />
+      <.input field={@address_form[:line2]} placeholder="Apartment, suite (optional)" />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@address_form[:city]} label="City" />
+        <.input field={@address_form[:region]} label="Region / state" />
+        <.input field={@address_form[:postal_code]} label="Postal code" />
+        <.input
+          field={@address_form[:country]}
+          label="Country code"
+          placeholder="RW"
+          maxlength="2"
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save address</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

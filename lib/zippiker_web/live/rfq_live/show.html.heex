@@ -1,0 +1,97 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:rfqs}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/rfqs"} class="hover:text-ink">Requests for quotation</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">{@rfq.number} <.rfq_status status={@rfq.status} /></span>
+    <:subtitle>{@rfq.supplier.name} · {Format.money(@rfq.total)}</:subtitle>
+    <:actions>
+      <.button navigate={~p"/rfqs/#{@rfq}/print"} id="print-rfq">
+        <.icon name="hero-printer-micro" /> Print / PDF
+      </.button>
+      <.button navigate={~p"/rfqs/new?copy=#{@rfq.id}"} id="duplicate-rfq">
+        <.icon name="hero-document-duplicate-micro" /> Duplicate
+      </.button>
+      <.button
+        :if={@rfq.status in [:draft, :sent, :quoted]}
+        navigate={~p"/rfqs/#{@rfq}/edit"}
+        id="edit-rfq"
+      >
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+      <.button
+        :if={@rfq.status == :draft}
+        phx-click="transition"
+        phx-value-to="sent"
+        id="send-rfq"
+      >
+        <.icon name="hero-paper-airplane-micro" /> Mark sent
+      </.button>
+      <.button
+        :if={@rfq.status in [:draft, :sent]}
+        phx-click="transition"
+        phx-value-to="quoted"
+        id="quoted-rfq"
+      >
+        <.icon name="hero-inbox-arrow-down-micro" /> Supplier replied
+      </.button>
+      <.button
+        :if={@rfq.status in [:draft, :sent, :quoted] and is_nil(@rfq.purchase_order)}
+        phx-click="order"
+        variant="primary"
+        id="order-rfq"
+      >
+        <.icon name="hero-shopping-cart-micro" /> Create purchase order
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <.paper document={@rfq} kind={:rfq} />
+
+    <aside class="space-y-4">
+      <.card title="Details">
+        <.list>
+          <:item title="Supplier">
+            <.link navigate={~p"/companies/#{@rfq.supplier}"} class="hover:underline">
+              {@rfq.supplier.name}
+            </.link>
+          </:item>
+          <:item :if={@rfq.purchase_order} title="Purchase order">
+            <.link navigate={~p"/purchase-orders/#{@rfq.purchase_order}"} class="hover:underline">
+              {@rfq.purchase_order.number}
+            </.link>
+          </:item>
+          <:item title="Reply by">{Format.date(@rfq.valid_until)}</:item>
+          <:item title="Owner">{Format.user_name(@rfq.owner)}</:item>
+        </.list>
+      </.card>
+      <p :if={@rfq.status in [:sent, :quoted]} class="px-1 text-xs text-muted">
+        When the supplier answers, edit the lines with their prices, then create the purchase order.
+      </p>
+      <div class="flex flex-col gap-2">
+        <.button
+          :if={@rfq.status in [:draft, :sent, :quoted]}
+          phx-click="transition"
+          phx-value-to="declined"
+          data-confirm="Decline this request?"
+          variant="danger"
+        >
+          Decline
+        </.button>
+        <.button
+          :if={@rfq.status in [:sent, :quoted, :declined]}
+          phx-click="transition"
+          phx-value-to="draft"
+        >
+          Back to draft
+        </.button>
+      </div>
+    </aside>
+  </div>
+</Layouts.app>

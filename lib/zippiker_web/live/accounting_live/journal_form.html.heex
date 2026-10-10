@@ -1,0 +1,124 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:journal}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/accounting/journal"} class="hover:text-ink">Journal</.link>
+    </:breadcrumb>
+    New journal entry
+    <:subtitle>
+      For anything that isn't an invoice, payment or simple expense: owner investment, loans,
+      depreciation, corrections.
+    </:subtitle>
+  </.header>
+
+  <.form for={@form} id="entry-form" phx-change="validate" phx-submit="save" class="space-y-4">
+    <.card>
+      <div class="grid gap-4 sm:grid-cols-[180px_1fr]">
+        <.input field={@form[:date]} type="date" label="Date" />
+        <.input field={@form[:memo]} label="Memo" placeholder="Owner investment" />
+      </div>
+    </.card>
+
+    <div
+      id="entry-lines"
+      class="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card"
+    >
+      <table class="w-full min-w-[760px] text-sm">
+        <thead>
+          <tr class="border-b border-line text-left text-xs text-muted">
+            <th class="w-72 px-3 py-2.5 font-medium">Account</th>
+            <th class="px-3 py-2.5 font-medium">Description</th>
+            <th class="w-36 px-3 py-2.5 font-medium">Debit</th>
+            <th class="w-36 px-3 py-2.5 font-medium">Credit</th>
+            <th class="w-10"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          <.inputs_for :let={line} field={@form[:lines]}>
+            <tr id={"entry-line-#{line.index}"} class="align-top">
+              <td class="px-3 py-2">
+                <.input
+                  field={line[:account_id]}
+                  type="select"
+                  prompt="Choose account…"
+                  options={@account_options}
+                />
+              </td>
+              <td class="px-3 py-2">
+                <.input field={line[:description]} placeholder="Optional" />
+              </td>
+              <td class="px-3 py-2">
+                <.input field={line[:debit]} type="number" step="0.01" min="0" placeholder="0.00" />
+              </td>
+              <td class="px-3 py-2">
+                <.input
+                  field={line[:credit]}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                />
+              </td>
+              <td class="py-3 pr-2">
+                <button
+                  type="button"
+                  phx-click="remove_line"
+                  phx-value-path={line.name}
+                  class="rounded p-1 text-muted transition hover:text-danger"
+                  aria-label="Remove line"
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
+                </button>
+              </td>
+            </tr>
+          </.inputs_for>
+        </tbody>
+        <tfoot>
+          <tr class="border-t border-line text-sm font-semibold text-ink">
+            <td class="px-3 py-3" colspan="2">
+              <.button type="button" phx-click="add_line" id="add-entry-line" size="sm">
+                <.icon name="hero-plus-micro" /> Add line
+              </.button>
+            </td>
+            <td class="tabular px-3 py-3">{amount(@debits, @current_organization.currency)}</td>
+            <td class="tabular px-3 py-3">{amount(@credits, @current_organization.currency)}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p
+        id="balance-indicator"
+        class={[
+          "flex items-center gap-2 text-sm",
+          @balanced? && "text-success",
+          !@balanced? && "text-muted"
+        ]}
+      >
+        <.icon
+          name={if(@balanced?, do: "hero-check-circle-micro", else: "hero-scale-micro")}
+          class="size-4"
+        />
+        <%= if @balanced? do %>
+          Balanced
+        <% else %>
+          Off by {amount(
+            Decimal.abs(Decimal.sub(@debits, @credits)),
+            @current_organization.currency
+          )} — debits must equal credits
+        <% end %>
+      </p>
+      <.error :for={{_field, {msg, _}} <- @form.errors}>{msg}</.error>
+      <div class="flex gap-2">
+        <.button navigate={~p"/accounting/journal"}>Cancel</.button>
+        <.button type="submit" variant="primary" phx-disable-with="Posting…">Post entry</.button>
+      </div>
+    </div>
+  </.form>
+</Layouts.app>

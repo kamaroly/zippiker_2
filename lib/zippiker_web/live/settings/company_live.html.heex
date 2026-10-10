@@ -1,0 +1,104 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:company}
+>
+  <.header>
+    Company details
+    <:subtitle>What appears on your quotes and invoices, and how they're numbered.</:subtitle>
+    <:actions>
+      <.button :if={admin?(assigns)} patch={~p"/settings/company/new"} id="new-entity">
+        <.icon name="hero-plus-micro" /> Legal entity
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-4">
+    <nav :if={length(@entities) > 1 or @live_action == :new} class="space-y-1">
+      <.link
+        :for={entity <- @entities}
+        patch={~p"/settings/company/#{entity}"}
+        class={[
+          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition",
+          @entity && @entity.id == entity.id &&
+            "bg-surface font-medium text-ink shadow-card ring-1 ring-line",
+          !(@entity && @entity.id == entity.id) && "text-ink-soft hover:bg-surface"
+        ]}
+      >
+        <span class="flex-1 truncate">{entity.name}</span>
+        <.badge :if={entity.default?} color={:orange}>Default</.badge>
+      </.link>
+    </nav>
+
+    <.card class={
+      if(length(@entities) > 1 or @live_action == :new,
+        do: "lg:col-span-3",
+        else: "lg:col-span-4"
+      )
+    }>
+      <.form
+        for={@form}
+        id="entity-form"
+        phx-change="validate"
+        phx-submit="save"
+        class="space-y-6"
+      >
+        <fieldset disabled={!admin?(assigns)} class="space-y-6">
+          <section class="grid gap-4 sm:grid-cols-2">
+            <.input field={@form[:name]} label="Display name" />
+            <.input field={@form[:legal_name]} label="Legal name" />
+            <.input field={@form[:tax_id]} label="Tax ID / VAT number" />
+            <.input field={@form[:registration_number]} label="Registration number" />
+            <.input field={@form[:email]} type="email" label="Billing email" />
+            <.input field={@form[:phone]} type="tel" label="Phone" />
+          </section>
+
+          <section class="grid gap-4 border-t border-line pt-6 sm:grid-cols-2">
+            <div class="sm:col-span-2"><.input field={@form[:line1]} label="Address" /></div>
+            <div class="sm:col-span-2">
+              <.input field={@form[:line2]} placeholder="Suite, floor (optional)" />
+            </div>
+            <.input field={@form[:city]} label="City" />
+            <.input field={@form[:region]} label="Region / state" />
+            <.input field={@form[:postal_code]} label="Postal code" />
+            <.input field={@form[:country]} label="Country code" placeholder="RW" maxlength="2" />
+          </section>
+
+          <section class="grid gap-4 border-t border-line pt-6 sm:grid-cols-3">
+            <.input field={@form[:quote_prefix]} label="Quote prefix" hint="e.g. QUO-2026-0001" />
+            <.input
+              field={@form[:invoice_prefix]}
+              label="Invoice prefix"
+              hint="e.g. INV-2026-0001"
+            />
+            <.input
+              field={@form[:payment_terms_days]}
+              type="number"
+              min="0"
+              label="Payment terms (days)"
+            />
+            <.input
+              field={@form[:fiscal_year_start_month]}
+              type="select"
+              label="Fiscal year starts"
+              options={for m <- 1..12, do: {Calendar.strftime(Date.new!(2000, m, 1), "%B"), m}}
+            />
+            <.input field={@form[:currency]} label="Currency" disabled />
+          </section>
+
+          <.input
+            field={@form[:invoice_footer]}
+            type="textarea"
+            label="Invoice footer"
+            placeholder="Bank: … · Account: … · Thank you for your business!"
+          />
+        </fieldset>
+
+        <div :if={admin?(assigns)} class="flex justify-end">
+          <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+        </div>
+      </.form>
+    </.card>
+  </div>
+</Layouts.app>

@@ -1,0 +1,153 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:products}
+>
+  <.header>
+    Products
+    <:subtitle>What you buy and sell. Goods can have their stock tracked.</:subtitle>
+    <:actions>
+      <.button patch={~p"/products/new"} variant="primary" id="new-product">
+        <.icon name="hero-plus-micro" /> Product
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="product-search" value={@query} placeholder="Search name or SKU…" />
+    <.custom_field_filters id="product-filters" definitions={@filters} values={@cf} />
+  </div>
+
+  <.table
+    id="products"
+    rows={@streams.products}
+    row_click={fn {_id, product} -> JS.patch(~p"/products/#{product}/edit") end}
+  >
+    <:col :let={{_id, product}} label="Name">
+      <div class="flex items-center gap-3">
+        <span class="flex size-8 items-center justify-center rounded-lg bg-canvas text-ink-soft">
+          <.icon
+            name={if(product.kind == :goods, do: "hero-cube", else: "hero-sparkles")}
+            class="size-4"
+          />
+        </span>
+        <div class="min-w-0">
+          <p class="truncate font-medium text-ink">{product.name}</p>
+          <p :if={product.sku} class="truncate font-mono text-xs text-muted">{product.sku}</p>
+        </div>
+      </div>
+    </:col>
+    <:col :let={{_id, product}} label="Type">{Format.humanize(product.kind)}</:col>
+    <:col :let={{_id, product}} label="Price" class="text-right">
+      <span class="tabular font-medium text-ink">
+        {Format.money(Money.new!(@current_organization.currency, product.unit_price))}
+      </span>
+      <span class="text-xs text-muted">/ {product.unit}</span>
+    </:col>
+    <:col :let={{_id, product}} label="In stock" class="hidden text-right sm:table-cell">
+      <span
+        :if={product.track_inventory?}
+        class={["tabular", product.low_stock? && "font-medium text-danger"]}
+      >
+        {Decimal.normalize(product.on_hand)} {product.unit}
+      </span>
+    </:col>
+    <:col :let={{_id, product}} label="Tax" class="hidden md:table-cell">
+      {product.tax_rate && "#{product.tax_rate.name} #{Decimal.normalize(product.tax_rate.rate)}%"}
+    </:col>
+    <:col :let={{_id, product}} label="Status" class="hidden md:table-cell">
+      <.badge color={if(product.active?, do: :emerald, else: :slate)}>
+        {if product.active?, do: "Active", else: "Inactive"}
+      </.badge>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-cube"
+        title={if(@query != "", do: "No matches", else: "No products yet")}
+      >
+        Add what you sell to price quotes in seconds.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&products_path(%{q: @query, cf: @cf, page: &1})} />
+
+  <.modal
+    :if={@form}
+    id="product-modal"
+    show
+    title={if(@product, do: "Edit #{@product.name}", else: "New product")}
+    on_cancel={JS.patch(products_path(%{q: @query, cf: @cf}))}
+    size="lg"
+  >
+    <.form for={@form} id="product-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:name]} label="Name" phx-mounted={JS.focus()} />
+        <.input field={@form[:sku]} label="SKU" />
+        <.input
+          field={@form[:kind]}
+          type="select"
+          label="Type"
+          options={[{"Service", "service"}, {"Goods", "goods"}]}
+        />
+        <.input field={@form[:unit]} label="Unit" placeholder="hour, pcs, month" />
+        <.input
+          field={@form[:unit_price]}
+          type="number"
+          step="any"
+          min="0"
+          label={"Price (#{@current_organization.currency})"}
+        />
+        <.input
+          field={@form[:tax_rate_id]}
+          type="select"
+          label="Tax"
+          prompt="No tax"
+          options={@tax_options}
+        />
+        <.input
+          field={@form[:cost_price]}
+          type="number"
+          step="any"
+          min="0"
+          label={"Purchase cost (#{@current_organization.currency})"}
+          hint="Default price on purchase orders and bills"
+        />
+      </div>
+      <div
+        :if={to_string(@form[:kind].value) == "goods"}
+        id="stock-settings"
+        class="grid gap-4 rounded-xl bg-canvas p-4 sm:grid-cols-2"
+      >
+        <.input field={@form[:track_inventory?]} type="checkbox" label="Track stock on hand" />
+        <.input
+          :if={@form[:track_inventory?].value in [true, "true"]}
+          field={@form[:reorder_level]}
+          type="number"
+          step="any"
+          min="0"
+          label="Reorder level"
+          hint="Flag as low stock at or below this quantity"
+        />
+      </div>
+      <.input field={@form[:description]} type="textarea" label="Description" />
+      <.input field={@form[:active?]} type="checkbox" label="Active (available on new documents)" />
+      <.custom_field_inputs form={@form} definitions={@definitions} />
+      <div class="flex items-center justify-between pt-2">
+        <button
+          :if={@product}
+          type="button"
+          phx-click="archive"
+          phx-value-id={@product.id}
+          data-confirm="Archive this product?"
+          class="text-sm text-danger hover:underline"
+        >
+          Archive
+        </button>
+        <span :if={!@product}></span>
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save product</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

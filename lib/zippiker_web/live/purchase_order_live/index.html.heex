@@ -1,0 +1,93 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:purchase_orders}
+>
+  <.header>
+    Purchase orders
+    <:subtitle>What you've ordered from suppliers, and what's still to arrive.</:subtitle>
+    <:actions>
+      <.button navigate={~p"/purchase-orders/new"} variant="primary" id="new-purchase-order">
+        <.icon name="hero-plus-micro" /> Purchase order
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <.stat
+      id="stat-to-receive"
+      label="To receive"
+      value={Format.money_short(@summary.orders_to_receive_value)}
+      icon="hero-truck"
+    >
+      {Format.count(@summary.orders_to_receive, "open order")}
+    </.stat>
+    <.stat
+      id="stat-payable"
+      label="You owe suppliers"
+      value={Format.money_short(@summary.payable)}
+      icon="hero-document-minus"
+    >
+      {Format.count(@summary.open_count, "bill")} to pay
+    </.stat>
+    <.stat
+      id="stat-due-week"
+      label="Due this week"
+      value={Format.money_short(@summary.due_this_week)}
+      icon="hero-calendar"
+    />
+    <.stat
+      id="stat-bills-overdue"
+      label="Overdue bills"
+      value={Format.money_short(@summary.overdue)}
+      icon="hero-exclamation-triangle"
+    >
+      {Format.count(@summary.overdue_count, "bill")}
+    </.stat>
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="po-search" value={@query} placeholder="Search number or supplier…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, orders_path(%{q: @query})},
+        {"Draft", :draft, orders_path(%{q: @query, status: :draft})},
+        {"To receive", :open, orders_path(%{q: @query, status: :open})},
+        {"Received", :received, orders_path(%{q: @query, status: :received})},
+        {"Cancelled", :cancelled, orders_path(%{q: @query, status: :cancelled})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="purchase-orders"
+    rows={@streams.orders}
+    row_click={fn {_id, order} -> JS.navigate(~p"/purchase-orders/#{order}") end}
+  >
+    <:col :let={{_id, order}} label="Number">
+      <span class="font-medium text-ink">{order.number}</span>
+    </:col>
+    <:col :let={{_id, order}} label="Supplier">{order.supplier.name}</:col>
+    <:col :let={{_id, order}} label="Status">
+      <.purchase_order_status status={order.status} />
+    </:col>
+    <:col :let={{_id, order}} label="Expected" class="hidden md:table-cell">
+      {Format.date(order.expected_on)}
+    </:col>
+    <:col :let={{_id, order}} label="Total" class="text-right">
+      <span class="tabular font-medium text-ink">{Format.money(order.total)}</span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-shopping-cart"
+        title={if(@query != "", do: "No matches", else: "No purchase orders yet")}
+      >
+        Order stock or services from a supplier, then receive and bill it.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&orders_path(%{q: @query, status: @status, page: &1})} />
+</Layouts.app>

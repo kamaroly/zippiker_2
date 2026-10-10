@@ -1,0 +1,26 @@
+defmodule Zippiker.Purchasing.Rfq.Attributes do
+  use Spark.Dsl.Fragment, of: Ash.Resource
+
+  attributes do
+    uuid_v7_primary_key :id
+    attribute :number, :string, public?: true
+
+    attribute :status, :atom do
+      allow_nil? false
+      public? true
+      default :draft
+      constraints one_of: [:draft, :sent, :quoted, :accepted, :declined]
+    end
+
+    attribute :issued_on, :date, allow_nil?: false, public?: true, default: &Date.utc_today/0
+    attribute :valid_until, :date, public?: true, description: "Reply by / quote valid until."
+    attribute :supplier_reference, :string, public?: true, constraints: [max_length: 60]
+    attribute :currency, :string, allow_nil?: false, public?: true
+    attribute :notes, :string, public?: true, constraints: [max_length: 5_000]
+    attribute :subtotal, :money, public?: true
+    attribute :tax_total, :money, public?: true
+    attribute :total, :money, public?: true
+
+    timestamps()
+  end
+end

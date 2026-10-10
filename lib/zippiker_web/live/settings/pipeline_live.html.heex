@@ -1,0 +1,102 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:pipeline}
+>
+  <.header>
+    Pipeline
+    <:subtitle>
+      The stages deals move through. Probabilities drive the weighted forecast.
+    </:subtitle>
+  </.header>
+
+  <p :if={!admin?(assigns)} class="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+    Only workspace admins can change the pipeline.
+  </p>
+
+  <.card :for={pipeline <- @pipelines} title={pipeline.name} padded={false} class="mb-4">
+    <ul id={"stages-#{pipeline.id}"} class="divide-y divide-line">
+      <li :for={stage <- pipeline.stages} id={"stage-#{stage.id}"} class="px-5 py-3">
+        <.form
+          for={
+            to_form(
+              %{"name" => stage.name, "probability" => stage.probability, "color" => stage.color},
+              as: "stage"
+            )
+          }
+          id={"stage-form-#{stage.id}"}
+          phx-submit="save_stage"
+          class="flex flex-wrap items-end gap-3"
+        >
+          <input type="hidden" name="stage_id" value={stage.id} />
+          <span class={["mb-3 size-2.5 rounded-full", dot_color(stage.color)]} />
+          <div class="min-w-40 flex-1">
+            <.input
+              name="stage[name]"
+              value={stage.name}
+              label="Name"
+              disabled={!admin?(assigns)}
+            />
+          </div>
+          <div class="w-28">
+            <.input
+              name="stage[probability]"
+              value={stage.probability}
+              type="number"
+              min="0"
+              max="100"
+              label="Probability %"
+              disabled={!admin?(assigns) || stage.kind != :open}
+            />
+          </div>
+          <div class="w-32">
+            <.input
+              name="stage[color]"
+              value={stage.color}
+              type="select"
+              options={@colors}
+              label="Color"
+              disabled={!admin?(assigns)}
+            />
+          </div>
+          <.badge
+            :if={stage.kind != :open}
+            color={if(stage.kind == :won, do: :emerald, else: :rose)}
+            class="mb-2"
+          >
+            {Format.humanize(stage.kind)}
+          </.badge>
+          <div :if={admin?(assigns)} class="flex gap-2">
+            <.button type="submit" size="sm">Save</.button>
+            <.button
+              :if={stage.kind == :open}
+              type="button"
+              size="sm"
+              variant="ghost"
+              phx-click="delete_stage"
+              phx-value-id={stage.id}
+              data-confirm="Delete this stage? It must not contain deals."
+            >
+              <.icon name="hero-trash-micro" />
+            </.button>
+          </div>
+        </.form>
+      </li>
+    </ul>
+    <div :if={admin?(assigns)} class="border-t border-line px-5 py-3">
+      <.form
+        for={to_form(%{}, as: "new_stage")}
+        id={"new-stage-#{pipeline.id}"}
+        phx-submit="add_stage"
+        class="flex gap-2"
+      >
+        <input type="hidden" name="pipeline_id" value={pipeline.id} />
+        <div class="w-64">
+          <.input name="new_stage[name]" value="" placeholder="New stage name" />
+        </div>
+        <.button type="submit" size="sm"><.icon name="hero-plus-micro" /> Add stage</.button>
+      </.form>
+    </div>
+  </.card>
+</Layouts.app>

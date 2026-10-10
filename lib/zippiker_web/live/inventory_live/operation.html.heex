@@ -1,0 +1,133 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:stock_operations}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/inventory/operations"} class="hover:text-ink">Stock movements</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      {@operation.number} <.operation_kind operation={@operation} />
+    </span>
+    <:subtitle>{Format.date(@operation.date)} · {@operation.memo}</:subtitle>
+    <:actions>
+      <.button navigate={~p"/inventory/operations/#{@operation}/print"} id="print-operation">
+        <.icon name="hero-printer-micro" />
+        {case @operation.kind do
+          :receipt -> "Goods received note"
+          :delivery -> "Delivery note"
+          :adjustment -> "Print"
+        end}
+      </.button>
+      <.button
+        :if={reversible?(@operation, assigns)}
+        phx-click="reverse"
+        id="reverse-operation"
+        data-confirm="Undo this adjustment? The opposite movement is recorded today."
+      >
+        <.icon name="hero-arrow-uturn-left-micro" /> Reverse
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <div class="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
+      <table id="operation-movements" class="w-full min-w-[520px] text-sm">
+        <thead>
+          <tr class="border-b border-line text-left text-xs text-muted">
+            <th class="px-5 py-2.5 font-medium">Product</th>
+            <th class="px-3 py-2.5 text-right font-medium">Quantity</th>
+            <th class="px-3 py-2.5 text-right font-medium">Unit cost</th>
+            <th class="px-5 py-2.5 text-right font-medium">Value</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          <tr :for={movement <- @operation.movements} id={"movement-#{movement.id}"}>
+            <td class="px-5 py-3">
+              <.link
+                navigate={~p"/inventory/products/#{movement.product}"}
+                class="font-medium text-ink hover:underline"
+              >
+                {movement.product.name}
+              </.link>
+            </td>
+            <td class="px-3 py-3 text-right">
+              <.signed_quantity quantity={movement.quantity} unit={movement.product.unit} />
+            </td>
+            <td class="tabular px-3 py-3 text-right text-ink-soft">
+              {amount(movement.unit_cost, @current_organization.currency)}
+            </td>
+            <td class="tabular px-5 py-3 text-right text-ink">
+              {amount(
+                Decimal.round(Decimal.mult(movement.quantity, movement.unit_cost), 2),
+                @current_organization.currency
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="space-y-4">
+      <.card title="Details">
+        <.list>
+          <:item title="Warehouse">{@operation.warehouse.name}</:item>
+          <:item
+            :if={@operation.party}
+            title={if(@operation.kind == :receipt, do: "Supplier", else: "Customer")}
+          >
+            {@operation.party.name}
+          </:item>
+          <:item :if={@operation.reference} title="Reference">{@operation.reference}</:item>
+          <:item :if={@operation.source_label} title="Document">
+            <.link
+              :if={source_path(@operation)}
+              navigate={source_path(@operation)}
+              class="hover:underline"
+            >
+              {@operation.source_label}
+            </.link>
+          </:item>
+          <:item title="Value">
+            {amount(@operation.total_value, @current_organization.currency)}
+          </:item>
+          <:item title="Recorded by">
+            {if @operation.created_by,
+              do: Format.user_name(@operation.created_by),
+              else: "Automatic"}
+          </:item>
+        </.list>
+      </.card>
+      <div
+        :if={@operation.reversal}
+        class="rounded-2xl border border-line bg-surface-muted p-4 text-sm text-ink-soft"
+      >
+        Reversed by <.link
+          navigate={~p"/inventory/operations/#{@operation.reversal}"}
+          class="font-medium text-ink hover:underline"
+        >
+          {@operation.reversal.number}
+        </.link>.
+      </div>
+      <div
+        :if={@operation.reversal_of}
+        class="rounded-2xl border border-line bg-surface-muted p-4 text-sm text-ink-soft"
+      >
+        Reverses <.link
+          navigate={~p"/inventory/operations/#{@operation.reversal_of}"}
+          class="font-medium text-ink hover:underline"
+        >
+          {@operation.reversal_of.number}
+        </.link>.
+      </div>
+      <p
+        :if={@operation.kind != :adjustment and is_nil(@operation.reversal_of_id)}
+        class="px-1 text-xs text-muted"
+      >
+        To undo a receipt or delivery, void the bill or invoice that caused it.
+      </p>
+    </aside>
+  </div>
+</Layouts.app>

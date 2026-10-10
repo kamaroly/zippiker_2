@@ -1,0 +1,127 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:employees}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/hr/employees"} class="hover:text-ink">Employees</.link>
+    </:breadcrumb>
+    {@page_title}
+  </.header>
+
+  <.form
+    for={@form}
+    id="employee-form"
+    phx-change="validate"
+    phx-submit="save"
+    class="mx-auto max-w-3xl space-y-4"
+  >
+    <.card title="Person">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:first_name]} label="First name" phx-mounted={JS.focus()} />
+        <.input field={@form[:last_name]} label="Last name" />
+        <.input field={@form[:email]} type="email" label="Work email" />
+        <.input field={@form[:phone]} type="tel" label="Phone" />
+      </div>
+    </.card>
+
+    <.card title="Job">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:job_title]} label="Job title" placeholder="Account manager" />
+        <.input
+          field={@form[:department_id]}
+          type="select"
+          label="Department"
+          prompt="—"
+          options={@departments}
+        />
+        <.input
+          field={@form[:manager_id]}
+          type="select"
+          label="Reports to"
+          prompt="Nobody (top level)"
+          options={@managers}
+        />
+        <.input
+          field={@form[:employment_type]}
+          type="select"
+          label="Contract"
+          options={[
+            {"Full-time", :full_time},
+            {"Part-time", :part_time},
+            {"Contractor", :contractor},
+            {"Intern", :intern}
+          ]}
+        />
+        <.input field={@form[:hire_date]} type="date" label="Start date" />
+        <.input
+          field={@form[:leave_policy_id]}
+          type="select"
+          label="Leave policy"
+          prompt="Default policy"
+          options={@policies}
+        />
+        <.input
+          field={@form[:user_id]}
+          type="select"
+          label="Workspace login"
+          prompt="None"
+          options={@members}
+          hint="Lets them request leave and approve their team's"
+        />
+      </div>
+    </.card>
+
+    <.card title="Pay & personal details">
+      <p class="-mt-2 mb-4 text-xs text-muted">
+        <.icon name="hero-lock-closed-micro" class="size-3.5" />
+        Visible only to admins and the employee.
+      </p>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:salary]}
+          type="number"
+          step="any"
+          min="0"
+          label={"Salary (#{@current_organization.currency})"}
+        />
+        <.input
+          field={@form[:pay_frequency]}
+          type="select"
+          label="Per"
+          options={[
+            {"Month", :monthly},
+            {"Two weeks", :biweekly},
+            {"Week", :weekly},
+            {"Hour", :hourly},
+            {"Year", :yearly}
+          ]}
+        />
+        <.input field={@form[:date_of_birth]} type="date" label="Date of birth" />
+        <.input field={@form[:national_id]} label="National ID" />
+        <.input field={@form[:emergency_contact_name]} label="Emergency contact" />
+        <.input field={@form[:emergency_contact_phone]} type="tel" label="Emergency phone" />
+      </div>
+    </.card>
+
+    <.card>
+      <.input field={@form[:notes]} type="textarea" label="Notes" />
+      <div :if={@definitions != []} class="mt-5">
+        <.custom_field_inputs form={@form} definitions={@definitions} />
+      </div>
+    </.card>
+
+    <div class="flex justify-end gap-2">
+      <.button navigate={
+        if(@employee, do: ~p"/hr/employees/#{@employee}", else: ~p"/hr/employees")
+      }>
+        Cancel
+      </.button>
+      <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-employee">
+        Save employee
+      </.button>
+    </div>
+  </.form>
+</Layouts.app>

@@ -1,0 +1,209 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:bills}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/bills"} class="hover:text-ink">Bills</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">{@bill.number} <.bill_status bill={@bill} /></span>
+    <:subtitle>
+      {@bill.supplier.name}
+      <span :if={@bill.supplier_reference}>· their ref. {@bill.supplier_reference}</span>
+      · {Format.money(@bill.total)}
+    </:subtitle>
+    <:actions>
+      <.print_buttons id="print-bill" notes={@receipts} kind={:goods_receipt} />
+      <.button navigate={~p"/bills/new?copy=#{@bill.id}"} id="duplicate-bill">
+        <.icon name="hero-document-duplicate-micro" /> Duplicate
+      </.button>
+      <.button :if={@bill.status == :draft} navigate={~p"/bills/#{@bill}/edit"} id="edit-bill">
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+      <.button
+        :if={@bill.status == :draft and admin?(assigns)}
+        phx-click="approve"
+        variant="primary"
+        id="approve-bill"
+        data-confirm="Approve this bill? It's recorded as owed and can no longer be edited."
+      >
+        <.icon name="hero-check-badge-micro" /> Approve
+      </.button>
+      <.button
+        :if={@bill.status == :open}
+        patch={~p"/bills/#{@bill}/payment"}
+        variant="primary"
+        id="pay-bill"
+      >
+        <.icon name="hero-banknotes-micro" /> Record payment
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <div class="space-y-4">
+      <div class="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
+        <table id="bill-lines" class="w-full min-w-[640px] text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs text-muted">
+              <th class="px-5 py-2.5 font-medium">Description</th>
+              <th class="px-3 py-2.5 font-medium">Booked to</th>
+              <th class="px-3 py-2.5 text-right font-medium">Qty</th>
+              <th class="px-3 py-2.5 text-right font-medium">Price</th>
+              <th class="px-5 py-2.5 text-right font-medium">Amount</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            <tr :for={line <- @bill.lines} id={"bill-line-#{line.id}"}>
+              <td class="px-5 py-3 text-ink">{line.description}</td>
+              <td class="px-3 py-3 text-muted">
+                <%= cond do %>
+                  <% line.received_unit_cost -> %>
+                    Goods received
+                  <% line.product && line.product.track_inventory? -> %>
+                    Inventory
+                  <% line.expense_account -> %>
+                    {line.expense_account.name}
+                  <% true -> %>
+                    Other expenses
+                <% end %>
+              </td>
+              <td class="tabular px-3 py-3 text-right">
+                {Decimal.normalize(line.quantity)} {line.unit}
+              </td>
+              <td class="tabular px-3 py-3 text-right">
+                {Format.money(Money.new!(@bill.currency, line.unit_price))}
+              </td>
+              <td class="tabular px-5 py-3 text-right font-medium text-ink">
+                {Format.money(Money.new!(@bill.currency, line.subtotal))}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="flex justify-end border-t border-line p-5">
+          <.totals totals={
+            %{subtotal: @bill.subtotal, tax_total: @bill.tax_total, total: @bill.total}
+          } />
+        </div>
+      </div>
+      <.card :if={@bill.notes} title="Notes">
+        <p class="text-sm whitespace-pre-line text-ink-soft">{@bill.notes}</p>
+      </.card>
+    </div>
+
+    <aside class="space-y-4">
+      <.card>
+        <p class="text-xs font-medium text-muted">To pay</p>
+        <p class={[
+          "tabular mt-1 text-2xl font-semibold tracking-tight",
+          @bill.overdue? && "text-danger"
+        ]}>
+          {Format.money(@bill.amount_due)}
+        </p>
+        <p :if={@bill.due_on} class="mt-1 text-xs text-muted">
+          {if @bill.overdue?, do: "Was due", else: "Due"} {Format.date(@bill.due_on)}
+        </p>
+      </.card>
+
+      <.card title="Payments" padded={false}>
+        <ul id="bill-payments" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={payment <- @bill.payments}
+            id={"bill-payment-#{payment.id}"}
+            class="group flex items-center gap-3 py-2.5"
+          >
+            <span class="flex size-7 items-center justify-center rounded-full bg-success-soft text-success">
+              <.icon name="hero-check-micro" class="size-4" />
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="tabular text-sm font-medium text-ink">{Format.money(payment.amount)}</p>
+              <p class="truncate text-xs text-muted">
+                {Format.date(payment.paid_on)} · {Format.humanize(payment.method)}
+              </p>
+            </div>
+            <button
+              :if={@bill.status != :void}
+              phx-click="delete_payment"
+              phx-value-id={payment.id}
+              data-confirm="Remove this payment?"
+              class="rounded p-1 text-muted opacity-0 transition group-hover:opacity-100 hover:text-danger"
+              title="Remove"
+            >
+              <.icon name="hero-trash" class="size-4" />
+            </button>
+          </li>
+        </ul>
+        <p :if={@bill.payments == []} class="px-5 pb-5 text-sm text-muted">No payments yet.</p>
+      </.card>
+
+      <.card title="Details">
+        <.list>
+          <:item title="Supplier">
+            <.link navigate={~p"/companies/#{@bill.supplier}"} class="hover:underline">
+              {@bill.supplier.name}
+            </.link>
+          </:item>
+          <:item :if={@bill.purchase_order} title="Purchase order">
+            <.link navigate={~p"/purchase-orders/#{@bill.purchase_order}"} class="hover:underline">
+              {@bill.purchase_order.number}
+            </.link>
+          </:item>
+          <:item title="Bill date">{Format.date(@bill.issued_on)}</:item>
+          <:item title="Owner">{Format.user_name(@bill.owner)}</:item>
+        </.list>
+      </.card>
+
+      <div class="flex flex-col gap-2">
+        <.button
+          :if={@bill.status == :open and admin?(assigns)}
+          phx-click="void"
+          data-confirm="Void this bill? The books (and any stock it brought in) are corrected."
+          variant="danger"
+        >
+          Void bill
+        </.button>
+        <.button
+          :if={@bill.status == :draft}
+          phx-click="delete"
+          data-confirm="Delete this draft?"
+          variant="danger"
+        >
+          Delete draft
+        </.button>
+      </div>
+    </aside>
+  </div>
+
+  <.modal
+    :if={@payment_form}
+    id="bill-payment-modal"
+    show
+    title="Record payment"
+    on_cancel={JS.patch(~p"/bills/#{@bill}")}
+  >
+    <.form for={@payment_form} id="bill-payment-form" phx-submit="save_payment" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          name={@payment_form[:amount].name}
+          id={@payment_form[:amount].id}
+          value={money_input(@payment_form[:amount].value)}
+          errors={Enum.map(@payment_form[:amount].errors, &translate_error/1)}
+          type="number"
+          step="any"
+          min="0"
+          label={"Amount (#{@bill.currency})"}
+          phx-mounted={JS.focus()}
+        />
+        <.input field={@payment_form[:paid_on]} type="date" label="Paid on" />
+        <.input field={@payment_form[:method]} type="select" label="Paid with" options={@methods} />
+        <.input field={@payment_form[:reference]} label="Reference" placeholder="Transfer ref." />
+      </div>
+      <.error :for={{_field, {msg, _}} <- @payment_form.errors}>{msg}</.error>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save payment</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

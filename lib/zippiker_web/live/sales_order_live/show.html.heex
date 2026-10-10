@@ -1,0 +1,230 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:sales_orders}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/orders"} class="hover:text-ink">Orders</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      {@order.number} <.order_status status={@order.status} />
+    </span>
+    <:subtitle>{@order.customer.name} · {Format.money(@order.total)}</:subtitle>
+    <:actions>
+      <.print_buttons
+        id="print-order"
+        document={~p"/orders/#{@order}/print"}
+        notes={@deliveries}
+        kind={:delivery}
+      />
+      <.button navigate={~p"/orders/new?copy=#{@order.id}"} id="duplicate-order">
+        <.icon name="hero-document-duplicate-micro" /> Duplicate
+      </.button>
+      <.button
+        :if={@order.status in [:draft, :confirmed]}
+        navigate={~p"/orders/#{@order}/edit"}
+        id="edit-order"
+      >
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+      <.button
+        :if={@order.status == :draft}
+        phx-click="transition"
+        phx-value-to="confirmed"
+        variant="primary"
+        id="confirm-order"
+      >
+        <.icon name="hero-check-micro" /> Confirm
+      </.button>
+      <.button
+        :if={@order.status in [:confirmed, :partially_delivered]}
+        patch={~p"/orders/#{@order}/deliver"}
+        variant="primary"
+        id="deliver-order"
+      >
+        <.icon name="hero-truck-micro" /> Deliver
+      </.button>
+      <.button
+        :if={
+          @order.status in [:confirmed, :partially_delivered, :delivered] and
+            is_nil(@order.invoice)
+        }
+        phx-click="invoice"
+        id="invoice-order"
+      >
+        <.icon name="hero-banknotes-micro" /> Create invoice
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_300px]">
+    <.paper document={@order} kind={:sales_order} />
+
+    <aside class="space-y-4">
+      <.card :if={@order.status != :draft} title="Delivery" padded={false}>
+        <ul id="order-delivery" class="divide-y divide-line px-5 pb-3">
+          <li :for={line <- @order.lines} id={"so-line-#{line.id}"} class="py-2.5">
+            <div class="flex justify-between gap-3 text-sm">
+              <span class="truncate text-ink">{line.description}</span>
+              <span class="tabular shrink-0 text-muted">
+                {Decimal.normalize(line.delivered_quantity)} / {Decimal.normalize(line.quantity)}
+              </span>
+            </div>
+            <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-canvas">
+              <div
+                class="h-full rounded-full bg-success transition-all"
+                style={"width: #{if Decimal.gt?(line.quantity, 0), do: min(100, round(Decimal.to_float(line.delivered_quantity) / Decimal.to_float(line.quantity) * 100)), else: 0}%"}
+              />
+            </div>
+          </li>
+        </ul>
+      </.card>
+
+      <.card :if={@deliveries != []} title="Deliveries" padded={false}>
+        <ul id="order-deliveries" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={delivery <- @deliveries}
+            id={"delivery-#{delivery.id}"}
+            class="flex items-center gap-3 py-2.5 text-sm"
+          >
+            <.link navigate={~p"/deliveries/#{delivery}"} class="min-w-0 flex-1 hover:opacity-80">
+              <span class="flex items-center gap-2 font-medium text-ink">
+                {delivery.number} <.delivery_status status={delivery.status} />
+              </span>
+              <span class="block truncate text-xs text-muted">
+                {Format.date(delivery.shipped_on)}<span :if={delivery.tracking_number}> · {delivery.tracking_number}</span>
+              </span>
+            </.link>
+            <.link
+              navigate={~p"/deliveries/#{delivery}/print"}
+              class="rounded p-1 text-muted hover:text-ink"
+              title="Print delivery note"
+              id={"print-delivery-#{delivery.id}"}
+            >
+              <.icon name="hero-printer" class="size-4" />
+            </.link>
+          </li>
+        </ul>
+      </.card>
+
+      <.card title="Details">
+        <.list>
+          <:item title="Customer">
+            <.link
+              navigate={
+                if(@order.customer.kind == :person,
+                  do: ~p"/contacts/#{@order.customer}",
+                  else: ~p"/companies/#{@order.customer}"
+                )
+              }
+              class="hover:underline"
+            >
+              {@order.customer.name}
+            </.link>
+          </:item>
+          <:item :if={@order.quote} title="Quote">
+            <.link navigate={~p"/quotes/#{@order.quote}"} class="hover:underline">{@order.quote.number}</.link>
+          </:item>
+          <:item :if={@order.invoice} title="Invoice">
+            <.link navigate={~p"/invoices/#{@order.invoice}"} class="hover:underline">
+              {@order.invoice.number || "Draft invoice"}
+            </.link>
+          </:item>
+          <:item :if={@order.deal} title="Deal">
+            <.link navigate={~p"/deals/#{@order.deal}"} class="hover:underline">{@order.deal.title}</.link>
+          </:item>
+          <:item :if={@order.warehouse} title="Ships from">{@order.warehouse.name}</:item>
+          <:item :if={@order.delivered_at} title="Delivered">
+            {Format.date(@order.delivered_at)}
+          </:item>
+          <:item title="Owner">{Format.user_name(@order.owner)}</:item>
+        </.list>
+      </.card>
+
+      <p :if={@order.status in [:confirmed, :partially_delivered]} class="px-1 text-xs text-muted">
+        Deliver all at once or in parts; each shipment gets its own delivery note. You can also
+        invoice first: issuing the invoice delivers whatever is left.
+      </p>
+
+      <.button
+        :if={@order.status in [:draft, :confirmed]}
+        phx-click="transition"
+        phx-value-to="cancelled"
+        data-confirm="Cancel this order?"
+        variant="danger"
+        class="w-full"
+      >
+        Cancel order
+      </.button>
+    </aside>
+  </div>
+  <.modal
+    :if={@delivering?}
+    id="deliver-modal"
+    show
+    title="Deliver goods"
+    on_cancel={JS.patch(~p"/orders/#{@order}")}
+  >
+    <form id="deliver-form" phx-submit="deliver" class="space-y-4">
+      <p class="text-sm text-muted">
+        Enter what's leaving now. Stock-tracked products leave <strong class="text-ink">
+          {(@order.warehouse && @order.warehouse.name) || "the default warehouse"}
+        </strong>.
+      </p>
+      <div class="divide-y divide-line rounded-xl border border-line">
+        <div
+          :for={line <- @order.lines}
+          :if={Decimal.gt?(remaining(line), 0)}
+          class="flex items-center gap-4 px-4 py-3"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium text-ink">{line.description}</p>
+            <p class="text-xs text-muted">
+              {Decimal.normalize(remaining(line))} {line.unit} still to deliver
+              <span :if={line.product && line.product.track_inventory?}>· from stock</span>
+            </p>
+          </div>
+          <div class="w-28">
+            <.input
+              type="number"
+              step="any"
+              min="0"
+              max={Decimal.to_string(remaining(line), :normal)}
+              name={"deliver[quantities][#{line.id}]"}
+              id={"deliver-qty-#{line.id}"}
+              value={Decimal.to_string(remaining(line), :normal)}
+            />
+          </div>
+        </div>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-3">
+        <.input
+          type="date"
+          name="deliver[date]"
+          id="deliver-date"
+          value={Date.utc_today()}
+          label="Shipped on"
+        />
+        <.input
+          name="deliver[carrier]"
+          id="deliver-carrier"
+          value=""
+          label="Carrier"
+          placeholder="Optional"
+        />
+        <.input
+          name="deliver[tracking_number]"
+          id="deliver-tracking"
+          value=""
+          label="Tracking no."
+          placeholder="Optional"
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Delivering…">Deliver</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

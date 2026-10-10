@@ -1,0 +1,142 @@
+<p>
+  Zippiker keeps <strong>double-entry books</strong>
+  for you. You don't need to be an accountant: most
+  entries are written automatically when you invoice and get paid. You only record the money that
+  goes out, and anything unusual.
+</p>
+
+<h2>Setting up</h2>
+<p>
+  The first time you open <.link navigate="/accounting">Accounting</.link>, an admin clicks <strong>Set up accounting</strong>. Zippiker creates a standard chart of accounts and posts every
+  invoice and payment you've already recorded, so your books start complete.
+</p>
+
+<h2>What happens automatically</h2>
+<table>
+  <thead>
+    <tr>
+      <th>When you…</th><th>Your books record</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Issue an invoice</td>
+      <td>
+        The customer owes you the total (<em>Accounts receivable</em>), you earned the net amount
+        (<em>Sales revenue</em>) and you owe the tax (<em>Sales tax payable</em>).
+      </td>
+    </tr>
+    <tr>
+      <td>Record a payment</td>
+      <td>
+        Money arrives in <em>Bank</em>, <em>Cash</em>
+        or <em>Mobile money</em>
+        (depending on the method) and
+        the customer owes that much less.
+      </td>
+    </tr>
+    <tr>
+      <td>Receive goods on a purchase order</td>
+      <td>
+        Your <em>Inventory</em>
+        grows, and <em>Goods received not billed</em>
+        holds what you'll owe
+        until the supplier's bill arrives.
+      </td>
+    </tr>
+    <tr>
+      <td>Approve a bill</td>
+      <td>
+        You owe the supplier (<em>Accounts payable</em>). Goods from a purchase order clear <em>Goods received not billed</em>; other stock goes to <em>Inventory</em>; services go to the
+        expense account on each line. Tax you paid goes to <em>Input tax receivable</em>.
+      </td>
+    </tr>
+    <tr>
+      <td>Pay a bill</td>
+      <td>
+        Money leaves the bank (or cash, mobile money) and you owe the supplier that much less.
+      </td>
+    </tr>
+    <tr>
+      <td>Deliver goods</td>
+      <td>
+        What they cost you moves from <em>Inventory</em>
+        to <em>Cost of sales</em>, so your profit is
+        sales minus the cost of what you sold.
+      </td>
+    </tr>
+    <tr>
+      <td>Adjust stock</td>
+      <td>
+        The difference goes to <em>Inventory adjustments</em>
+        (a loss, or a gain when you find more).
+      </td>
+    </tr>
+    <tr>
+      <td>Void an invoice or bill, remove a payment</td>
+      <td>The original entry is reversed. Nothing is deleted, so the history stays readable.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Recording expenses</h2>
+<p>
+  For quick out-of-pocket spending, click <strong>+ Expense</strong>
+  on the accounting overview. (When a
+  supplier sends an invoice you'll pay later, enter it as a
+  <.link navigate="/help/purchasing">bill</.link>
+  instead.) Say what it was for, the amount,
+  the category (rent, software, travel…) and where the money came from (bank, cash, mobile money or the
+  company credit card). Optionally pick the supplier.
+</p>
+
+<h2>Journal entries</h2>
+<p>
+  For everything else (the owner putting money in, a loan, buying equipment, a correction), an admin
+  can post a <strong>journal entry</strong>
+  under <.link navigate="/accounting/journal">Journal → + Journal entry</.link>.
+  Each line goes to one account as either a debit or a credit, and the totals must match: the
+  form tells you when it's balanced.
+</p>
+<.callout>
+  Debits and credits in one sentence: <strong>assets and expenses go up with debits; liabilities,
+  equity and income go up with credits.</strong> Owner puts 5,000 in the bank? Debit Bank 5,000,
+  credit Owner's equity 5,000.
+</.callout>
+<p>
+  Entries are never edited. If one is wrong, open it and click <strong>Reverse</strong>: Zippiker posts
+  the mirror image dated today, then you post the correct one. Automatic entries are corrected from
+  their document instead (void the invoice or remove the payment).
+</p>
+
+<h2>Chart of accounts</h2>
+<p>
+  <.link navigate="/accounting/accounts">Chart of accounts</.link>
+  lists every account with its balance.
+  Click one to see its ledger: every posting with a running balance. Admins can add accounts (say <em>6150 Insurance</em>), rename or renumber them, and deactivate the ones they don't use. Accounts
+  marked <strong>Auto</strong>
+  are used by invoices and payments and can't be deleted.
+</p>
+
+<h2>Reports</h2>
+<ul>
+  <li>
+    <strong>Profit &amp; loss</strong>
+    — income minus expenses for any period. Are you making money?
+  </li>
+  <li>
+    <strong>Balance sheet</strong>
+    — what you own (assets), what you owe (liabilities) and what's left for
+    the owners (equity, including profit to date) on any date. It always balances.
+  </li>
+  <li>
+    <strong>Trial balance</strong>
+    — every account's debit or credit balance; the two totals match.
+    Your accountant will ask for this one.
+  </li>
+</ul>
+<p>Every report can be printed or saved as PDF.</p>
+<.callout kind={:warning}>
+  Zippiker gives you a solid, always-current set of books. Your accountant should still review
+  them before you file taxes or close a financial year.
+</.callout>

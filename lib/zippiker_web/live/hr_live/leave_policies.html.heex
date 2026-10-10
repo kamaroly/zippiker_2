@@ -1,0 +1,233 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:leave_policies}
+>
+  <.header>
+    Leave policies
+    <:subtitle>
+      Who gets which leave, and how much. Everyone not assigned follows the default policy.
+    </:subtitle>
+    <:actions>
+      <.button navigate={~p"/hr/leave-types"} id="manage-leave-types">
+        <.icon name="hero-tag-micro" /> Leave types
+      </.button>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/hr/leave-policies/new"}
+        variant="primary"
+        id="new-leave-policy"
+      >
+        <.icon name="hero-plus-micro" /> Policy
+      </.button>
+    </:actions>
+  </.header>
+
+  <div
+    :if={@leave_types == []}
+    class="mb-4 rounded-2xl border border-warning/30 bg-warning-soft p-4 text-sm text-ink-soft"
+  >
+    Start by adding
+    <.link navigate={~p"/hr/leave-types"} class="font-medium underline">leave types</.link>
+    (Annual, Sick…), then decide how many days each policy gives.
+  </div>
+
+  <div id="leave-policies" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <section
+      :for={policy <- @policies}
+      id={"policy-#{policy.id}"}
+      class="flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-card"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="flex items-center gap-2 font-semibold text-ink">
+            {policy.name}
+            <.badge :if={policy.default?} color={:orange}>Default</.badge>
+          </h2>
+          <p :if={policy.description} class="mt-0.5 text-xs text-muted">{policy.description}</p>
+        </div>
+        <span class="text-xs text-muted">{Format.count(policy.employees_count, "person")}</span>
+      </div>
+
+      <ul class="mt-4 flex-1 space-y-2">
+        <li :for={rule <- policy.rules} class="flex items-center justify-between gap-3 text-sm">
+          <.leave_type_badge type={rule.leave_type} />
+          <span class="tabular text-ink">
+            {if rule.days_per_year, do: "#{days(rule.days_per_year)} days", else: "No limit"}
+            <span :if={Decimal.gt?(rule.carry_over_days, 0)} class="text-xs text-muted">
+              · carry {days(rule.carry_over_days)}
+            </span>
+          </span>
+        </li>
+        <li :if={policy.rules == []} class="text-sm text-muted">No leave types yet.</li>
+      </ul>
+
+      <div
+        :if={admin?(assigns)}
+        class="mt-5 flex flex-wrap gap-2 border-t border-line pt-4 text-xs"
+      >
+        <.button
+          patch={~p"/hr/leave-policies/#{policy}/rules"}
+          size="sm"
+          id={"rules-#{policy.id}"}
+        >
+          Entitlements
+        </.button>
+        <.button
+          patch={~p"/hr/leave-policies/#{policy}/assign"}
+          size="sm"
+          id={"assign-#{policy.id}"}
+        >
+          Assign people
+        </.button>
+        <.link
+          patch={~p"/hr/leave-policies/#{policy}/edit"}
+          class="self-center px-2 text-muted hover:text-ink"
+        >
+          Rename
+        </.link>
+        <button
+          phx-click="delete"
+          phx-value-id={policy.id}
+          data-confirm="Delete this policy? Its people move to the default policy."
+          class="self-center px-2 text-danger hover:underline"
+        >
+          Delete
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <.empty_state :if={@policies == []} icon="hero-scale" title="No leave policies yet">
+    Without a policy, each leave type's default days per year apply to everyone. Create policies
+    when different people get different entitlements (e.g. Standard vs Senior).
+  </.empty_state>
+
+  <.modal
+    :if={@editing == :details}
+    id="policy-modal"
+    show
+    title={if(@policy, do: "Edit #{@policy.name}", else: "New leave policy")}
+    on_cancel={JS.patch(~p"/hr/leave-policies")}
+  >
+    <.form for={@form} id="policy-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <.input field={@form[:name]} label="Name" placeholder="Standard" phx-mounted={JS.focus()} />
+      <.input
+        field={@form[:description]}
+        label="Description"
+        placeholder="For all full-time staff"
+      />
+      <.input field={@form[:default?]} type="checkbox" label="Default for everyone not assigned" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">
+          {if @policy, do: "Save", else: "Next: entitlements"}
+        </.button>
+      </div>
+    </.form>
+  </.modal>
+
+  <.modal
+    :if={@editing == :rules}
+    id="rules-modal"
+    show
+    size="lg"
+    title={"#{@policy.name}: entitlements"}
+    on_cancel={JS.patch(~p"/hr/leave-policies")}
+  >
+    <form id="rules-form" phx-submit="save_rules" class="space-y-4">
+      <p class="text-sm text-muted">
+        Tick the leave types this policy gives. Days are working days per calendar year; leave
+        empty for no limit. Carry-over moves up to that many unused days into next year.
+      </p>
+      <div class="divide-y divide-line rounded-xl border border-line">
+        <div
+          :for={{type, index} <- Enum.with_index(@leave_types)}
+          class="grid items-center gap-3 px-4 py-3 sm:grid-cols-[1fr_120px_120px]"
+        >
+          <label class="flex items-center gap-3">
+            <input type="hidden" name={"rules[#{index}][included]"} value="false" />
+            <input
+              type="checkbox"
+              name={"rules[#{index}][included]"}
+              value="true"
+              checked={rule(@policy, type) != nil}
+              class="size-4 rounded border-line-strong text-brand focus:ring-brand/30"
+              id={"include-#{type.id}"}
+            />
+            <input type="hidden" name={"rules[#{index}][leave_type_id]"} value={type.id} />
+            <.leave_type_badge type={type} />
+          </label>
+          <.input
+            type="number"
+            step="0.5"
+            min="0"
+            name={"rules[#{index}][days_per_year]"}
+            id={"days-#{type.id}"}
+            value={
+              days((rule(@policy, type) || %{days_per_year: type.allowance_days}).days_per_year)
+            }
+            placeholder="No limit"
+          />
+          <.input
+            type="number"
+            step="0.5"
+            min="0"
+            name={"rules[#{index}][carry_over_days]"}
+            id={"carry-#{type.id}"}
+            value={days(rule(@policy, type) && rule(@policy, type).carry_over_days)}
+            placeholder="Carry 0"
+          />
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save entitlements</.button>
+      </div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@editing == :assign}
+    id="assign-modal"
+    show
+    size="lg"
+    title={"Assign people to #{@policy.name}"}
+    on_cancel={JS.patch(~p"/hr/leave-policies")}
+  >
+    <form id="assign-form" phx-submit="save_assign" class="space-y-4">
+      <.input
+        type="select"
+        name="department_id"
+        id="assign-department"
+        label="Everyone in a department"
+        prompt="—"
+        options={Enum.map(@departments, &{&1.name, &1.id})}
+        value=""
+      />
+      <p class="text-sm font-medium text-ink">…and/or these people</p>
+      <input type="hidden" name="employee_ids[]" value="" />
+      <div class="max-h-80 divide-y divide-line overflow-y-auto rounded-xl border border-line">
+        <label
+          :for={employee <- @employees}
+          class="flex cursor-pointer items-center gap-3 px-4 py-2.5 hover:bg-canvas"
+        >
+          <input
+            type="checkbox"
+            name="employee_ids[]"
+            value={employee.id}
+            checked={employee.leave_policy_id == @policy.id}
+            class="size-4 rounded border-line-strong text-brand focus:ring-brand/30"
+            id={"assign-#{employee.id}"}
+          />
+          <span class="min-w-0 flex-1 truncate text-sm text-ink">{employee.name}</span>
+          <span class="text-xs text-muted">
+            {(employee.leave_policy && employee.leave_policy.name) || "Default"}
+          </span>
+        </label>
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Assign</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

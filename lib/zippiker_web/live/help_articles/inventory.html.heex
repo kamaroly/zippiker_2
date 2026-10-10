@@ -1,0 +1,82 @@
+<p>
+  Inventory keeps count of the goods you buy and sell, where they are, and what they're worth.
+</p>
+
+<h2>Tracking a product</h2>
+<p>
+  Open a product of type <strong>Goods</strong>
+  under <.link navigate="/products">Products</.link>
+  and switch on <strong>Track stock on hand</strong>. Optionally set a <strong>reorder level</strong>: when stock falls to
+  that quantity, it's flagged <em>Low</em>. Services are never stocked.
+</p>
+
+<h2>How stock moves</h2>
+<table>
+  <thead>
+    <tr>
+      <th>When you…</th><th>Stock</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Receive a purchase order</td><td>
+        Goes up in the order's warehouse (a <em>GRN</em> receipt)
+      </td>
+    </tr>
+    <tr>
+      <td>Approve a bill without an order</td><td>Goes up in the default warehouse</td>
+    </tr>
+    <tr>
+      <td>Deliver a sales order</td><td>Goes down (a <em>DO</em> delivery)</td>
+    </tr>
+    <tr>
+      <td>Issue an invoice not delivered by an order</td><td>Goes down</td>
+    </tr>
+    <tr>
+      <td>Void a bill or invoice</td><td>Is put back the way it was</td>
+    </tr>
+    <tr>
+      <td>Adjust stock</td><td>Goes up or down by what you enter (an <em>ADJ</em> adjustment)</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Every movement is listed under <.link navigate="/inventory/operations">Movements</.link>, and each
+  product's page shows its full history.
+</p>
+
+<h2>Goods received and delivery notes</h2>
+<p>
+  Every receipt prints as a <strong>goods received note</strong>
+  and every delivery as a <strong>delivery note</strong>: who it's from or to, the warehouse, the order, the reference, the
+  items and quantities (no prices), a tick box per line and signature lines. Open the movement and
+  click the print button, or use the printer icon next to it on the order.
+</p>
+
+<h2>Stock counts and adjustments</h2>
+<p>
+  Counted the shelves and found a difference? Click <strong>Adjust stock</strong>
+  on the <.link navigate="/inventory">Stock</.link>
+  page and enter the change: <code>+5</code>
+  if you found more, <code>-2</code>
+  for damaged or lost items, with a short reason. A wrong adjustment can be reversed by an
+  admin from its page.
+</p>
+
+<h2>What your stock is worth</h2>
+<p>
+  Zippiker values stock at <strong>weighted average cost</strong>. Buy 10 at $5 and 10 at $7 and each one is
+  worth $6. Goods leave at that average, so the cost of what you sold lands in your profit &amp; loss
+  automatically.
+</p>
+
+<h2>Several warehouses</h2>
+<p>
+  Add shops, depots or vans under <.link navigate="/inventory/warehouses">Warehouses</.link>. Choose
+  which one an order ships from or a purchase order arrives in; filter the stock page by warehouse.
+  The <strong>default</strong> warehouse is used when you don't choose.
+</p>
+<.callout>
+  Stock can go below zero if you sell before receiving. It shows in red so you can catch up on
+  receiving.
+</.callout>
