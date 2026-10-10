@@ -37,8 +37,20 @@ defmodule Zippiker.Platform.Plan.Attributes do
     attribute :modules, {:array, :atom} do
       allow_nil? false
       public? true
-      default [:crm, :sales, :purchasing, :inventory, :accounting, :hr]
-      constraints items: [one_of: [:crm, :sales, :purchasing, :inventory, :accounting, :hr]]
+      default [:crm, :sales, :purchasing, :inventory, :accounting, :hr, :expenses, :manufacturing]
+
+      constraints items: [
+                    one_of: [
+                      :crm,
+                      :sales,
+                      :purchasing,
+                      :inventory,
+                      :accounting,
+                      :hr,
+                      :expenses,
+                      :manufacturing
+                    ]
+                  ]
     end
 
     attribute :trial_days, :integer do

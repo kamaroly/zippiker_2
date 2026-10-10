@@ -37,6 +37,18 @@ defmodule ZippikerWeb.Modules do
       description: "Employees, departments, org chart and leave."
     },
     %{
+      key: :expenses,
+      name: "Expenses",
+      icon: "hero-receipt-percent",
+      description: "Expense claims, approval workflows and reimbursements."
+    },
+    %{
+      key: :manufacturing,
+      name: "Manufacturing",
+      icon: "hero-wrench-screwdriver",
+      description: "Bills of materials, work centers and production orders."
+    },
+    %{
       key: :accounting,
       name: "Accounting",
       icon: "hero-calculator",
@@ -92,6 +104,23 @@ defmodule ZippikerWeb.Modules do
       ZippikerWeb.HRLive.Departments,
       ZippikerWeb.HRLive.LeaveTypes,
       ZippikerWeb.HRLive.LeavePolicies
+    ],
+    expenses: [
+      ZippikerWeb.ExpenseLive.Index,
+      ZippikerWeb.ExpenseLive.Show,
+      ZippikerWeb.ExpenseLive.Form,
+      ZippikerWeb.ExpenseLive.Approvals,
+      ZippikerWeb.ExpenseLive.Categories,
+      ZippikerWeb.ExpenseLive.Workflows,
+      ZippikerWeb.ExpenseLive.Groups
+    ],
+    manufacturing: [
+      ZippikerWeb.ProductionLive.Index,
+      ZippikerWeb.ProductionLive.Show,
+      ZippikerWeb.ProductionLive.JobCard,
+      ZippikerWeb.ProductionLive.WorkCenters,
+      ZippikerWeb.BomLive.Index,
+      ZippikerWeb.BomLive.Form
     ],
     accounting: [
       ZippikerWeb.AccountingLive.Overview,

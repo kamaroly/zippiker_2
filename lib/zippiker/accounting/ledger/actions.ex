@@ -46,12 +46,35 @@ defmodule Zippiker.Accounting.Ledger.Actions do
       run Actions.PostStockOperation
     end
 
+    action :post_expense_claim, :struct do
+      constraints instance_of: Zippiker.Accounting.JournalEntry
+      argument :claim_id, :uuid, allow_nil?: false
+      run Actions.PostExpenseClaim
+    end
+
+    action :post_expense_reimbursement, :struct do
+      constraints instance_of: Zippiker.Accounting.JournalEntry
+      argument :claim_id, :uuid, allow_nil?: false
+      run Actions.PostExpenseReimbursement
+    end
+
     action :reverse_source do
       description "Reverses the entry posted for a document, if any."
 
       argument :source, :atom,
         allow_nil?: false,
-        constraints: [one_of: [:invoice, :payment, :bill, :bill_payment, :stock]]
+        constraints: [
+          one_of: [
+            :invoice,
+            :payment,
+            :bill,
+            :bill_payment,
+            :stock,
+            :expense_claim,
+            :expense_reimbursement,
+            :production
+          ]
+        ]
 
       argument :source_id, :uuid, allow_nil?: false
       run Actions.ReverseSource

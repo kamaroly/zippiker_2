@@ -39,6 +39,12 @@ defmodule Zippiker.Accounting do
       define :post_bill, action: :post_bill, args: [:bill_id]
       define :post_bill_payment, action: :post_bill_payment, args: [:bill_payment_id]
       define :post_stock_operation, action: :post_stock_operation, args: [:operation_id]
+      define :post_expense_claim, action: :post_expense_claim, args: [:claim_id]
+
+      define :post_expense_reimbursement,
+        action: :post_expense_reimbursement,
+        args: [:claim_id]
+
       define :reverse_source, action: :reverse_source, args: [:source, :source_id]
     end
 

@@ -1,0 +1,244 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={if(@owner?, do: :my_expenses, else: :all_expenses)}
+>
+  <.header>
+    <:breadcrumb>
+      <.link
+        navigate={if(@owner?, do: ~p"/expenses", else: ~p"/expenses/all")}
+        class="hover:text-ink"
+      >
+        Expense claims
+      </.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      {@claim.title} <.claim_status status={@claim.status} />
+    </span>
+    <:subtitle>
+      {@claim.number} · {Format.user_name(@claim.claimant)} · {Format.money(@claim.total)}
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={@claim.status in [:draft, :rejected] and (@owner? or admin?(assigns))}
+        navigate={~p"/expenses/#{@claim}/edit"}
+        id="edit-claim"
+      >
+        <.icon name="hero-pencil-square-micro" /> Edit
+      </.button>
+      <.button
+        :if={@claim.status in [:draft, :rejected] and (@owner? or admin?(assigns))}
+        phx-click="submit"
+        variant="primary"
+        id="submit-claim"
+        phx-disable-with="Submitting…"
+      >
+        <.icon name="hero-paper-airplane-micro" />
+        {if @claim.status == :rejected, do: "Resubmit", else: "Submit for approval"}
+      </.button>
+      <.button
+        :if={@claim.status == :approved and admin?(assigns)}
+        patch={~p"/expenses/#{@claim}/reimburse"}
+        variant="primary"
+        id="reimburse-claim"
+      >
+        <.icon name="hero-banknotes-micro" /> Pay back
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-[1fr_340px]">
+    <div class="space-y-4">
+      <.card
+        :if={@can_decide?}
+        id="decision-card"
+        class="border-warning/40 bg-warning-soft/30"
+      >
+        <form id="decision-form" phx-submit="decide" class="space-y-3">
+          <p class="flex items-center gap-2 text-sm font-semibold text-ink">
+            <.icon name="hero-hand-raised" class="size-4 text-warning" /> Your decision is needed
+          </p>
+          <.input
+            type="textarea"
+            name="comment"
+            id="decision-comment"
+            value={@comment}
+            placeholder="Comment (required when rejecting)"
+            rows="2"
+          />
+          <div class="flex justify-end gap-2">
+            <.button
+              type="submit"
+              name="decision"
+              value="reject"
+              variant="danger"
+              id="reject-claim"
+            >
+              <.icon name="hero-x-mark-micro" /> Reject
+            </.button>
+            <.button
+              type="submit"
+              name="decision"
+              value="approve"
+              variant="primary"
+              id="approve-claim"
+            >
+              <.icon name="hero-check-micro" /> Approve
+            </.button>
+          </div>
+        </form>
+      </.card>
+
+      <.card title="Expenses" padded={false}>
+        <table id="claim-items" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-left text-xs text-muted">
+              <th class="px-5 py-2 font-medium">Date</th>
+              <th class="px-3 py-2 font-medium">Description</th>
+              <th class="hidden px-3 py-2 font-medium sm:table-cell">Category</th>
+              <th class="px-5 py-2 text-right font-medium">Amount</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            <tr :for={item <- @claim.items} id={"claim-item-#{item.id}"}>
+              <td class="px-5 py-2.5 whitespace-nowrap text-muted">
+                {Format.date(item.spent_on)}
+              </td>
+              <td class="px-3 py-2.5">
+                <span class="text-ink">{item.description}</span>
+                <span :if={item.merchant} class="block text-xs text-muted">{item.merchant}</span>
+              </td>
+              <td class="hidden px-3 py-2.5 sm:table-cell">
+                <.badge>{item.category.name}</.badge>
+              </td>
+              <td class="tabular px-5 py-2.5 text-right text-ink">
+                {Format.money(Money.new!(@claim.currency, item.amount))}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="border-t border-line">
+              <td colspan="3" class="px-5 py-3 text-right text-muted">Total</td>
+              <td class="tabular px-5 py-3 text-right text-base font-semibold text-ink">
+                {Format.money(@claim.total)}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+        <p :if={@claim.items == []} class="px-5 pb-5 text-sm text-muted">No expenses yet.</p>
+      </.card>
+
+      <.card :if={@claim.notes} title="Notes">
+        <p class="text-sm whitespace-pre-line text-ink-soft">{@claim.notes}</p>
+      </.card>
+    </div>
+
+    <aside class="space-y-4">
+      <.card title="Approval">
+        <%= if @request do %>
+          <.approval_timeline request={@request} />
+          <p :if={@request.status == :cancelled} class="mt-3 text-xs text-muted">
+            This approval was withdrawn.
+          </p>
+        <% else %>
+          <p class="text-sm text-muted">
+            Not submitted yet. When you submit, it goes through your workspace's <.link
+              navigate={~p"/expenses/workflows"}
+              class="underline hover:text-ink"
+            >
+              approval workflow
+            </.link>.
+          </p>
+        <% end %>
+      </.card>
+
+      <.card title="Details">
+        <.list>
+          <:item title="Claimant">{Format.user_name(@claim.claimant)}</:item>
+          <:item :if={@claim.employee} title="Employee">
+            <.link navigate={~p"/hr/employees/#{@claim.employee}"} class="hover:underline">
+              {@claim.employee.name}
+            </.link>
+          </:item>
+          <:item title="Company">{@claim.legal_entity.name}</:item>
+          <:item :if={@claim.submitted_at} title="Submitted">
+            {Format.date(@claim.submitted_at)}
+          </:item>
+          <:item :if={@claim.approved_at} title="Approved">
+            {Format.date(@claim.approved_at)}
+          </:item>
+          <:item :if={@claim.reimbursed_on} title="Paid back">
+            {Format.date(@claim.reimbursed_on)} · {Format.humanize(@claim.reimbursed_from)}
+            <span :if={@claim.reimbursement_reference} class="block text-xs text-muted">
+              Ref. {@claim.reimbursement_reference}
+            </span>
+          </:item>
+        </.list>
+      </.card>
+
+      <.button
+        :if={@claim.status in [:draft, :submitted, :rejected] and (@owner? or admin?(assigns))}
+        phx-click="cancel"
+        data-confirm="Cancel this claim?"
+        class="w-full"
+        id="cancel-claim"
+      >
+        Cancel claim
+      </.button>
+      <.button
+        :if={@claim.status == :draft and (@owner? or admin?(assigns))}
+        phx-click="delete"
+        data-confirm="Delete this draft?"
+        variant="danger"
+        class="w-full"
+        id="delete-claim"
+      >
+        Delete draft
+      </.button>
+    </aside>
+  </div>
+
+  <.modal
+    :if={@live_action == :reimburse}
+    id="reimburse-modal"
+    show
+    title="Pay back the claimant"
+    on_cancel={JS.patch(~p"/expenses/#{@claim}")}
+  >
+    <form id="reimburse-form" phx-submit="reimburse" class="space-y-4">
+      <p class="text-sm text-muted">
+        Records that {Format.user_name(@claim.claimant)} was paid
+        <strong class="text-ink">{Format.money(@claim.total)}</strong>
+        and posts it to the books.
+      </p>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          type="date"
+          name="reimburse[reimbursed_on]"
+          id="reimburse-date"
+          value={Date.utc_today()}
+          label="Paid on"
+        />
+        <.input
+          type="select"
+          name="reimburse[reimbursed_from]"
+          id="reimburse-from"
+          value="bank"
+          label="Paid from"
+          options={[{"Bank", "bank"}, {"Cash", "cash"}, {"Mobile money", "mobile_money"}]}
+        />
+      </div>
+      <.input
+        name="reimburse[reimbursement_reference]"
+        id="reimburse-reference"
+        value=""
+        label="Reference"
+        placeholder="Transfer number (optional)"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Mark as paid</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

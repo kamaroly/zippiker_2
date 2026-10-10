@@ -10,6 +10,20 @@ defmodule ZippikerWeb.LiveHelpers do
   def admin?(%{current_role: role}), do: role in [:owner, :admin]
   def admin?(_assigns), do: false
 
+  @doc """
+  Whether the current user may impersonate a workspace member: owners can
+  impersonate admins and members, admins only members. Never yourself, a
+  super admin, or while already impersonating someone.
+  """
+  def can_impersonate?(%{current_user: actor} = assigns, %{role: role, user: user}) do
+    is_nil(actor.__metadata__[:impersonator]) and user.id != actor.id and
+      not user.super_admin? and impersonation_allowed?(assigns[:current_role], role)
+  end
+
+  def impersonation_allowed?(:owner, target_role), do: target_role in [:admin, :member]
+  def impersonation_allowed?(:admin, target_role), do: target_role == :member
+  def impersonation_allowed?(_role, _target_role), do: false
+
   @doc "Whether the current workspace has a business module switched on."
   def module?(%{current_organization: organization}, key),
     do: ZippikerWeb.Modules.enabled?(organization, key)

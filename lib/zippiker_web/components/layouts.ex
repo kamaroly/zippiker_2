@@ -7,62 +7,83 @@ defmodule ZippikerWeb.Layouts do
 
   embed_templates "layouts/*"
 
-  # {key, label, icon, path, module} – module nil means always available.
-  @nav [
-    {:dashboard, "Dashboard", "hero-squares-2x2", "/", nil},
-    {:leads, "Leads", "hero-inbox-arrow-down", "/leads", :crm},
-    {:deals, "Deals", "hero-view-columns", "/deals", :crm},
-    {:contacts, "Contacts", "hero-users", "/contacts", nil},
-    {:companies, "Companies", "hero-building-office-2", "/companies", nil},
-    {:tasks, "Tasks", "hero-check-circle", "/tasks", :crm}
-  ]
-
-  @sales_nav [
-    {:quotes, "Quotes", "hero-document-text", "/quotes", :sales},
-    {:sales_orders, "Orders", "hero-clipboard-document-check", "/orders", :sales},
-    {:deliveries, "Delivery notes", "hero-truck", "/deliveries", :sales},
-    {:invoices, "Invoices", "hero-banknotes", "/invoices", :sales},
-    {:products, "Products", "hero-cube", "/products", :sales}
-  ]
-
-  @purchasing_nav [
-    {:rfqs, "Requests for quotation", "hero-chat-bubble-left-ellipsis", "/rfqs", :purchasing},
-    {:purchase_orders, "Purchase orders", "hero-shopping-cart", "/purchase-orders", :purchasing},
-    {:goods_receipts, "Goods received", "hero-inbox-arrow-down", "/goods-receipts", :purchasing},
-    {:bills, "Bills", "hero-document-minus", "/bills", :purchasing}
-  ]
-
-  @inventory_nav [
-    {:stock, "Stock", "hero-archive-box", "/inventory", :inventory},
-    {:stock_operations, "Movements", "hero-arrows-right-left", "/inventory/operations",
-     :inventory},
-    {:warehouses, "Warehouses", "hero-building-storefront", "/inventory/warehouses", :inventory}
-  ]
-
-  @hr_nav [
-    {:employees, "Employees", "hero-identification", "/hr/employees", :hr},
-    {:leave, "Leave", "hero-sun", "/hr/leave", :hr},
-    {:org_chart, "Org chart", "hero-share", "/hr/org-chart", :hr},
-    {:departments, "Departments", "hero-rectangle-group", "/hr/departments", :hr},
-    {:leave_policies, "Leave policies", "hero-scale", "/hr/leave-policies", :hr},
-    {:leave_types, "Leave types", "hero-calendar-days", "/hr/leave-types", :hr}
-  ]
-
-  @accounting_nav [
-    {:accounting, "Overview", "hero-calculator", "/accounting", :accounting},
-    {:journal, "Journal", "hero-book-open", "/accounting/journal", :accounting},
-    {:accounts, "Chart of accounts", "hero-list-bullet", "/accounting/accounts", :accounting},
-    {:reports, "Reports", "hero-chart-bar", "/accounting/reports", :accounting}
-  ]
-
-  @settings_nav [
-    {:custom_fields, "Custom fields", "hero-adjustments-horizontal", "/settings/custom-fields",
-     nil},
-    {:pipeline, "Pipeline", "hero-queue-list", "/settings/pipeline", :crm},
-    {:company, "Company details", "hero-building-library", "/settings/company", nil},
-    {:taxes, "Taxes", "hero-receipt-percent", "/settings/taxes", :sales},
-    {:workspace, "Workspace", "hero-cog-6-tooth", "/settings/workspace", nil},
-    {:billing, "Plan & billing", "hero-credit-card", "/settings/billing", nil}
+  # Sidebar entries are modules; their pages show as tabs across the top of the
+  # page (like the platform panel). Pages: {key, label, path, module} – module
+  # nil means always available; a module with no visible pages is hidden.
+  @modules [
+    {:home, "Dashboard", "hero-squares-2x2", [{:dashboard, "Dashboard", "/", nil}]},
+    {:crm, "CRM", "hero-funnel",
+     [
+       {:leads, "Leads", "/leads", :crm},
+       {:deals, "Deals", "/deals", :crm},
+       {:tasks, "Tasks", "/tasks", :crm}
+     ]},
+    {:directory, "Contacts", "hero-users",
+     [
+       {:contacts, "Contacts", "/contacts", nil},
+       {:companies, "Companies", "/companies", nil}
+     ]},
+    {:sales, "Sales", "hero-document-text",
+     [
+       {:quotes, "Quotes", "/quotes", :sales},
+       {:sales_orders, "Orders", "/orders", :sales},
+       {:deliveries, "Delivery notes", "/deliveries", :sales},
+       {:invoices, "Invoices", "/invoices", :sales},
+       {:products, "Products", "/products", :sales}
+     ]},
+    {:purchasing, "Purchasing", "hero-shopping-cart",
+     [
+       {:rfqs, "Requests for quotation", "/rfqs", :purchasing},
+       {:purchase_orders, "Purchase orders", "/purchase-orders", :purchasing},
+       {:goods_receipts, "Goods received", "/goods-receipts", :purchasing},
+       {:bills, "Bills", "/bills", :purchasing}
+     ]},
+    {:inventory, "Inventory", "hero-archive-box",
+     [
+       {:stock, "Stock", "/inventory", :inventory},
+       {:stock_operations, "Movements", "/inventory/operations", :inventory},
+       {:warehouses, "Warehouses", "/inventory/warehouses", :inventory}
+     ]},
+    {:manufacturing, "Manufacturing", "hero-wrench-screwdriver",
+     [
+       {:production_orders, "Production orders", "/manufacturing/orders", :manufacturing},
+       {:boms, "Bills of materials", "/manufacturing/boms", :manufacturing},
+       {:work_centers, "Work centers", "/manufacturing/work-centers", :manufacturing}
+     ]},
+    {:hr, "People", "hero-user-group",
+     [
+       {:employees, "Employees", "/hr/employees", :hr},
+       {:leave, "Leave", "/hr/leave", :hr},
+       {:org_chart, "Org chart", "/hr/org-chart", :hr},
+       {:departments, "Departments", "/hr/departments", :hr},
+       {:leave_policies, "Leave policies", "/hr/leave-policies", :hr},
+       {:leave_types, "Leave types", "/hr/leave-types", :hr}
+     ]},
+    {:expenses, "Expenses", "hero-receipt-percent",
+     [
+       {:my_expenses, "My claims", "/expenses", :expenses},
+       {:expense_approvals, "Approvals", "/expenses/approvals", :expenses},
+       {:all_expenses, "All claims", "/expenses/all", :expenses},
+       {:expense_categories, "Categories", "/expenses/categories", :expenses},
+       {:approval_workflows, "Approval workflows", "/expenses/workflows", :expenses},
+       {:approval_groups, "Approval groups", "/expenses/groups", :expenses}
+     ]},
+    {:accounting, "Accounting", "hero-calculator",
+     [
+       {:accounting, "Overview", "/accounting", :accounting},
+       {:journal, "Journal", "/accounting/journal", :accounting},
+       {:accounts, "Chart of accounts", "/accounting/accounts", :accounting},
+       {:reports, "Reports", "/accounting/reports", :accounting}
+     ]},
+    {:settings, "Settings", "hero-cog-6-tooth",
+     [
+       {:company, "Company details", "/settings/company", nil},
+       {:workspace, "Workspace", "/settings/workspace", nil},
+       {:billing, "Plan & billing", "/settings/billing", nil},
+       {:custom_fields, "Custom fields", "/settings/custom-fields", nil},
+       {:pipeline, "Pipeline", "/settings/pipeline", :crm},
+       {:taxes, "Taxes", "/settings/taxes", :sales}
+     ]}
   ]
 
   @doc """
@@ -82,19 +103,15 @@ defmodule ZippikerWeb.Layouts do
 
   def app(assigns) do
     organization = assigns.current_organization
-    visible = &Enum.filter(&1, fn item -> visible?(item, organization) end)
+    sections = sections(organization)
 
     assigns =
       assign(assigns,
-        sections: [
-          {nil, visible.(@nav)},
-          {"Sales", visible.(@sales_nav)},
-          {"Purchasing", visible.(@purchasing_nav)},
-          {"Inventory", visible.(@inventory_nav)},
-          {"People", visible.(@hr_nav)},
-          {"Accounting", visible.(@accounting_nav)},
-          {"Settings", visible.(@settings_nav)}
-        ],
+        sections: sections,
+        current:
+          Enum.find(sections, fn section ->
+            Enum.any?(section.pages, &(elem(&1, 0) == assigns.active))
+          end),
         impersonator: assigns.current_user.__metadata__[:impersonator],
         platform_access?: organization.__metadata__[:platform_access?] == true
       )
@@ -165,22 +182,16 @@ defmodule ZippikerWeb.Layouts do
         </details>
 
         <nav class="flex-1 space-y-0.5 overflow-y-auto px-3 py-2" aria-label="Main">
-          <%= for {title, items} <- @sections, items != [] do %>
-            <p
-              :if={title}
-              class="px-3 pt-6 pb-2 text-[11px] font-semibold tracking-wider text-muted uppercase"
-            >
-              {title}
-            </p>
-            <.nav_item
-              :for={{key, label, icon, path, _module} <- items}
-              active={@active == key}
-              icon={icon}
-              navigate={path}
-            >
-              {label}
-            </.nav_item>
-          <% end %>
+          <.nav_item
+            :for={section <- @sections}
+            id={"nav-#{section.key}"}
+            active={@current && @current.key == section.key}
+            icon={section.icon}
+            navigate={section.path}
+            class={section.key == :settings && "mt-4"}
+          >
+            {section.label}
+          </.nav_item>
         </nav>
 
         <div class="border-t border-line p-3">
@@ -222,6 +233,34 @@ defmodule ZippikerWeb.Layouts do
         current_organization={@current_organization}
       />
 
+      <nav
+        :if={@current && length(@current.pages) > 1}
+        id="module-tabs"
+        class="border-b border-line bg-surface"
+        aria-label={@current.label}
+      >
+        <div class={[
+          "flex items-center gap-1 overflow-x-auto px-2 sm:px-6",
+          !@wide && "mx-auto max-w-7xl"
+        ]}>
+          <span class="mr-3 hidden shrink-0 items-center gap-2 pl-2 text-sm font-semibold text-ink sm:flex">
+            <.icon name={@current.icon} class="size-4 text-brand" /> {@current.label}
+          </span>
+          <.link
+            :for={{key, label, path, _module} <- @current.pages}
+            navigate={path}
+            id={"tab-#{key}"}
+            class={[
+              "border-b-2 px-3 py-3 text-sm whitespace-nowrap transition-colors",
+              @active == key && "border-brand font-semibold text-ink",
+              @active != key && "border-transparent text-muted hover:text-ink"
+            ]}
+          >
+            {label}
+          </.link>
+        </div>
+      </nav>
+
       <main class={[
         "animate-rise px-4 py-6 sm:px-8 sm:py-8",
         !@wide && "mx-auto max-w-7xl"
@@ -234,9 +273,18 @@ defmodule ZippikerWeb.Layouts do
     """
   end
 
-  defp visible?({_key, _label, _icon, _path, nil}, _organization), do: true
+  # Modules with the pages this workspace can see; the sidebar links to the first.
+  defp sections(organization) do
+    for {key, label, icon, pages} <- @modules,
+        pages = Enum.filter(pages, &visible?(&1, organization)),
+        pages != [] do
+      %{key: key, label: label, icon: icon, pages: pages, path: pages |> hd() |> elem(2)}
+    end
+  end
 
-  defp visible?({_key, _label, _icon, _path, module}, organization),
+  defp visible?({_key, _label, _path, nil}, _organization), do: true
+
+  defp visible?({_key, _label, _path, module}, organization),
     do: ZippikerWeb.Modules.enabled?(organization, module)
 
   attr :impersonator, :any, required: true
@@ -372,13 +420,17 @@ defmodule ZippikerWeb.Layouts do
   attr :active, :boolean, default: false
   attr :icon, :string, required: true
   attr :navigate, :string, required: true
+  attr :id, :string, default: nil
+  attr :class, :any, default: nil
   slot :inner_block, required: true
 
   defp nav_item(assigns) do
     ~H"""
     <.link
       navigate={@navigate}
+      id={@id}
       class={[
+        @class,
         "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
         @active && "bg-canvas font-semibold text-ink",
         !@active && "text-ink-soft hover:bg-canvas/70 hover:text-ink"

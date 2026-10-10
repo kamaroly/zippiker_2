@@ -1,0 +1,102 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:approval_groups}
+>
+  <.header>
+    Approval groups
+    <:subtitle>Any one member of a group can approve a step assigned to it.</:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/expenses/groups/new"}
+        variant="primary"
+        id="new-group"
+      >
+        <.icon name="hero-plus-micro" /> Group
+      </.button>
+    </:actions>
+  </.header>
+
+  <div id="groups" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <.card :for={group <- @groups} id={"group-#{group.id}"} title={group.name}>
+      <:action>
+        <span :if={admin?(assigns)} class="flex gap-3">
+          <.link patch={~p"/expenses/groups/#{group}/edit"} class="text-ink-soft hover:text-ink">
+            Edit
+          </.link>
+          <.link
+            phx-click="delete"
+            phx-value-id={group.id}
+            data-confirm={"Delete #{group.name}?"}
+            class="text-danger hover:opacity-80"
+          >
+            Delete
+          </.link>
+        </span>
+      </:action>
+      <p :if={group.description} class="-mt-2 mb-3 text-xs text-muted">{group.description}</p>
+      <ul class="space-y-2">
+        <li :for={member <- group.members} class="flex items-center gap-2 text-sm text-ink">
+          <.avatar name={Format.user_name(member)} size="xs" /> {Format.user_name(member)}
+        </li>
+        <li :if={group.members == []} class="text-sm text-muted">No members yet.</li>
+      </ul>
+    </.card>
+  </div>
+  <.card :if={@groups == []}>
+    <.empty_state icon="hero-user-group" title="No approval groups yet">
+      Create a Finance or Management group and use it as a step in an approval workflow.
+    </.empty_state>
+  </.card>
+
+  <.modal
+    :if={@editing?}
+    id="group-modal"
+    show
+    title={if(@group, do: "Edit #{@group.name}", else: "New approval group")}
+    on_cancel={JS.patch(~p"/expenses/groups")}
+  >
+    <form id="group-form" phx-submit="save" class="space-y-4">
+      <.input
+        name="group[name]"
+        id="group-name"
+        value={@name}
+        label="Name"
+        placeholder="Finance"
+        required
+      />
+      <.input
+        name="group[description]"
+        id="group-description"
+        value={@description}
+        label="Description"
+        placeholder="Optional"
+      />
+      <fieldset>
+        <legend class="mb-2 text-sm font-medium text-ink">Members</legend>
+        <input type="hidden" name="group[member_ids][]" value="" />
+        <div class="max-h-64 divide-y divide-line overflow-y-auto rounded-xl border border-line">
+          <label
+            :for={{name, id} <- @members}
+            class="flex cursor-pointer items-center gap-3 px-4 py-2.5 text-sm hover:bg-canvas"
+          >
+            <input
+              type="checkbox"
+              name="group[member_ids][]"
+              value={id}
+              id={"group-member-#{id}"}
+              checked={id in @member_ids}
+              class="size-4 rounded border-line"
+            />
+            <.avatar name={name} size="xs" /> {name}
+          </label>
+        </div>
+      </fieldset>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

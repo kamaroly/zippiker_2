@@ -67,6 +67,7 @@ defmodule ZippikerWeb.EmployeeLive.Show do
     socket
     |> assign(employee: employee, page_title: employee.name)
     |> assign(:balances, HR.leave_balances!(employee.id, opts))
+    |> assign(:membership, membership(socket, employee))
     |> stream(
       :requests,
       HR.list_leave_requests!(%{employee_id: employee.id}, opts ++ [page: [limit: 20]]).results,
@@ -83,4 +84,20 @@ defmodule ZippikerWeb.EmployeeLive.Show do
   # Field policies hide pay and personal details from other members.
   defp visible?(%Ash.ForbiddenField{}), do: false
   defp visible?(_value), do: true
+
+  # The employee's workspace membership, when they have a login, so admins can
+  # impersonate them from here.
+  defp membership(_socket, %{user_id: nil}), do: nil
+
+  defp membership(socket, %{user_id: user_id}) do
+    socket.assigns
+    |> member_memberships()
+    |> Enum.find(&(&1.user_id == user_id))
+  end
+
+  defp member_memberships(assigns),
+    do:
+      Zippiker.Accounts.list_members!(assigns.current_organization.id,
+        actor: assigns.current_user
+      )
 end

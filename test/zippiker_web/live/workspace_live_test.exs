@@ -44,6 +44,21 @@ defmodule ZippikerWeb.WorkspaceLiveTest do
       end
     end
 
+    test "modules are sidebar entries; their pages are tabs", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/invoices")
+      assert has_element?(view, ~s|#nav-sales[href="/quotes"]|)
+
+      for {tab, path} <- [quotes: "/quotes", sales_orders: "/orders", invoices: "/invoices"] do
+        assert has_element?(view, ~s|#module-tabs #tab-#{tab}[href="#{path}"]|)
+      end
+
+      assert has_element?(view, "#tab-invoices.border-brand")
+      refute has_element?(view, "#module-tabs #tab-leads")
+
+      {:ok, view, _html} = live(conn, ~p"/")
+      refute has_element?(view, "#module-tabs")
+    end
+
     test "dashboard shows KPIs", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/")
       assert has_element?(view, "#stat-pipeline")

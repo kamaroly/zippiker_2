@@ -18,7 +18,7 @@
         {case @operation.kind do
           :receipt -> "Goods received note"
           :delivery -> "Delivery note"
-          :adjustment -> "Print"
+          _other -> "Print"
         end}
       </.button>
       <.button
@@ -123,7 +123,7 @@
         </.link>.
       </div>
       <p
-        :if={@operation.kind != :adjustment and is_nil(@operation.reversal_of_id)}
+        :if={@operation.kind in [:receipt, :delivery] and is_nil(@operation.reversal_of_id)}
         class="px-1 text-xs text-muted"
       >
         To undo a receipt or delivery, void the bill or invoice that caused it.

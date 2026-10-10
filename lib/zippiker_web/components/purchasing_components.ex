@@ -75,6 +75,7 @@ defmodule ZippikerWeb.PurchasingComponents do
         %{kind: :receipt} -> {"Receipt", :emerald}
         %{kind: :delivery} -> {"Delivery", :orange}
         %{kind: :adjustment} -> {"Adjustment", :violet}
+        %{kind: :production} -> {"Production", :teal}
       end
 
     assigns = assign(assigns, label: label, color: color)

@@ -1,0 +1,99 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:expense_categories}
+>
+  <.header>
+    Expense categories
+    <:subtitle>What people can claim for, and the expense account it's booked to.</:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/expenses/categories/new"}
+        variant="primary"
+        id="new-category"
+      >
+        <.icon name="hero-plus-micro" /> Category
+      </.button>
+    </:actions>
+  </.header>
+
+  <.table id="categories" rows={@streams.categories}>
+    <:col :let={{_id, category}} label="Name">
+      <span class="font-medium text-ink">{category.name}</span>
+      <.badge :if={!category.active?} class="ml-2">Inactive</.badge>
+      <span :if={category.description} class="block text-xs text-muted">
+        {category.description}
+      </span>
+    </:col>
+    <:col :let={{_id, category}} label="Booked to">
+      <%= if category.account do %>
+        <span class="tabular text-muted">{category.account.code}</span> {category.account.name}
+      <% else %>
+        <span class="text-muted">Other expenses</span>
+      <% end %>
+    </:col>
+    <:col :let={{_id, category}} label="Receipt" class="hidden sm:table-cell">
+      {if category.receipt_required?, do: "Required", else: "Optional"}
+    </:col>
+    <:action :let={{_id, category}}>
+      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+        <.link
+          patch={~p"/expenses/categories/#{category}/edit"}
+          class="text-ink-soft hover:text-ink"
+        >
+          Edit
+        </.link>
+        <.link
+          phx-click="delete"
+          phx-value-id={category.id}
+          data-confirm={"Delete #{category.name}?"}
+          class="text-danger hover:opacity-80"
+        >
+          Delete
+        </.link>
+      </span>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-tag" title="No categories yet">
+        Add Travel, Meals, Office supplies… so people can file claims.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="category-modal"
+    show
+    title={if(@category, do: "Edit #{@category.name}", else: "New category")}
+    on_cancel={JS.patch(~p"/expenses/categories")}
+  >
+    <.form
+      for={@form}
+      id="category-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="space-y-4"
+    >
+      <.input field={@form[:name]} label="Name" placeholder="Travel" phx-mounted={JS.focus()} />
+      <.input
+        field={@form[:account_id]}
+        type="select"
+        label="Expense account"
+        prompt="Other expenses"
+        options={Enum.map(@accounts, &{"#{&1.code} · #{&1.name}", &1.id})}
+      />
+      <.input field={@form[:description]} label="Description" placeholder="Optional" />
+      <.input
+        field={@form[:receipt_required?]}
+        type="checkbox"
+        label="Receipt required"
+      />
+      <.input :if={@category} field={@form[:active?]} type="checkbox" label="Active" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

@@ -357,7 +357,7 @@ end
 # --- Purchasing & inventory (Phase 4). Added to the demo workspace once. ---
 alias Zippiker.{Inventory, Purchasing}
 
-all_modules = [:crm, :sales, :purchasing, :inventory, :accounting, :hr]
+all_modules = [:crm, :sales, :purchasing, :inventory, :accounting, :hr, :expenses, :manufacturing]
 
 for plan <- Platform.list_plans!(authorize?: false), plan.code == "scale" do
   Platform.update_plan!(plan, %{modules: all_modules}, authorize?: false)
@@ -690,4 +690,192 @@ if Purchasing.list_rfqs!(opts) == [] and
   |> Purchasing.send_rfq!(opts)
 
   IO.puts("Seeded a request for quotation.")
+end
+
+# --- Expenses and approval workflows. Once. ---
+alias Zippiker.{Expenses, Workflow}
+
+if Expenses.list_expense_categories!(opts) == [] do
+  Accounting.setup_books!(opts)
+  accounts = Map.new(Accounting.list_accounts!(opts), &{&1.name, &1.id})
+
+  [travel, meals, _software, _office] =
+    for {name, account, receipt?} <- [
+          {"Travel", "Travel", true},
+          {"Meals & entertainment", "Other expenses", true},
+          {"Software", "Software & subscriptions", false},
+          {"Office supplies", "Other expenses", false}
+        ] do
+      Expenses.create_expense_category!(
+        %{name: name, account_id: accounts[account], receipt_required?: receipt?},
+        opts
+      )
+    end
+
+  finance = Workflow.create_approval_group!(%{name: "Finance", member_ids: [demo.id]}, opts)
+
+  Workflow.create_approval_workflow!(
+    %{
+      name: "Everyday expenses",
+      steps: [%{approver_type: :manager, label: "Line manager"}]
+    },
+    opts
+  )
+
+  Workflow.create_approval_workflow!(
+    %{
+      name: "Large expenses",
+      min_amount: "500000",
+      steps: [
+        %{approver_type: :manager, label: "Line manager"},
+        %{approver_type: :group, group_id: finance.id, label: "Finance"},
+        %{approver_type: :admins, label: "Director sign-off"}
+      ]
+    },
+    opts
+  )
+
+  today = Date.utc_today()
+
+  Expenses.create_expense_claim!(
+    %{
+      title: "Client visit to Musanze",
+      items: [
+        %{
+          spent_on: Date.add(today, -3),
+          category_id: travel.id,
+          description: "Fuel",
+          amount: "45000"
+        },
+        %{
+          spent_on: Date.add(today, -3),
+          category_id: meals.id,
+          description: "Lunch with the client",
+          merchant: "Virunga Lodge",
+          amount: "38000"
+        }
+      ]
+    },
+    opts
+  )
+
+  paid =
+    Expenses.create_expense_claim!(
+      %{
+        title: "Trade fair, Nairobi",
+        items: [
+          %{
+            spent_on: Date.add(today, -20),
+            category_id: travel.id,
+            description: "Bus tickets",
+            amount: "60000"
+          },
+          %{
+            spent_on: Date.add(today, -19),
+            category_id: meals.id,
+            description: "Meals",
+            amount: "25000"
+          }
+        ]
+      },
+      opts
+    )
+    |> Expenses.submit_expense_claim!(opts)
+
+  if paid.status == :approved do
+    Expenses.reimburse_expense_claim!(
+      paid,
+      %{reimbursed_on: Date.add(today, -10), reimbursed_from: :mobile_money},
+      opts
+    )
+  end
+
+  IO.puts("Seeded expense categories, approval workflows and claims.")
+end
+
+# --- Manufacturing. Once. ---
+alias Zippiker.Manufacturing
+
+if Manufacturing.list_work_centers!(opts) == [] do
+  product = fn name, sku, cost, price ->
+    Catalog.create_product!(
+      %{
+        name: name,
+        sku: sku,
+        kind: :goods,
+        unit: "pcs",
+        track_inventory?: true,
+        cost_price: cost,
+        unit_price: price
+      },
+      opts
+    )
+  end
+
+  kit = product.("Solar lamp kit", "SLK-01", 0, 45000)
+  panel = product.("Solar panel 5W", "SP-5W", 12000, 0)
+  battery = product.("Li-ion battery 3.7V", "BAT-37", 6000, 0)
+  bulb = product.("LED bulb 3W", "LED-3W", 1500, 0)
+  casing = product.("Lamp casing", "CAS-01", 3000, 0)
+
+  Inventory.record_stock_operation!(
+    %{
+      kind: :receipt,
+      memo: "Opening stock of components",
+      lines:
+        Enum.map(
+          [{panel, 40}, {battery, 40}, {bulb, 120}, {casing, 35}],
+          fn {p, q} -> %{product_id: p.id, quantity: q, unit_cost: p.cost_price} end
+        )
+    },
+    opts
+  )
+
+  assembly = Manufacturing.create_work_center!(%{name: "Assembly", hourly_rate: 3000}, opts)
+  testing = Manufacturing.create_work_center!(%{name: "Quality control", hourly_rate: 2400}, opts)
+
+  Manufacturing.create_bom!(
+    %{
+      product_id: kit.id,
+      quantity: 1,
+      components: [
+        %{product_id: panel.id, quantity: 1, position: 0},
+        %{product_id: battery.id, quantity: 1, position: 1},
+        %{product_id: bulb.id, quantity: 3, position: 2},
+        %{product_id: casing.id, quantity: 1, position: 3}
+      ],
+      operations: [
+        %{
+          name: "Wire and assemble",
+          work_center_id: assembly.id,
+          minutes: 25,
+          position: 0,
+          instructions: "Solder panel and battery leads; fit bulbs; close casing."
+        },
+        %{name: "Charge test", work_center_id: testing.id, minutes: 10, position: 1}
+      ]
+    },
+    opts
+  )
+
+  today = Date.utc_today()
+
+  Manufacturing.create_production_order!(
+    %{product_id: kit.id, quantity: 20, due_on: Date.add(today, 7)},
+    opts
+  )
+  |> Manufacturing.confirm_production_order!(opts)
+  |> Manufacturing.record_production!(8, opts)
+
+  Manufacturing.create_production_order!(
+    %{
+      product_id: kit.id,
+      quantity: 10,
+      planned_start: Date.add(today, 7),
+      due_on: Date.add(today, 14)
+    },
+    opts
+  )
+
+  IO.puts("Seeded manufacturing demo data.")
 end

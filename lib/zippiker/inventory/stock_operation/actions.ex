@@ -7,7 +7,9 @@ defmodule Zippiker.Inventory.StockOperation.Actions do
     defaults [:read]
 
     read :search do
-      argument :kind, :atom, constraints: [one_of: [:receipt, :delivery, :adjustment]]
+      argument :kind, :atom,
+        constraints: [one_of: [:receipt, :delivery, :adjustment, :production]]
+
       argument :source, :atom
       argument :source_id, :uuid
       prepare Zippiker.Inventory.StockOperation.Preparations.Search

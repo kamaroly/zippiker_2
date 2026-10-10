@@ -112,8 +112,8 @@ defmodule ZippikerWeb.AccountingLiveTest do
     Accounts.set_plan_limits!(organization, %{enabled_modules: [:crm, :sales]}, authorize?: false)
 
     {:ok, view, _html} = live(conn, ~p"/")
-    refute has_element?(view, "#sidebar a[href='/accounting']")
-    assert has_element?(view, "#sidebar a[href='/invoices']")
+    refute has_element?(view, "#nav-accounting")
+    assert has_element?(view, "#nav-sales")
 
     assert {:error, {:redirect, %{to: "/", flash: %{"error" => message}}}} =
              live(conn, ~p"/accounting")

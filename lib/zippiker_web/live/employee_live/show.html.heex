@@ -21,6 +21,15 @@
     </:subtitle>
     <:actions>
       <.button
+        :if={@membership && can_impersonate?(assigns, @membership)}
+        href={~p"/workspaces/#{@current_organization.id}/impersonate/#{@membership.user_id}"}
+        method="post"
+        data-confirm={"Sign in as #{@employee.name}? You'll see exactly what they see until you stop."}
+        id="impersonate-employee"
+      >
+        <.icon name="hero-eye-micro" /> Impersonate
+      </.button>
+      <.button
         :if={@employee.status == :active}
         navigate={~p"/hr/leave/new?employee_id=#{@employee.id}"}
         id="request-leave-for"

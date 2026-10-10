@@ -1,0 +1,123 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:production_orders}
+>
+  <.header>
+    Production orders
+    <:subtitle>What to make, from which bill of materials, and how far along it is.</:subtitle>
+    <:actions>
+      <.button patch={~p"/manufacturing/orders/new"} variant="primary" id="new-production-order">
+        <.icon name="hero-plus-micro" /> Production order
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="production-search" value={@query} placeholder="Search number or product…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, orders_path(%{q: @query})},
+        {"Open", :open, orders_path(%{q: @query, status: :open})},
+        {"Draft", :draft, orders_path(%{q: @query, status: :draft})},
+        {"Confirmed", :confirmed, orders_path(%{q: @query, status: :confirmed})},
+        {"In progress", :in_progress, orders_path(%{q: @query, status: :in_progress})},
+        {"Done", :done, orders_path(%{q: @query, status: :done})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="production-orders"
+    rows={@streams.orders}
+    row_click={fn {_id, order} -> JS.navigate(~p"/manufacturing/orders/#{order}") end}
+  >
+    <:col :let={{_id, order}} label="Order">
+      <span class="font-medium text-ink">{order.number}</span>
+      <span class="block text-xs text-muted">{order.product.name}</span>
+    </:col>
+    <:col :let={{_id, order}} label="Status"><.production_status status={order.status} /></:col>
+    <:col :let={{_id, order}} label="Progress" class="hidden md:table-cell">
+      <.production_progress order={order} class="max-w-48" />
+    </:col>
+    <:col :let={{_id, order}} label="Due" class="hidden md:table-cell">
+      {Format.date(order.due_on)}
+    </:col>
+    <:col :let={{_id, order}} label="Responsible" class="hidden lg:table-cell">
+      {Format.user_name(order.owner)}
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-wrench-screwdriver"
+        title={if(@query != "", do: "No matches", else: "No production orders yet")}
+      >
+        Set up a bill of materials for a product, then plan a production order.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&orders_path(%{q: @query, status: @status, page: &1})} />
+
+  <.modal
+    :if={@form}
+    id="production-order-modal"
+    show
+    title="New production order"
+    on_cancel={JS.patch(~p"/manufacturing/orders")}
+  >
+    <%= if @boms == [] do %>
+      <.empty_state icon="hero-clipboard-document-list" title="No bills of materials yet">
+        A product needs a bill of materials (its components and operations) before you can make it.
+        <:action>
+          <.button navigate={~p"/manufacturing/boms/new"} variant="primary">
+            Create a bill of materials
+          </.button>
+        </:action>
+      </.empty_state>
+    <% else %>
+      <.form
+        for={@form}
+        id="production-order-form"
+        phx-change="validate"
+        phx-submit="save"
+        class="space-y-4"
+      >
+        <div class="grid gap-4 sm:grid-cols-[2fr_1fr]">
+          <.input
+            field={@form[:product_id]}
+            type="select"
+            label="Product"
+            options={product_options(@boms)}
+          />
+          <.input field={@form[:quantity]} type="number" step="any" min="0" label="Quantity" />
+        </div>
+        <.input
+          field={@form[:bom_id]}
+          type="select"
+          label="Bill of materials"
+          prompt="Latest active"
+          options={bom_options(@boms, @form[:product_id].value)}
+        />
+        <div class="grid gap-4 sm:grid-cols-3">
+          <.input field={@form[:planned_start]} type="date" label="Start" />
+          <.input field={@form[:due_on]} type="date" label="Due" />
+          <.input
+            field={@form[:warehouse_id]}
+            type="select"
+            label="Warehouse"
+            prompt="Default"
+            options={Enum.map(@warehouses, &{&1.name, &1.id})}
+          />
+        </div>
+        <.input field={@form[:notes]} type="textarea" label="Notes" rows="2" />
+        <div class="flex justify-end">
+          <.button type="submit" variant="primary" phx-disable-with="Creating…">
+            Create order
+          </.button>
+        </div>
+      </.form>
+    <% end %>
+  </.modal>
+</Layouts.app>

@@ -1,0 +1,46 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:expense_approvals}
+>
+  <.header>
+    Approvals
+    <:subtitle>
+      {if @count == 0,
+        do: "Nothing is waiting for you.",
+        else: "#{Format.count(@count, "claim")} waiting for your decision."}
+    </:subtitle>
+  </.header>
+
+  <ul id="approval-inbox" phx-update="stream" class="space-y-3">
+    <li id="inbox-empty" class="hidden only:block">
+      <.card>
+        <.empty_state icon="hero-check-badge" title="You're all caught up">
+          Claims you need to approve show up here, oldest first.
+        </.empty_state>
+      </.card>
+    </li>
+    <li :for={{id, request} <- @streams.requests} id={id}>
+      <.link
+        navigate={document_path(request)}
+        class="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:shadow-pop"
+      >
+        <.avatar name={Format.user_name(request.requested_by)} />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-semibold text-ink">{request.document_label}</p>
+          <p class="truncate text-xs text-muted">
+            {Format.user_name(request.requested_by)} · submitted {Format.ago(request.inserted_at)} · step {current_step(
+              request
+            ).position} of {length(request.steps)}: {current_step(request).label ||
+              "Approver #{current_step(request).position}"}
+          </p>
+        </div>
+        <span class="tabular text-sm font-semibold text-ink">
+          {Decimal.to_string(Decimal.round(request.amount, 2), :normal)}
+        </span>
+        <.icon name="hero-chevron-right" class="size-4 text-muted" />
+      </.link>
+    </li>
+  </ul>
+</Layouts.app>

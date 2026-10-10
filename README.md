@@ -28,6 +28,9 @@ A modular monolith: each business area is its own Ash domain, all tenant-scoped 
 | `Zippiker.Sales` | Quotes, sales orders, invoices, payments, sales reports. Lines priced by `Zippiker.Sales.Pricing` |
 | `Zippiker.Purchasing` | Purchase orders (receiving), supplier bills and bill payments, payables report |
 | `Zippiker.HR` | Departments, employees (Parties people + job, reporting line, pay with field policies), leave types, leave requests with manager approval, org chart |
+| `Zippiker.Workflow` | Configurable approvals for any document: groups, workflows (ordered steps: manager / user / group / admins), requests with step snapshots |
+| `Zippiker.Expenses` | Expense categories, employee expense claims (approval workflow, posting, reimbursement) |
+| `Zippiker.Manufacturing` | Work centers, bills of materials (components + operations), production orders with partial output |
 | `Zippiker.Inventory` | Warehouses, stock operations (receipts, deliveries, adjustments) made of movements, weighted average cost |
 | `Zippiker.Accounting` | Chart of accounts, immutable double-entry journal, posting rules (`Ledger`), financial statements (`Reports`) |
 | `Zippiker.Platform` | The SaaS layer: plans, one subscription per workspace, platform invoices, audit log, super admin overview (global, not tenant-scoped) |
@@ -109,15 +112,45 @@ default policy) lists the leave types, days per year and carry-over; with no pol
 `LeaveType.allowance_days` applies. Salary and personal fields
 are protected by field policies (admins and the employee only).
 
+### Approvals and expenses
+
+`Zippiker.Workflow` is document-agnostic. `ApprovalRequest.start` picks the active workflow for the
+`document_type` with the highest `min_amount` not above the document amount (no workflow = any
+workspace admin) and snapshots its steps. Steps go waiting → pending → approved / rejected, or
+skipped when nobody but the initiator could approve (`Workflow.Approvers`). `decide` checks the
+actor is an approver of the pending step (`ActorCanDecide`); `approval_inbox` lists what the actor
+can decide. When a request finishes, `Workflow.Callbacks.finished/2` tells the document
+(`Expenses.apply_approval`). To add a new approvable document, add its type to the
+`document_type` constraints and a `Callbacks` clause.
+
+Expense claims (`EXP-…`) go draft → submitted → approved → reimbursed (or rejected → edit and
+resubmit, or cancelled). Approval posts DR category expense accounts / CR "Employee reimbursements"
+(system key `:reimbursements`); reimbursing posts DR reimbursements / CR cash, bank or mobile money.
+
+### Manufacturing
+
+A `BillOfMaterials` makes `quantity` units of a stock-tracked product from components (stock-tracked
+products) and operations (minutes at a `WorkCenter` with an hourly rate). `Manufacturing.Costing`
+scales them for a quantity: requirements with stock shortages, labour/overhead and unit cost.
+`ProductionOrder` (`MO-…`) goes draft → confirmed → in_progress → done (or cancelled before any
+output). `record_output` refuses shortages, then records a `:production` stock operation (`PRD-…`):
+components out at average cost, finished goods in at components + labour per unit. The ledger posts
+the net (the labour/overhead) as DR inventory / CR "Manufacturing overhead applied"
+(`:production_overhead`). The job card prints at `/manufacturing/orders/:id/print`.
+
 ### Modules, plans and the platform panel
 
-- `Organization.enabled_modules` (`:crm`, `:sales`, `:purchasing`, `:inventory`, `:hr`, `:accounting`) hides navigation and
+- `Organization.enabled_modules` (`:crm`, `:sales`, `:purchasing`, `:inventory`, `:hr`, `:expenses`, `:manufacturing`, `:accounting`) hides navigation and
   blocks routes (`ZippikerWeb.Modules`, checked in `LiveUserAuth`). Data is kept.
 - A plan sets modules and `seat_limit` on the workspace when assigned. Invitations respect
   the seat limit.
 - Super admins (`users.super_admin?`) use `/platform`: workspaces, users, plans and billing.
   They can **impersonate** users (`PlatformController`, session `impersonator_id`) and
   **open any workspace** acting as admin. Both show a banner and are written to the audit log.
+- Workspace owners and admins can impersonate their own members from Settings → Workspace or the
+  employee page (`WorkspaceController.impersonate`): owners → admins and members, admins → members,
+  never super admins or while already impersonating. Session `impersonation_origin` sends them back
+  to their workspace when they stop.
 - Grant the first super admin with `mix zippiker.super_admin someone@example.com`
   (`--revoke` to remove).
 

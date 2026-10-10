@@ -27,6 +27,10 @@ defmodule ZippikerWeb.Router do
     get "/invitations/:token", WorkspaceController, :invitation
     post "/workspaces/:id/switch", WorkspaceController, :switch
 
+    post "/workspaces/:organization_id/impersonate/:user_id",
+         WorkspaceController,
+         :impersonate
+
     post "/platform/users/:id/impersonate", PlatformController, :impersonate
     delete "/platform/impersonation", PlatformController, :stop_impersonating
     post "/platform/teams/:id/access", PlatformController, :access
@@ -190,6 +194,36 @@ defmodule ZippikerWeb.Router do
       live "/hr/leave-types", HRLive.LeaveTypes, :index
       live "/hr/leave-types/new", HRLive.LeaveTypes, :new
       live "/hr/leave-types/:id/edit", HRLive.LeaveTypes, :edit
+
+      live "/manufacturing/orders", ProductionLive.Index, :index
+      live "/manufacturing/orders/new", ProductionLive.Index, :new
+      live "/manufacturing/orders/:id", ProductionLive.Show, :show
+      live "/manufacturing/orders/:id/edit", ProductionLive.Show, :edit
+      live "/manufacturing/orders/:id/produce", ProductionLive.Show, :produce
+      live "/manufacturing/orders/:id/print", ProductionLive.JobCard, :print
+      live "/manufacturing/boms", BomLive.Index, :index
+      live "/manufacturing/boms/new", BomLive.Form, :new
+      live "/manufacturing/boms/:id/edit", BomLive.Form, :edit
+      live "/manufacturing/work-centers", ProductionLive.WorkCenters, :index
+      live "/manufacturing/work-centers/new", ProductionLive.WorkCenters, :new
+      live "/manufacturing/work-centers/:id/edit", ProductionLive.WorkCenters, :edit
+
+      live "/expenses", ExpenseLive.Index, :mine
+      live "/expenses/all", ExpenseLive.Index, :all
+      live "/expenses/new", ExpenseLive.Form, :new
+      live "/expenses/approvals", ExpenseLive.Approvals, :index
+      live "/expenses/categories", ExpenseLive.Categories, :index
+      live "/expenses/categories/new", ExpenseLive.Categories, :new
+      live "/expenses/categories/:id/edit", ExpenseLive.Categories, :edit
+      live "/expenses/workflows", ExpenseLive.Workflows, :index
+      live "/expenses/workflows/new", ExpenseLive.Workflows, :new
+      live "/expenses/workflows/:id/edit", ExpenseLive.Workflows, :edit
+      live "/expenses/groups", ExpenseLive.Groups, :index
+      live "/expenses/groups/new", ExpenseLive.Groups, :new
+      live "/expenses/groups/:id/edit", ExpenseLive.Groups, :edit
+      live "/expenses/:id", ExpenseLive.Show, :show
+      live "/expenses/:id/edit", ExpenseLive.Form, :edit
+      live "/expenses/:id/reimburse", ExpenseLive.Show, :reimburse
 
       live "/help", HelpLive, :index
       live "/help/:slug", HelpLive, :show

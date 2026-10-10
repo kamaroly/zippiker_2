@@ -12,7 +12,19 @@ defmodule Zippiker.Accounting.JournalEntry.Attributes do
       allow_nil? false
       public? true
       default :manual
-      constraints one_of: [:manual, :expense, :invoice, :payment, :bill, :bill_payment, :stock]
+
+      constraints one_of: [
+                    :manual,
+                    :expense,
+                    :invoice,
+                    :payment,
+                    :bill,
+                    :bill_payment,
+                    :stock,
+                    :expense_claim,
+                    :expense_reimbursement,
+                    :production
+                  ]
     end
 
     attribute :source_id, :uuid, public?: true

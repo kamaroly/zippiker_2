@@ -26,6 +26,7 @@ defmodule ZippikerWeb.PlatformController do
         Ash.Resource.put_metadata(target, :token, token)
       )
       |> put_session(:impersonator_id, admin.id)
+      |> delete_session(:impersonation_origin)
       |> delete_session(:organization_id)
       |> put_flash(:info, "You're now signed in as #{target.email}.")
       |> redirect(to: ~p"/")
@@ -37,27 +38,43 @@ defmodule ZippikerWeb.PlatformController do
     end
   end
 
-  @doc "Returns to the super admin's own session."
+  @doc """
+  Returns to the impersonator's own session: super admins go back to the
+  platform panel, workspace admins to their workspace's settings.
+  """
   def stop_impersonating(conn, _params) do
+    origin = get_session(conn, :impersonation_origin)
+
     with id when is_binary(id) <- get_session(conn, :impersonator_id),
-         {:ok, %{super_admin?: true} = admin} <- Ash.get(User, id, authorize?: false),
+         {:ok, admin} <- Ash.get(User, id, authorize?: false),
+         true <- admin.super_admin? or is_binary(origin),
          {:ok, token, _claims} <- AshAuthentication.Jwt.token_for_user(admin) do
       impersonated = conn.assigns[:current_user]
 
-      log(
-        admin,
-        :impersonation_stopped,
-        "Stopped impersonating #{impersonated && impersonated.email}",
-        target_user_id: impersonated && impersonated.id
+      Platform.log_event!(
+        %{
+          action: :impersonation_stopped,
+          summary: "Stopped impersonating #{impersonated && impersonated.email}",
+          target_user_id: impersonated && impersonated.id,
+          organization_id: origin
+        },
+        actor: admin,
+        authorize?: false
       )
 
-      conn
-      |> AshAuthentication.Plug.Helpers.store_in_session(
-        Ash.Resource.put_metadata(admin, :token, token)
-      )
-      |> delete_session(:impersonator_id)
-      |> delete_session(:organization_id)
-      |> redirect(to: ~p"/platform/users")
+      conn =
+        conn
+        |> AshAuthentication.Plug.Helpers.store_in_session(
+          Ash.Resource.put_metadata(admin, :token, token)
+        )
+        |> delete_session(:impersonator_id)
+        |> delete_session(:impersonation_origin)
+
+      if is_binary(origin) do
+        conn |> put_session(:organization_id, origin) |> redirect(to: ~p"/settings/workspace")
+      else
+        conn |> delete_session(:organization_id) |> redirect(to: ~p"/platform/users")
+      end
     else
       _ -> redirect(conn, to: ~p"/")
     end

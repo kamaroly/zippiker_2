@@ -57,12 +57,28 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.inventory/1
     },
     %{
+      slug: "manufacturing",
+      title: "Manufacturing",
+      section: "Manufacturing",
+      icon: "hero-wrench-screwdriver",
+      summary: "Bills of materials, work centers, production orders and job cards.",
+      render: &__MODULE__.manufacturing/1
+    },
+    %{
       slug: "people-and-leave",
       title: "People & leave",
       section: "HR",
       icon: "hero-user-group",
       summary: "Your team directory, reporting lines, departments and time off.",
       render: &__MODULE__.people_and_leave/1
+    },
+    %{
+      slug: "expenses",
+      title: "Expense claims & approvals",
+      section: "Expenses",
+      icon: "hero-receipt-percent",
+      summary: "Claim back what you spent, approval workflows, and paying people back.",
+      render: &__MODULE__.expenses/1
     },
     %{
       slug: "accounting",

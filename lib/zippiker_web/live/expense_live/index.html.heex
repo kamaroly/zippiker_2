@@ -1,0 +1,77 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={if(@mine?, do: :my_expenses, else: :all_expenses)}
+>
+  <.header>
+    {if @mine?, do: "My expense claims", else: "All expense claims"}
+    <:subtitle>
+      {if @mine?,
+        do: "What you paid for the business and are owed back.",
+        else: "Every claim in the workspace."}
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={@inbox_count > 0}
+        navigate={~p"/expenses/approvals"}
+        id="inbox-shortcut"
+      >
+        <.icon name="hero-inbox-arrow-down-micro" />
+        {Format.count(@inbox_count, "claim")} to approve
+      </.button>
+      <.button navigate={~p"/expenses/new"} variant="primary" id="new-claim">
+        <.icon name="hero-plus-micro" /> Expense claim
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.search_box id="claim-search" value={@query} placeholder="Search number, title or person…" />
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, claims_path(assigns, %{q: @query})},
+        {"Draft", :draft, claims_path(assigns, %{q: @query, status: :draft})},
+        {"Awaiting approval", :submitted, claims_path(assigns, %{q: @query, status: :submitted})},
+        {"Approved", :approved, claims_path(assigns, %{q: @query, status: :approved})},
+        {"Rejected", :rejected, claims_path(assigns, %{q: @query, status: :rejected})},
+        {"Paid back", :reimbursed, claims_path(assigns, %{q: @query, status: :reimbursed})}
+      ]}
+    />
+  </div>
+
+  <.table
+    id="claims"
+    rows={@streams.claims}
+    row_click={fn {_id, claim} -> JS.navigate(~p"/expenses/#{claim}") end}
+  >
+    <:col :let={{_id, claim}} label="Claim">
+      <span class="font-medium text-ink">{claim.title}</span>
+      <span class="block text-xs text-muted">{claim.number}</span>
+    </:col>
+    <:col :let={{_id, claim}} :if={!@mine?} label="Claimant">
+      <span class="flex items-center gap-2">
+        <.avatar name={Format.user_name(claim.claimant)} size="xs" />
+        {Format.user_name(claim.claimant)}
+      </span>
+    </:col>
+    <:col :let={{_id, claim}} label="Status"><.claim_status status={claim.status} /></:col>
+    <:col :let={{_id, claim}} label="Created" class="hidden md:table-cell">
+      {Format.date(claim.inserted_at)}
+    </:col>
+    <:col :let={{_id, claim}} label="Total" class="text-right">
+      <span class="tabular font-medium text-ink">{Format.money(claim.total)}</span>
+    </:col>
+    <:empty>
+      <.empty_state
+        icon="hero-receipt-percent"
+        title={if(@query != "", do: "No matches", else: "No expense claims yet")}
+      >
+        Paid for a taxi, a client lunch or a tool? Create a claim and get paid back.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.pager page={@page} path={&claims_path(assigns, %{q: @query, status: @status, page: &1})} />
+</Layouts.app>

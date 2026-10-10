@@ -1,0 +1,100 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:work_centers}
+>
+  <.header>
+    Work centers
+    <:subtitle>
+      Where operations happen. The hourly rate (labour and overhead) is added to the cost of what's produced.
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/manufacturing/work-centers/new"}
+        variant="primary"
+        id="new-work-center"
+      >
+        <.icon name="hero-plus-micro" /> Work center
+      </.button>
+    </:actions>
+  </.header>
+
+  <.table id="work-centers" rows={@streams.work_centers}>
+    <:col :let={{_id, center}} label="Name">
+      <span class="font-medium text-ink">{center.name}</span>
+      <.badge :if={!center.active?} class="ml-2">Inactive</.badge>
+      <span :if={center.description} class="block text-xs text-muted">{center.description}</span>
+    </:col>
+    <:col :let={{_id, center}} label="Hourly rate" class="text-right">
+      <span class="tabular">{Format.money(Money.new!(@currency, center.hourly_rate))}</span>
+    </:col>
+    <:col :let={{_id, center}} label="Capacity" class="hidden text-right sm:table-cell">
+      {qty(center.hours_per_day)} h / day
+    </:col>
+    <:action :let={{_id, center}}>
+      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+        <.link
+          patch={~p"/manufacturing/work-centers/#{center}/edit"}
+          class="text-ink-soft hover:text-ink"
+        >
+          Edit
+        </.link>
+        <.link
+          phx-click="delete"
+          phx-value-id={center.id}
+          data-confirm={"Delete #{center.name}?"}
+          class="text-danger hover:opacity-80"
+        >
+          Delete
+        </.link>
+      </span>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-building-office-2" title="No work centers yet">
+        Add the places where work is done: Assembly, Cutting, Paint shop…
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="work-center-modal"
+    show
+    title={if(@work_center, do: "Edit #{@work_center.name}", else: "New work center")}
+    on_cancel={JS.patch(~p"/manufacturing/work-centers")}
+  >
+    <.form
+      for={@form}
+      id="work-center-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="space-y-4"
+    >
+      <.input field={@form[:name]} label="Name" placeholder="Assembly" phx-mounted={JS.focus()} />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:hourly_rate]}
+          type="number"
+          step="0.01"
+          min="0"
+          label={"Hourly rate (#{@currency})"}
+        />
+        <.input
+          field={@form[:hours_per_day]}
+          type="number"
+          step="0.5"
+          min="0"
+          max="24"
+          label="Hours per day"
+        />
+      </div>
+      <.input field={@form[:description]} label="Description" placeholder="Optional" />
+      <.input :if={@work_center} field={@form[:active?]} type="checkbox" label="Active" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

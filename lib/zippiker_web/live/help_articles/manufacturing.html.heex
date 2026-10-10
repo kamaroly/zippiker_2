@@ -1,0 +1,66 @@
+<p>
+  Manufacturing turns components you keep in stock into finished products. You describe each
+  product's recipe once, then plan production orders, record what's produced, and Zippiker moves
+  the stock and costs for you.
+</p>
+
+<h2>1. Work centers</h2>
+<p>
+  Under <.link navigate="/manufacturing/work-centers">Work centers</.link>, add the places where work
+  happens (Assembly, Cutting, Paint shop) with their <strong>hourly rate</strong>: what an hour there
+  costs in labour and overhead. Operations done there add that cost to what you make.
+</p>
+
+<h2>2. Bills of materials</h2>
+<p>
+  A <.link navigate="/manufacturing/boms">bill of materials</.link>
+  says what a product is made of. Choose the finished product (it must be a stock-tracked product),
+  how many units the recipe makes, then add:
+</p>
+<ul>
+  <li><strong>Components</strong>: stock-tracked products and the quantity used per batch.</li>
+  <li>
+    <strong>Operations</strong>
+    (optional): what's done, at which work center, and how many minutes it takes per batch. Add
+    instructions to print them on the job card.
+  </li>
+</ul>
+<p>
+  Each bill of materials shows an estimated cost per unit. A product can have several versions;
+  production orders use the latest active one unless you choose another.
+</p>
+
+<h2>3. Production orders</h2>
+<ol>
+  <li>
+    Click <strong>+ Production order</strong>
+    under <.link navigate="/manufacturing/orders">Production orders</.link>
+    (or <strong>Produce</strong>
+    on a bill of materials), choose the product and quantity, start and due dates.
+  </li>
+  <li>
+    Open the order to see the components needed for the rest of the run, what's in stock and any <strong>shortages</strong>, plus the estimated cost.
+  </li>
+  <li>
+    <strong>Confirm</strong>
+    it to release it to the shop floor, and print the <strong>Job card</strong>.
+  </li>
+  <li>
+    Each time units are finished, click <strong>Record output</strong>. You can produce in several
+    runs; the order shows its progress and closes itself when the planned quantity is reached. Close
+    it early if the rest won't be made.
+  </li>
+</ol>
+<.callout kind={:warning}>
+  Output can't be recorded if a component doesn't have enough stock. Receive more on a purchase
+  order, or correct the count with a stock adjustment, then try again.
+</.callout>
+
+<h2>Stock and the books</h2>
+<p>
+  Each recorded run is a <em>Production</em>
+  stock movement (<code>PRD-…</code>, under <.link navigate="/inventory/operations">Inventory → Movements</.link>): components go out at their
+  average cost and the finished goods come in at components + labour/overhead per unit, which
+  updates the product's average cost. In the books, inventory goes up by the labour and overhead
+  added, credited to <em>Manufacturing overhead applied</em>.
+</p>

@@ -4,7 +4,7 @@ defmodule ZippikerWeb.InventoryLive.Operations do
 
   alias Zippiker.Inventory
 
-  @kinds ~w(receipt delivery adjustment)
+  @kinds ~w(receipt delivery adjustment production)
 
   @impl true
   def mount(_params, _session, socket), do: {:ok, assign(socket, :page_title, "Stock movements")}

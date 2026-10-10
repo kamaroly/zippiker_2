@@ -75,6 +75,9 @@ config :zippiker,
     Zippiker.Inventory,
     Zippiker.Purchasing,
     Zippiker.HR,
+    Zippiker.Workflow,
+    Zippiker.Expenses,
+    Zippiker.Manufacturing,
     Zippiker.Platform
   ]
 

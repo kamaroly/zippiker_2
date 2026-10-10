@@ -36,5 +36,9 @@ defmodule ZippikerWeb.InventoryLive.Operation do
   defp source_path(%{source: :bill, source_id: id}), do: ~p"/bills/#{id}"
   defp source_path(%{source: :sales_order, source_id: id}), do: ~p"/orders/#{id}"
   defp source_path(%{source: :invoice, source_id: id}), do: ~p"/invoices/#{id}"
+
+  defp source_path(%{source: :production_order, source_id: id}),
+    do: ~p"/manufacturing/orders/#{id}"
+
   defp source_path(_operation), do: nil
 end

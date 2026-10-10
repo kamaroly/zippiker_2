@@ -21,6 +21,6 @@ defmodule Zippiker.Accounts.Organization do
     repo Zippiker.Repo
 
     migration_defaults enabled_modules:
-                         "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr']::text[]\")"
+                         "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr', 'expenses', 'manufacturing']::text[]\")"
   end
 end

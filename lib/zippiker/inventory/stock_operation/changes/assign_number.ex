@@ -1,12 +1,18 @@
 defmodule Zippiker.Inventory.StockOperation.Changes.AssignNumber do
   @moduledoc """
   `MV-…` for receipts and deliveries (their paperwork is the goods received
-  note / delivery note), `ADJ-…` for adjustments; gap-free per year.
+  note / delivery note), `ADJ-…` for adjustments, `PRD-…` for production;
+  gap-free per year.
   """
   use Ash.Resource.Change
 
-  @prefixes %{receipt: "MV", delivery: "MV", adjustment: "ADJ"}
-  @sequences %{receipt: :stock_movement, delivery: :stock_movement, adjustment: :stock_adjustment}
+  @prefixes %{receipt: "MV", delivery: "MV", adjustment: "ADJ", production: "PRD"}
+  @sequences %{
+    receipt: :stock_movement,
+    delivery: :stock_movement,
+    adjustment: :stock_adjustment,
+    production: :stock_production
+  }
 
   @impl true
   def change(changeset, _opts, _context) do

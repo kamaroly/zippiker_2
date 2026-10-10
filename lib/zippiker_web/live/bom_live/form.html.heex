@@ -1,0 +1,215 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:boms}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/manufacturing/boms"} class="hover:text-ink">Bills of materials</.link>
+    </:breadcrumb>
+    {if @bom, do: "#{@bom.product.name} · #{@bom.reference}", else: "New bill of materials"}
+    <:subtitle>Components come out of stock; operations add labour and overhead cost.</:subtitle>
+  </.header>
+
+  <form id="bom-form" phx-change="change" phx-submit="save" class="space-y-4">
+    <.card>
+      <div class="grid gap-4 sm:grid-cols-[2fr_1fr_1fr]">
+        <%= if @bom do %>
+          <div>
+            <p class="mb-1 text-sm font-medium text-ink">Product</p>
+            <p class="py-2 text-sm text-ink-soft">{@bom.product.name}</p>
+          </div>
+        <% else %>
+          <.input
+            type="select"
+            name="bom[product_id]"
+            id="bom-product"
+            value={@fields["product_id"]}
+            label="Product to make"
+            prompt="Choose a stock-tracked product"
+            options={Enum.map(@products, &{&1.name, &1.id})}
+          />
+        <% end %>
+        <.input
+          name="bom[reference]"
+          id="bom-reference"
+          value={@fields["reference"]}
+          label="Version"
+        />
+        <.input
+          type="number"
+          step="any"
+          min="0"
+          name="bom[quantity]"
+          id="bom-quantity"
+          value={@fields["quantity"]}
+          label="Makes (units)"
+        />
+      </div>
+    </.card>
+
+    <.card title="Components" padded={false}>
+      <div id="bom-components" class="divide-y divide-line">
+        <div
+          :for={row <- @components}
+          id={"component-#{row["key"]}"}
+          class="grid grid-cols-[1fr_8rem_2rem] items-end gap-3 px-5 py-3"
+        >
+          <.input
+            type="select"
+            name={"components[#{row["key"]}][product_id]"}
+            id={"component-product-#{row["key"]}"}
+            value={row["product_id"]}
+            prompt="Choose a component"
+            options={
+              for product <- @products,
+                  product.id != @fields["product_id"],
+                  do:
+                    {"#{product.name} (#{qty(product.on_hand)} #{product.unit} in stock)",
+                     product.id}
+            }
+          />
+          <.input
+            type="number"
+            step="any"
+            min="0"
+            name={"components[#{row["key"]}][quantity]"}
+            id={"component-quantity-#{row["key"]}"}
+            value={row["quantity"]}
+          />
+          <button
+            type="button"
+            phx-click="remove"
+            phx-value-list="components"
+            phx-value-key={row["key"]}
+            class="mb-2 rounded p-1 text-muted transition hover:bg-danger-soft hover:text-danger"
+            title="Remove"
+          >
+            <.icon name="hero-trash" class="size-4" />
+          </button>
+        </div>
+      </div>
+      <div class="border-t border-line px-5 py-3">
+        <button
+          type="button"
+          phx-click="add_component"
+          id="add-component"
+          class="inline-flex items-center gap-1 text-sm font-medium text-ink-soft hover:text-ink"
+        >
+          <.icon name="hero-plus-micro" /> Add component
+        </button>
+      </div>
+    </.card>
+
+    <.card title="Operations" padded={false}>
+      <:action>
+        <.link navigate={~p"/manufacturing/work-centers"} class="text-muted hover:text-ink">
+          Work centers
+        </.link>
+      </:action>
+      <p :if={@work_centers == []} class="px-5 pb-4 text-sm text-muted">
+        Add a
+        <.link navigate={~p"/manufacturing/work-centers/new"} class="underline">work center</.link>
+        to include operations (optional).
+      </p>
+      <div id="bom-operations" class="divide-y divide-line">
+        <div
+          :for={row <- @operations}
+          id={"operation-#{row["key"]}"}
+          class="grid gap-3 px-5 py-3 sm:grid-cols-[1fr_12rem_7rem_2rem] sm:items-end"
+        >
+          <.input
+            name={"operations[#{row["key"]}][name]"}
+            id={"operation-name-#{row["key"]}"}
+            value={row["name"]}
+            label="Operation"
+            placeholder="Assemble"
+          />
+          <.input
+            type="select"
+            name={"operations[#{row["key"]}][work_center_id]"}
+            id={"operation-center-#{row["key"]}"}
+            value={row["work_center_id"]}
+            label="Work center"
+            options={Enum.map(@work_centers, &{&1.name, &1.id})}
+          />
+          <.input
+            type="number"
+            step="any"
+            min="0"
+            name={"operations[#{row["key"]}][minutes]"}
+            id={"operation-minutes-#{row["key"]}"}
+            value={row["minutes"]}
+            label="Minutes"
+          />
+          <button
+            type="button"
+            phx-click="remove"
+            phx-value-list="operations"
+            phx-value-key={row["key"]}
+            class="mb-2 rounded p-1 text-muted transition hover:bg-danger-soft hover:text-danger"
+            title="Remove"
+          >
+            <.icon name="hero-trash" class="size-4" />
+          </button>
+          <div class="sm:col-span-3">
+            <.input
+              name={"operations[#{row["key"]}][instructions]"}
+              id={"operation-instructions-#{row["key"]}"}
+              value={row["instructions"]}
+              placeholder="Instructions for the job card (optional)"
+            />
+          </div>
+        </div>
+      </div>
+      <div :if={@work_centers != []} class="border-t border-line px-5 py-3">
+        <button
+          type="button"
+          phx-click="add_operation"
+          id="add-operation"
+          class="inline-flex items-center gap-1 text-sm font-medium text-ink-soft hover:text-ink"
+        >
+          <.icon name="hero-plus-micro" /> Add operation
+        </button>
+      </div>
+    </.card>
+
+    <.card>
+      <.input
+        type="textarea"
+        name="bom[notes]"
+        id="bom-notes"
+        value={@fields["notes"]}
+        label="Notes"
+        rows="2"
+      />
+      <label class="mt-3 flex items-center gap-2 text-sm text-ink">
+        <input type="hidden" name="bom[active?]" value="false" />
+        <input
+          type="checkbox"
+          name="bom[active?]"
+          value="true"
+          id="bom-active"
+          checked={@fields["active?"] == "true"}
+          class="size-4 rounded border-line"
+        /> Active (used for new production orders)
+      </label>
+    </.card>
+
+    <div
+      :for={error <- @errors}
+      id="bom-error"
+      class="rounded-lg bg-danger-soft px-4 py-2 text-sm text-danger"
+    >
+      {error}
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <.button navigate={~p"/manufacturing/boms"}>Cancel</.button>
+      <.button type="submit" variant="primary" id="save-bom" phx-disable-with="Saving…">
+        Save
+      </.button>
+    </div>
+  </form>
+</Layouts.app>

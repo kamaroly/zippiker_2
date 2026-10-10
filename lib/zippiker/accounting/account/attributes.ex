@@ -16,7 +16,9 @@ defmodule Zippiker.Accounting.Account.Attributes do
     :tax_receivable,
     :grni,
     :cost_of_sales,
-    :inventory_adjustment
+    :inventory_adjustment,
+    :reimbursements,
+    :production_overhead
   ]
 
   attributes do

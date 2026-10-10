@@ -1,0 +1,92 @@
+<p>
+  Paid for a taxi, a client lunch or a software license out of your own pocket? File an <strong>expense claim</strong>. It goes through your workspace's approval workflow, lands in the
+  books once approved, and is marked paid when the money is back in your account.
+</p>
+
+<h2>Filing a claim</h2>
+<ol>
+  <li>
+    Go to <.link navigate="/expenses">Expenses → My claims</.link>
+    and click <strong>+ Expense claim</strong>.
+  </li>
+  <li>
+    Give it a title (<em>Client visit to Kigali</em>) and add one row per receipt: date, category,
+    what it was, where, and the amount. The total updates as you type.
+  </li>
+  <li>
+    Click <strong>Submit for approval</strong>, or <strong>Save draft</strong>
+    to finish later. Each claim gets a number like <code>EXP-2026-0001</code>.
+  </li>
+</ol>
+<p>
+  A claim moves through these statuses: <em>Draft</em>
+  → <em>Awaiting approval</em>
+  → <em>Approved</em>
+  → <em>Paid back</em>. If an approver rejects it, it comes back to you as <em>Rejected</em>
+  with their comment: edit it and click <strong>Resubmit</strong>. You can cancel a claim any time
+  before it's approved.
+</p>
+
+<h2>Approving claims</h2>
+<p>
+  Claims waiting for you appear under <.link navigate="/expenses/approvals">Approvals</.link>, oldest
+  first. Open one, check the receipts, then <strong>Approve</strong>
+  or <strong>Reject</strong>
+  (rejecting needs a reason). The <em>Approval</em>
+  panel on every claim shows each step: who decided, when, and what they said.
+</p>
+<.callout>
+  Nobody approves their own claim. If you're the only possible approver for a step, that step is
+  skipped and the claim moves on.
+</.callout>
+
+<h2>Approval workflows</h2>
+<p>
+  Admins decide who approves under <.link navigate="/expenses/workflows">Approval workflows</.link>. A workflow is a chain: <strong>initiator → approver 1 → approver 2 → … → final approver</strong>. Each approver can be:
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Approver</th><th>Who decides</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Initiator's manager</td><td>
+        The person the claimant reports to in People (Reports to).
+      </td>
+    </tr>
+    <tr>
+      <td>Specific person</td><td>One named team member, e.g. your CFO.</td>
+    </tr>
+    <tr>
+      <td>Anyone in a group</td><td>
+        Any one member of an <.link navigate="/expenses/groups">approval group</.link>
+        such as Finance.
+      </td>
+    </tr>
+    <tr>
+      <td>Any workspace admin</td><td>Any owner or admin of the workspace.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Steps run in order and each one must approve; one rejection ends the approval. Use
+  <strong>Applies from</strong>
+  to route bigger claims differently: for example one workflow for all claims (manager only) and
+  another from 1,000 (manager, then Finance, then the CFO). The workflow with the highest threshold
+  not above the claim's total is used. With no workflow at all, any workspace admin can approve.
+</p>
+<.callout kind={:warning}>
+  Changing a workflow only affects claims submitted afterwards. Claims already in approval keep
+  the steps they started with.
+</.callout>
+
+<h2>Categories and the books</h2>
+<p>
+  Admins manage <.link navigate="/expenses/categories">Categories</.link>
+  (Travel, Meals, Office…) and pick the expense account each one is booked to. When a claim is
+  approved, Zippiker records the expense in those accounts and what you owe the employee in <em>Employee reimbursements</em>. When an admin clicks
+  <strong>Pay back</strong>
+  (choosing bank, cash or mobile money), that balance is cleared. Both entries show in the <.link navigate="/accounting/journal">Journal</.link>.
+</p>

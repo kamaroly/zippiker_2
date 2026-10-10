@@ -8,7 +8,7 @@ defmodule Zippiker.Inventory.StockOperation.Attributes do
     attribute :kind, :atom do
       allow_nil? false
       public? true
-      constraints one_of: [:receipt, :delivery, :adjustment]
+      constraints one_of: [:receipt, :delivery, :adjustment, :production]
     end
 
     attribute :date, :date, allow_nil?: false, public?: true, default: &Date.utc_today/0
@@ -19,7 +19,15 @@ defmodule Zippiker.Inventory.StockOperation.Attributes do
       allow_nil? false
       public? true
       default :manual
-      constraints one_of: [:manual, :purchase_order, :bill, :sales_order, :invoice]
+
+      constraints one_of: [
+                    :manual,
+                    :purchase_order,
+                    :bill,
+                    :sales_order,
+                    :invoice,
+                    :production_order
+                  ]
     end
 
     attribute :source_id, :uuid, public?: true

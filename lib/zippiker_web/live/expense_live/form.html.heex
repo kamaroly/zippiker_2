@@ -1,0 +1,156 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:my_expenses}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/expenses"} class="hover:text-ink">Expense claims</.link>
+    </:breadcrumb>
+    {if @claim, do: "Edit #{@claim.number}", else: "New expense claim"}
+    <:subtitle>One row per receipt. Amounts are in {@currency}.</:subtitle>
+  </.header>
+
+  <form id="claim-form" phx-change="change" phx-submit="save" class="space-y-4">
+    <.card>
+      <div class="grid gap-4 sm:grid-cols-[2fr_3fr]">
+        <.input
+          name="claim[title]"
+          id="claim-title"
+          value={@title}
+          label="What was it for?"
+          placeholder="Client visit to Kigali"
+          required
+        />
+        <.input
+          name="claim[notes]"
+          id="claim-notes"
+          value={@notes}
+          label="Notes"
+          placeholder="Optional context for the approvers"
+        />
+      </div>
+    </.card>
+
+    <.card title="Expenses" padded={false}>
+      <:action>
+        <.link navigate={~p"/expenses/categories"} class="text-muted hover:text-ink">
+          Manage categories
+        </.link>
+      </:action>
+      <div :if={@categories == []} class="px-5 pb-5">
+        <.empty_state icon="hero-tag" title="No expense categories yet">
+          An admin needs to add categories (Travel, Meals…) first.
+        </.empty_state>
+      </div>
+      <div :if={@categories != []} id="claim-items" class="divide-y divide-line">
+        <div
+          :for={item <- @items}
+          id={"item-#{item["key"]}"}
+          class="grid grid-cols-2 gap-3 px-5 py-3 sm:grid-cols-[9rem_10rem_1fr_9rem_8rem_2rem] sm:items-end"
+        >
+          <.input
+            type="date"
+            name={"items[#{item["key"]}][spent_on]"}
+            id={"item-date-#{item["key"]}"}
+            value={item["spent_on"]}
+            label="Date"
+          />
+          <.input
+            type="select"
+            name={"items[#{item["key"]}][category_id]"}
+            id={"item-category-#{item["key"]}"}
+            value={item["category_id"]}
+            label="Category"
+            options={Enum.map(@categories, &{&1.name, &1.id})}
+          />
+          <.input
+            name={"items[#{item["key"]}][description]"}
+            id={"item-description-#{item["key"]}"}
+            value={item["description"]}
+            label="Description"
+            placeholder="Taxi to the airport"
+          />
+          <.input
+            name={"items[#{item["key"]}][merchant]"}
+            id={"item-merchant-#{item["key"]}"}
+            value={item["merchant"]}
+            label="Merchant"
+            placeholder="Optional"
+          />
+          <.input
+            type="number"
+            step="0.01"
+            min="0"
+            name={"items[#{item["key"]}][amount]"}
+            id={"item-amount-#{item["key"]}"}
+            value={item["amount"]}
+            label="Amount"
+            class="tabular w-full rounded-lg border border-line bg-surface px-3 py-2 text-right text-sm text-ink focus:border-ink focus:outline-none"
+          />
+          <button
+            type="button"
+            phx-click="remove_item"
+            phx-value-key={item["key"]}
+            class="mb-2 justify-self-end rounded p-1 text-muted transition hover:bg-danger-soft hover:text-danger"
+            title="Remove"
+            id={"remove-item-#{item["key"]}"}
+          >
+            <.icon name="hero-trash" class="size-4" />
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center justify-between border-t border-line px-5 py-3">
+        <button
+          :if={@categories != []}
+          type="button"
+          phx-click="add_item"
+          id="add-item"
+          class="inline-flex items-center gap-1 text-sm font-medium text-ink-soft hover:text-ink"
+        >
+          <.icon name="hero-plus-micro" /> Add expense
+        </button>
+        <p class="text-sm text-muted">
+          Total
+          <span id="claim-total" class="tabular ml-2 text-lg font-semibold text-ink">
+            {Format.money(Money.new!(@currency, total(@items)))}
+          </span>
+        </p>
+      </div>
+    </.card>
+
+    <div
+      :for={error <- @errors}
+      class="rounded-lg bg-danger-soft px-4 py-2 text-sm text-danger"
+      id="claim-error"
+    >
+      {error}
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <.button navigate={if(@claim, do: ~p"/expenses/#{@claim}", else: ~p"/expenses")}>
+        Cancel
+      </.button>
+      <.button
+        type="submit"
+        name="intent"
+        value="draft"
+        id="save-draft"
+        phx-disable-with="Saving…"
+      >
+        Save draft
+      </.button>
+      <.button
+        type="submit"
+        name="intent"
+        value="submit"
+        variant="primary"
+        id="save-submit"
+        phx-disable-with="Submitting…"
+      >
+        <.icon name="hero-paper-airplane-micro" /> Submit for approval
+      </.button>
+    </div>
+  </form>
+</Layouts.app>
