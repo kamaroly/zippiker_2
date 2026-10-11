@@ -31,6 +31,7 @@ defmodule ZippikerWeb.Layouts do
      ]},
     {:sales, "Sales", "hero-document-text",
      [
+       {:customers, "Customers", "/customers", :sales},
        {:quotes, "Quotes", "/quotes", :sales},
        {:sales_orders, "Orders", "/orders", :sales},
        {:deliveries, "Delivery notes", "/deliveries", :sales},
@@ -39,6 +40,7 @@ defmodule ZippikerWeb.Layouts do
      ]},
     {:purchasing, "Purchasing", "hero-shopping-cart",
      [
+       {:suppliers, "Suppliers", "/suppliers", :purchasing},
        {:rfqs, "Requests for quotation", "/rfqs", :purchasing},
        {:purchase_orders, "Purchase orders", "/purchase-orders", :purchasing},
        {:goods_receipts, "Goods received", "/goods-receipts", :purchasing},
@@ -110,6 +112,7 @@ defmodule ZippikerWeb.Layouts do
      [
        {:company, "Company details", "/settings/company", nil},
        {:workspace, "Workspace", "/settings/workspace", nil},
+       {:users, "Users", "/settings/users", nil},
        {:roles, "Roles & permissions", "/settings/roles", nil},
        {:branches, "Branches", "/settings/branches", nil},
        {:billing, "Plan & billing", "/settings/billing", nil},

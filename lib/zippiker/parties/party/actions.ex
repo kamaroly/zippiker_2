@@ -33,13 +33,17 @@ defmodule Zippiker.Parties.Party.Actions do
     end
 
     read :search do
-      argument :kind, :atom, allow_nil?: false, constraints: [one_of: [:person, :organization]]
+      argument :kind, :atom do
+        description "People or organizations; both when empty (e.g. all customers)."
+        constraints one_of: [:person, :organization]
+      end
+
       argument :query, :string
       argument :role, :atom
       argument :employer_id, :uuid
       argument :custom_fields, :map
 
-      filter expr(kind == ^arg(:kind))
+      filter expr(is_nil(^arg(:kind)) or kind == ^arg(:kind))
       prepare Zippiker.Parties.Party.Preparations.Search
       prepare Zippiker.Extensibility.CustomFields.Preparations.Filter
       prepare build(sort: [name: :asc], load: [:employer, :owner])

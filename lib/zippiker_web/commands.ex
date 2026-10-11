@@ -10,6 +10,8 @@ defmodule ZippikerWeb.Commands do
     {"New contact", "/contacts/new", nil, "contacts.manage", "person customer supplier add"},
     {"New company", "/companies/new", nil, "contacts.manage",
      "organization customer supplier add"},
+    {"New customer", "/customers/new", :sales, "contacts.manage", "client buyer account add"},
+    {"New supplier", "/suppliers/new", :purchasing, "contacts.manage", "vendor seller add"},
     {"New lead", "/leads/new", :crm, "leads.manage", "prospect add"},
     {"New deal", "/deals/new", :crm, "deals.manage", "opportunity add pipeline"},
     {"New quote", "/quotes/new", :sales, "quotes.manage", "quotation estimate proposal"},

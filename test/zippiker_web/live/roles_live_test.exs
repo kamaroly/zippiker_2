@@ -56,7 +56,7 @@ defmodule ZippikerWeb.RolesLiveTest do
     user = member_fixture(organization)
     [membership] = Ash.load!(user, :memberships, authorize?: false).memberships
 
-    {:ok, view, _html} = live(conn, ~p"/settings/workspace")
+    {:ok, view, _html} = live(conn, ~p"/settings/users")
     assert has_element?(view, "#member-roles-#{membership.id}", "Team member")
 
     view |> element("#edit-roles-#{membership.id}") |> render_click()

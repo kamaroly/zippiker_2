@@ -7,6 +7,12 @@
     phx-target={@myself}
     class="space-y-4"
   >
+    <input
+      :for={role <- @roles || []}
+      type="hidden"
+      name="party[roles][]"
+      value={role}
+    />
     <%= if @kind == :person do %>
       <div class="grid gap-4 sm:grid-cols-2">
         <.input field={@form[:first_name]} label="First name" phx-mounted={JS.focus()} />

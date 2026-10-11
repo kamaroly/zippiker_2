@@ -457,6 +457,16 @@ defmodule Zippiker.Accounts.Permissions do
         permissions: ~w(view.contacts view.compliance compliance.manage)
       },
       %{
+        key: "it_support",
+        name: "IT support",
+        default?: false,
+        description:
+          "Manages users, invitations, roles, branches and custom fields, without being an admin.",
+        permissions:
+          ~w(view.contacts team.manage roles.manage branches.manage custom_fields.manage
+             company.manage)
+      },
+      %{
         key: "viewer",
         name: "Viewer (read only)",
         default?: false,

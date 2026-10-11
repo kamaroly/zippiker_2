@@ -2,42 +2,84 @@
   flash={@flash}
   current_user={@current_user}
   current_organization={@current_organization}
-  active={if(@kind == :person, do: :contacts, else: :companies)}
+  active={active(assigns)}
 >
-  <.header>
-    {@page_title}
-    <:subtitle>
-      {if @kind == :person,
-        do: "Everyone you work with.",
-        else: "The organizations you do business with."}
-    </:subtitle>
-    <:actions>
-      <.button patch={new_path(@kind)} variant="primary" id="new-party">
-        <.icon name="hero-plus-micro" /> {if @kind == :person, do: "Contact", else: "Company"}
-      </.button>
-    </:actions>
-  </.header>
+  <%= if @directory do %>
+    <.header>
+      {@page_title}
+      <:subtitle>
+        {if @directory == :customer,
+          do: "People and companies you sell to.",
+          else: "People and companies you buy from."}
+      </:subtitle>
+      <:actions>
+        <.button patch={directory_new_path(@directory, "person")} id="new-party-person">
+          <.icon name="hero-user-plus-micro" /> Person
+        </.button>
+        <.button
+          patch={directory_new_path(@directory, "organization")}
+          variant="primary"
+          id="new-party"
+        >
+          <.icon name="hero-plus-micro" /> {if @directory == :customer,
+            do: "Customer",
+            else: "Supplier"}
+        </.button>
+      </:actions>
+    </.header>
 
-  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-    <.search_box
-      id="party-search"
-      value={@query}
-      placeholder={"Search #{String.downcase(@page_title)}…"}
-    />
-    <.segmented
-      current={@role}
-      options={[
-        {"All", nil, list_path(@kind, %{q: @query, cf: @cf})},
-        {"Customers", :customer, list_path(@kind, %{q: @query, role: :customer, cf: @cf})},
-        {"Prospects", :lead, list_path(@kind, %{q: @query, role: :lead, cf: @cf})},
-        {"Suppliers", :supplier, list_path(@kind, %{q: @query, role: :supplier, cf: @cf})}
-      ]}
-    />
-  </div>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <.search_box
+        id="party-search"
+        value={@query}
+        placeholder={"Search #{String.downcase(@page_title)}…"}
+      />
+      <.segmented
+        current={@type}
+        options={[
+          {"All", nil, directory_path(@directory, %{q: @query})},
+          {"Companies", "organization",
+           directory_path(@directory, %{q: @query, type: "organization"})},
+          {"People", "person", directory_path(@directory, %{q: @query, type: "person"})}
+        ]}
+      />
+    </div>
+  <% else %>
+    <.header>
+      {@page_title}
+      <:subtitle>
+        {if @kind == :person,
+          do: "Everyone you work with.",
+          else: "The organizations you do business with."}
+      </:subtitle>
+      <:actions>
+        <.button patch={new_path(@kind)} variant="primary" id="new-party">
+          <.icon name="hero-plus-micro" /> {if @kind == :person, do: "Contact", else: "Company"}
+        </.button>
+      </:actions>
+    </.header>
 
-  <div class="mb-4">
-    <.custom_field_filters id="party-filters" definitions={@filters} values={@cf} />
-  </div>
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <.search_box
+        id="party-search"
+        value={@query}
+        placeholder={"Search #{String.downcase(@page_title)}…"}
+      />
+      <.segmented
+        current={@role}
+        options={[
+          {"All", nil, list_path(@kind, %{q: @query, cf: @cf})},
+          {"Customers", :customer, list_path(@kind, %{q: @query, role: :customer, cf: @cf})},
+          {"Prospects", :lead, list_path(@kind, %{q: @query, role: :lead, cf: @cf})},
+          {"Suppliers", :supplier, list_path(@kind, %{q: @query, role: :supplier, cf: @cf})}
+        ]}
+      />
+    </div>
+
+    <div class="mb-4">
+      <.custom_field_filters id="party-filters" definitions={@filters} values={@cf} />
+    </div>
+  <% end %>
 
   <.table
     id="parties"
@@ -60,6 +102,13 @@
     <:col :let={{_id, party}} :if={@kind == :organization} label="Industry">
       {party.industry}
     </:col>
+    <:col :let={{_id, party}} :if={is_nil(@kind)} label="Type">
+      <span class="text-ink-soft">
+        {if party.kind == :person,
+          do: (party.employer && "Person · #{party.employer.name}") || "Person",
+          else: party.industry || "Company"}
+      </span>
+    </:col>
     <:col :let={{_id, party}} label="Phone" class="hidden md:table-cell">{party.phone}</:col>
     <:col :let={{_id, party}} label="Roles" class="hidden lg:table-cell">
       <.roles roles={party.roles} />
@@ -81,7 +130,14 @@
     </:empty>
   </.table>
 
-  <.pager page={@page} path={&list_path(@kind, %{q: @query, role: @role, cf: @cf, page: &1})} />
+  <.pager
+    page={@page}
+    path={
+      if @directory,
+        do: &directory_path(@directory, %{q: @query, type: @type, page: &1}),
+        else: &list_path(@kind, %{q: @query, role: @role, cf: @cf, page: &1})
+    }
+  />
 
   <.modal
     :if={@live_action in [:new_contact, :new_company]}
@@ -96,6 +152,24 @@
       id="new-party-form"
       party={nil}
       kind={@kind}
+      current_user={@current_user}
+      current_organization={@current_organization}
+    />
+  </.modal>
+  <.modal
+    :if={@live_action in [:new_customer, :new_supplier]}
+    id="party-modal"
+    show
+    title={"New #{if(@directory == :customer, do: "customer", else: "supplier")}"}
+    on_cancel={JS.patch(directory_path(@directory, %{}))}
+    size="lg"
+  >
+    <.live_component
+      module={ZippikerWeb.PartyLive.FormComponent}
+      id="new-party-form"
+      party={nil}
+      kind={@new_kind}
+      roles={[@directory]}
       current_user={@current_user}
       current_organization={@current_organization}
     />

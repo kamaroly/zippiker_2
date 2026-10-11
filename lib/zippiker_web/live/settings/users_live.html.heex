@@ -1,0 +1,199 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:users}
+>
+  <.header>
+    Users
+    <:subtitle>
+      Everyone who signs in to {@current_organization.name}: staff, admins and IT support.
+      What members can do comes from their <.link
+        navigate={~p"/settings/roles"}
+        class="underline hover:text-ink"
+      >roles</.link>.
+    </:subtitle>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-5">
+    <div class="lg:col-span-3">
+      <.card title="Members" padded={false}>
+        <p class="px-5 pt-1 pb-2 text-xs text-muted">
+          Members can do what their roles allow (<.link
+            navigate={~p"/settings/roles"}
+            class="underline hover:text-ink"
+          >manage roles</.link>). Owners and admins can do everything.
+        </p>
+        <ul id="members" phx-update="stream" class="divide-y divide-line px-5 pb-2">
+          <li
+            :for={{dom_id, membership} <- @streams.members}
+            id={dom_id}
+            class="flex items-center gap-3 py-3"
+          >
+            <.avatar name={Format.user_name(membership.user)} size="sm" />
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-ink">
+                {Format.user_name(membership.user)}
+              </p>
+              <p class="truncate text-xs text-muted">{membership.user.email}</p>
+            </div>
+            <.link
+              :if={can_impersonate?(assigns, membership)}
+              href={~p"/workspaces/#{@current_organization.id}/impersonate/#{membership.user_id}"}
+              method="post"
+              data-confirm={"Sign in as #{Format.user_name(membership.user)}? You'll see exactly what they see until you stop."}
+              id={"impersonate-#{membership.user_id}"}
+              class="rounded-lg px-2 py-1 text-xs font-medium text-ink-soft ring-1 ring-line transition hover:bg-canvas hover:text-ink"
+              title="See the workspace as this person"
+            >
+              <.icon name="hero-eye-micro" /> Impersonate
+            </.link>
+            <div class="flex shrink-0 items-center gap-2">
+              <div
+                :if={membership.role == :member}
+                id={"member-roles-#{membership.id}"}
+                class="hidden max-w-56 flex-wrap justify-end gap-1 sm:flex"
+              >
+                <.badge :for={role <- membership.roles} color={:slate}>{role.name}</.badge>
+                <span :if={membership.roles == []} class="text-xs text-muted">No role</span>
+              </div>
+              <.badge :if={membership.role != :member} color={:orange}>Full access</.badge>
+              <button
+                :if={can?(assigns, "team.manage") and membership.role == :member}
+                type="button"
+                phx-click="edit_roles"
+                phx-value-id={membership.id}
+                id={"edit-roles-#{membership.id}"}
+                class="rounded-lg px-2 py-1 text-xs font-medium text-ink-soft ring-1 ring-line transition hover:bg-canvas hover:text-ink"
+              >
+                Roles
+              </button>
+              <%= if admin?(assigns) and membership.role != :owner and membership.user_id != @current_user.id do %>
+                <form id={"role-#{membership.id}"} phx-change="role">
+                  <input type="hidden" name="membership_id" value={membership.id} />
+                  <select
+                    name="role"
+                    class="h-8 rounded-lg border border-line bg-surface px-2 text-xs text-ink focus:border-brand focus:outline-none"
+                  >
+                    {Phoenix.HTML.Form.options_for_select(
+                      [{"Member", "member"}, {"Admin", "admin"}],
+                      membership.role
+                    )}
+                  </select>
+                </form>
+              <% else %>
+                <.badge :if={membership.role == :owner} color={:orange}>Owner</.badge>
+              <% end %>
+              <button
+                :if={
+                  can?(assigns, "team.manage") and membership.role != :owner and
+                    membership.user_id != @current_user.id
+                }
+                phx-click="remove"
+                phx-value-id={membership.id}
+                data-confirm={"Remove #{Format.user_name(membership.user)} from the workspace?"}
+                class="rounded p-1 text-muted transition hover:text-danger"
+                title="Remove"
+              >
+                <.icon name="hero-user-minus" class="size-4" />
+              </button>
+            </div>
+          </li>
+        </ul>
+      </.card>
+    </div>
+    <div class="lg:col-span-2">
+      <.card :if={can?(assigns, "team.manage")} title="Invite people">
+        <.form
+          for={@invite_form}
+          id="invite-form"
+          phx-submit="invite"
+          class="flex flex-wrap items-start gap-2"
+        >
+          <div class="min-w-56 flex-1">
+            <.input field={@invite_form[:email]} type="email" placeholder="teammate@company.com" />
+          </div>
+          <div class="w-32">
+            <.input
+              field={@invite_form[:role]}
+              type="select"
+              options={[{"Member", "member"}, {"Admin", "admin"}]}
+            />
+          </div>
+          <.button type="submit" variant="primary" phx-disable-with="Sending…">Send invite</.button>
+        </.form>
+
+        <ul id="invitations" phx-update="stream" class="mt-4 divide-y divide-line">
+          <li id="invitations-empty" class="hidden only:block">
+            <p class="text-sm text-muted">No pending invitations.</p>
+          </li>
+          <li
+            :for={{dom_id, invitation} <- @streams.invitations}
+            id={dom_id}
+            class="flex items-center gap-3 py-2.5"
+          >
+            <.icon name="hero-envelope" class="size-4 text-muted" />
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm text-ink">{invitation.email}</p>
+              <p class="text-xs text-muted">
+                {Format.humanize(invitation.role)} · sent {Format.ago(invitation.inserted_at)}
+              </p>
+            </div>
+            <button
+              phx-click="revoke"
+              phx-value-id={invitation.id}
+              class="text-xs font-medium text-danger hover:underline"
+            >
+              Revoke
+            </button>
+          </li>
+        </ul>
+      </.card>
+    </div>
+  </div>
+
+  <.modal
+    :if={@editing_roles}
+    id="roles-modal"
+    show
+    title={"Roles for #{Format.user_name(@editing_roles.user)}"}
+    on_cancel={JS.push("close_roles")}
+  >
+    <form id="member-roles-form" phx-submit="save_roles" class="space-y-4">
+      <input type="hidden" name="role_ids[]" value="" />
+      <div class="max-h-[55vh] space-y-1 overflow-y-auto">
+        <label
+          :for={role <- @roles}
+          for={"member-role-#{role.id}"}
+          class="flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2 transition hover:bg-canvas"
+        >
+          <input
+            type="checkbox"
+            name="role_ids[]"
+            value={role.id}
+            id={"member-role-#{role.id}"}
+            checked={Enum.any?(@editing_roles.roles, &(&1.id == role.id))}
+            class="mt-0.5 size-4 rounded border-line text-brand focus:ring-brand/30"
+          />
+          <span class="min-w-0">
+            <span class="block text-sm font-medium text-ink">{role.name}</span>
+            <span class="block text-xs text-muted">{role.description}</span>
+          </span>
+        </label>
+      </div>
+      <p class="text-xs text-muted">
+        With several roles, people can do everything any of them allows.
+      </p>
+      <div class="flex justify-end">
+        <.button
+          type="submit"
+          variant="primary"
+          phx-disable-with="Saving…"
+          id="save-member-roles"
+        >
+          Save roles
+        </.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

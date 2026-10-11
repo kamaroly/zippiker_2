@@ -6,7 +6,7 @@ defmodule ZippikerWeb.PartyLive.FormComponent do
 
   @impl true
   def update(assigns, socket) do
-    socket = assign(socket, assigns)
+    socket = socket |> assign(:roles, nil) |> assign(assigns)
     kind = if socket.assigns.party, do: socket.assigns.party.kind, else: socket.assigns.kind
 
     {:ok,
@@ -51,7 +51,8 @@ defmodule ZippikerWeb.PartyLive.FormComponent do
         prepare_source: &Ash.Changeset.change_attribute(&1, :kind, kind),
         params: %{
           "owner_id" => socket.assigns.current_user.id,
-          "employer_id" => socket.assigns[:employer_id]
+          "employer_id" => socket.assigns[:employer_id],
+          "roles" => Enum.map(socket.assigns[:roles] || [], &to_string/1)
         }
       )
       |> to_form()

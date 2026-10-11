@@ -43,10 +43,23 @@ defmodule ZippikerWeb.Access do
   @doc "The view permission a LiveView needs, or nil."
   def view_permission(view, action) do
     cond do
-      view in @self_service_views -> nil
-      view in [ZippikerWeb.PartyLive.Index, ZippikerWeb.PartyLive.Show] -> "view.contacts"
-      view in [ZippikerWeb.ReportLive.Index, ZippikerWeb.ReportLive.Show] -> "view.reports"
-      true -> view |> ZippikerWeb.Modules.for_view(action) |> module_permission()
+      view in @self_service_views ->
+        nil
+
+      view == ZippikerWeb.PartyLive.Index and action in [:customers, :new_customer] ->
+        "view.sales"
+
+      view == ZippikerWeb.PartyLive.Index and action in [:suppliers, :new_supplier] ->
+        "view.purchasing"
+
+      view in [ZippikerWeb.PartyLive.Index, ZippikerWeb.PartyLive.Show] ->
+        "view.contacts"
+
+      view in [ZippikerWeb.ReportLive.Index, ZippikerWeb.ReportLive.Show] ->
+        "view.reports"
+
+      true ->
+        view |> ZippikerWeb.Modules.for_view(action) |> module_permission()
     end
   end
 

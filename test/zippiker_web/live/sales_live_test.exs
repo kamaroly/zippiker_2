@@ -103,7 +103,7 @@ defmodule ZippikerWeb.SalesLiveTest do
   end
 
   test "invites a teammate from workspace settings", %{conn: conn, opts: opts} do
-    {:ok, view, _html} = live(conn, ~p"/settings/workspace")
+    {:ok, view, _html} = live(conn, ~p"/settings/users")
 
     view
     |> form("#invite-form", invitation: %{email: "mate@example.com", role: "member"})

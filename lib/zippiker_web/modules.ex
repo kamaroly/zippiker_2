@@ -165,6 +165,10 @@ defmodule ZippikerWeb.Modules do
 
   # Shared pages belong to the module of the document they're showing.
   @actions %{
+    customers: :sales,
+    new_customer: :sales,
+    suppliers: :purchasing,
+    new_supplier: :purchasing,
     new_quote: :sales,
     edit_quote: :sales,
     new_sales_order: :sales,
@@ -192,6 +196,7 @@ defmodule ZippikerWeb.Modules do
   def for_view(view, action)
       when view in [
              ZippikerWeb.DocumentLive.Form,
+             ZippikerWeb.PartyLive.Index,
              ZippikerWeb.DocumentLive.Print,
              ZippikerWeb.NotesPrintLive
            ],

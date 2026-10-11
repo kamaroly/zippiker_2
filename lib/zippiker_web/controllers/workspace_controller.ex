@@ -81,7 +81,7 @@ defmodule ZippikerWeb.WorkspaceController do
       _ ->
         conn
         |> put_flash(:error, "You can't impersonate that person.")
-        |> redirect(to: ~p"/settings/workspace")
+        |> redirect(to: ~p"/settings/users")
     end
   end
 

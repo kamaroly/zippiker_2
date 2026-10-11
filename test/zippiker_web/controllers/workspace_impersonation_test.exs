@@ -18,7 +18,7 @@ defmodule ZippikerWeb.WorkspaceImpersonationTest do
   } do
     member = member_fixture(organization)
 
-    {:ok, view, _html} = live(conn, ~p"/settings/workspace")
+    {:ok, view, _html} = live(conn, ~p"/settings/users")
     assert has_element?(view, "#impersonate-#{member.id}")
     refute has_element?(view, "#impersonate-#{owner.id}")
 
@@ -30,13 +30,13 @@ defmodule ZippikerWeb.WorkspaceImpersonationTest do
     assert has_element?(view, "#platform-banner", to_string(member.email))
 
     # No impersonating from inside an impersonation.
-    {:ok, view, _html} = live(recycle(conn), ~p"/settings/workspace")
+    {:ok, view, _html} = live(recycle(conn), ~p"/settings/users")
     refute has_element?(view, "[id^='impersonate-']")
 
     conn = delete(recycle(conn), ~p"/platform/impersonation")
-    assert redirected_to(conn) == "/settings/workspace"
+    assert redirected_to(conn) == "/settings/users"
     assert get_session(conn, :impersonator_id) == nil
-    assert {:ok, _view, _html} = live(recycle(conn), ~p"/settings/workspace")
+    assert {:ok, _view, _html} = live(recycle(conn), ~p"/settings/users")
 
     actions =
       %{}
@@ -59,7 +59,7 @@ defmodule ZippikerWeb.WorkspaceImpersonationTest do
 
     for target <- [owner, other_admin, admin] do
       conn = impersonate(conn, organization, target)
-      assert redirected_to(conn) == "/settings/workspace"
+      assert redirected_to(conn) == "/settings/users"
       assert get_session(conn, :impersonator_id) == nil
     end
 

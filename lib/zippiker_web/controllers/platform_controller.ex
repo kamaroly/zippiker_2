@@ -71,7 +71,7 @@ defmodule ZippikerWeb.PlatformController do
         |> delete_session(:impersonation_origin)
 
       if is_binary(origin) do
-        conn |> put_session(:organization_id, origin) |> redirect(to: ~p"/settings/workspace")
+        conn |> put_session(:organization_id, origin) |> redirect(to: ~p"/settings/users")
       else
         conn |> delete_session(:organization_id) |> redirect(to: ~p"/platform/users")
       end

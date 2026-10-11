@@ -98,6 +98,11 @@ defmodule ZippikerWeb.Router do
       live "/contacts/:id", PartyLive.Show, :show
       live "/contacts/:id/edit", PartyLive.Show, :edit
 
+      live "/customers", PartyLive.Index, :customers
+      live "/customers/new", PartyLive.Index, :new_customer
+      live "/suppliers", PartyLive.Index, :suppliers
+      live "/suppliers/new", PartyLive.Index, :new_supplier
+
       live "/companies", PartyLive.Index, :companies
       live "/companies/new", PartyLive.Index, :new_company
       live "/companies/:id", PartyLive.Show, :show
@@ -121,6 +126,7 @@ defmodule ZippikerWeb.Router do
       live "/settings/branches", Settings.BranchesLive, :index
       live "/settings/branches/new", Settings.BranchesLive, :new
       live "/settings/branches/:id/edit", Settings.BranchesLive, :edit
+      live "/settings/users", Settings.UsersLive, :index
       live "/settings/roles", Settings.RolesLive, :index
       live "/settings/roles/new", Settings.RolesLive, :new
       live "/settings/roles/:id/edit", Settings.RolesLive, :edit
