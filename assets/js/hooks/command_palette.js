@@ -4,10 +4,13 @@ const normalize = (text) => text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]
 
 export default {
   mounted() {
+    // The top bar's backdrop-blur makes it the containing block for fixed
+    // children, so the overlay lives on <body> to cover the whole screen.
     this.dialog = this.el.querySelector("[data-palette-dialog]")
-    this.input = this.el.querySelector("[data-palette-input]")
-    this.items = Array.from(this.el.querySelectorAll("[data-palette-item]"))
-    this.empty = this.el.querySelector("[data-palette-empty]")
+    document.body.appendChild(this.dialog)
+    this.input = this.dialog.querySelector("[data-palette-input]")
+    this.items = Array.from(this.dialog.querySelectorAll("[data-palette-item]"))
+    this.empty = this.dialog.querySelector("[data-palette-empty]")
     this.active = 0
 
     this.onKey = (e) => {
@@ -24,12 +27,15 @@ export default {
     window.addEventListener("keydown", this.onKey)
 
     this.el.querySelectorAll("[data-palette-open]").forEach((el) => el.addEventListener("click", () => this.open()))
-    this.el.querySelector("[data-palette-backdrop]").addEventListener("click", () => this.close())
+    this.dialog.querySelector("[data-palette-backdrop]").addEventListener("click", () => this.close())
     this.input.addEventListener("input", () => this.filter())
     this.items.forEach((item) => item.addEventListener("click", () => this.close()))
   },
 
-  destroyed() { window.removeEventListener("keydown", this.onKey) },
+  destroyed() {
+    window.removeEventListener("keydown", this.onKey)
+    this.dialog.remove()
+  },
 
   isOpen() { return !this.dialog.classList.contains("hidden") },
 
@@ -70,7 +76,7 @@ export default {
   },
 
   go() {
-    const item = this.visible()[this.active]
-    if (item) item.click()
+    const link = this.visible()[this.active]?.querySelector("a")
+    if (link) link.click()
   }
 }

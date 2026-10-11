@@ -146,25 +146,27 @@ defmodule ZippikerWeb.Layouts do
 
     ~H"""
     <div class="min-h-screen lg:pl-64">
-      <%!-- Top bar: menu (mobile), then help, platform admin and the user menu on the right --%>
+      <%!-- Top bar: menu (mobile) on the left, search centered, then help, platform admin and the user menu on the right --%>
       <div
         id="top-bar"
         class="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-4 backdrop-blur sm:px-6"
       >
-        <button
-          id="sidebar-open"
-          type="button"
-          phx-click={
-            JS.remove_class("-translate-x-full", to: "#sidebar") |> JS.show(to: "#sidebar-backdrop")
-          }
-          aria-label="Open menu"
-          class="rounded-lg p-1.5 text-ink-soft hover:bg-canvas lg:hidden"
-        >
-          <.icon name="hero-bars-3" class="size-5" />
-        </button>
-        <div class="lg:hidden"><.brand /></div>
+        <div class="flex items-center gap-2 sm:flex-1">
+          <button
+            id="sidebar-open"
+            type="button"
+            phx-click={
+              JS.remove_class("-translate-x-full", to: "#sidebar") |> JS.show(to: "#sidebar-backdrop")
+            }
+            aria-label="Open menu"
+            class="rounded-lg p-1.5 text-ink-soft hover:bg-canvas lg:hidden"
+          >
+            <.icon name="hero-bars-3" class="size-5" />
+          </button>
+          <div class="lg:hidden"><.brand /></div>
+        </div>
         <.command_palette commands={ZippikerWeb.Commands.list(@current_organization, @role)} />
-        <div class="ml-auto flex items-center gap-1">
+        <div class="ml-auto flex items-center justify-end gap-1 sm:flex-1">
           <.link
             navigate="/help"
             id="top-help"
