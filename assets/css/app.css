@@ -113,12 +113,14 @@ html, body {
 .deal-card.dragging { opacity: 0.4; }
 .board-column.drop-target { background: var(--brand-soft); }
 
-/* Subtle page entrance */
+/* Subtle page entrance. Opacity only: a transform (even an animated or
+   filled one) makes <main> the containing block of `position: fixed`
+   descendants, which would trap modals inside the content column. */
 @keyframes rise {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-.animate-rise { animation: rise 220ms ease-out both; }
+.animate-rise { animation: rise 220ms ease-out backwards; }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-rise { animation: none; }
