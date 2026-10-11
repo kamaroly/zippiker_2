@@ -25,7 +25,12 @@ defmodule Zippiker.Workflow.MakerChecker do
       label: "Chart of accounts",
       description: "New, changed or deleted accounts"
     },
-    %{key: :tax_rates, label: "Tax rates", description: "New, changed or archived rates"}
+    %{key: :tax_rates, label: "Tax rates", description: "New, changed or archived rates"},
+    %{
+      key: :journal_entries,
+      label: "Journal postings",
+      description: "Manual journal entries and recorded expenses post only once approved"
+    }
   ]
 
   def scopes, do: @scopes

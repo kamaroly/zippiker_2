@@ -84,4 +84,48 @@ defmodule Zippiker.Workflow.MakerCheckerTest do
     assert Workflow.cancel_change_request!(request, as.(maker)).status == :cancelled
     assert Catalog.get_product!(product.id, as.(maker))
   end
+
+  test "journal postings: a manual entry posts only once a checker approves it",
+       %{owner: owner, maker: maker, checker: checker, as: as} do
+    organization = as.(maker)[:tenant]
+    Zippiker.Accounting.setup_books!(actor: owner, tenant: organization)
+
+    Accounts.set_maker_checker!(
+      organization,
+      %{maker_checker?: true, maker_checker_scopes: [:journal_entries]},
+      actor: owner
+    )
+
+    accounts = Zippiker.Accounting.list_accounts!(as.(maker))
+    cash = Enum.find(accounts, &(&1.system_key == :cash))
+    equity = Enum.find(accounts, &(&1.system_key == :equity))
+
+    entry = %{
+      memo: "Owner top-up",
+      lines: [
+        %{account_id: cash.id, debit: "500"},
+        %{account_id: equity.id, credit: "500"}
+      ]
+    }
+
+    assert {:error, error} = Zippiker.Accounting.create_journal_entry(entry, as.(maker))
+    %ChangeRequested{change_request_id: id} = requested(error)
+
+    entries = fn ->
+      Zippiker.Accounting.list_journal_entries!(%{}, as.(maker) ++ [page: [limit: 50]]).results
+    end
+
+    assert entries.() == []
+
+    id
+    |> Workflow.get_change_request!(as.(checker))
+    |> Map.fetch!(:approval_request_id)
+    |> Workflow.get_approval_request!(as.(checker))
+    |> Workflow.decide_approval!(:approve, as.(checker))
+
+    assert [%{memo: "Owner top-up", posted_by_id: posted_by}] = entries.()
+    assert posted_by == maker.id
+
+    assert Workflow.get_change_request!(id, as.(checker)).status == :applied
+  end
 end

@@ -50,7 +50,16 @@ defmodule ZippikerWeb.AccountingLive.JournalForm do
          |> push_navigate(to: ~p"/accounting/journal/#{entry}")}
 
       {:error, form} ->
-        {:noreply, assign_form(socket, form)}
+        case change_requested(form) do
+          nil ->
+            {:noreply, assign_form(socket, form)}
+
+          number ->
+            {:noreply,
+             socket
+             |> put_flash(:info, change_requested_message(number))
+             |> push_navigate(to: ~p"/accounting/journal")}
+        end
     end
   end
 

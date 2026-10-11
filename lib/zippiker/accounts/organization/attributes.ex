@@ -48,7 +48,17 @@ defmodule Zippiker.Accounts.Organization.Attributes do
       allow_nil? false
       public? true
       default []
-      constraints items: [one_of: [:employees, :contacts, :products, :accounts, :tax_rates]]
+
+      constraints items: [
+                    one_of: [
+                      :employees,
+                      :contacts,
+                      :products,
+                      :accounts,
+                      :tax_rates,
+                      :journal_entries
+                    ]
+                  ]
     end
 
     attribute :currency, :string do

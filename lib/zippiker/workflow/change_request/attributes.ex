@@ -8,7 +8,15 @@ defmodule Zippiker.Workflow.ChangeRequest.Attributes do
     attribute :scope, :atom do
       allow_nil? false
       public? true
-      constraints one_of: [:employees, :contacts, :products, :accounts, :tax_rates]
+
+      constraints one_of: [
+                    :employees,
+                    :contacts,
+                    :products,
+                    :accounts,
+                    :tax_rates,
+                    :journal_entries
+                  ]
     end
 
     attribute :resource, :string, allow_nil?: false, public?: true

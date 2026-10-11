@@ -71,7 +71,16 @@ defmodule ZippikerWeb.AccountingLive.Overview do
          |> push_patch(to: ~p"/accounting")}
 
       {:error, form} ->
-        {:noreply, assign(socket, :expense_form, form)}
+        case change_requested(form) do
+          nil ->
+            {:noreply, assign(socket, :expense_form, form)}
+
+          number ->
+            {:noreply,
+             socket
+             |> put_flash(:info, change_requested_message(number))
+             |> push_patch(to: ~p"/accounting")}
+        end
     end
   end
 

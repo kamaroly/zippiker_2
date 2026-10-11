@@ -20,6 +20,8 @@ defmodule Zippiker.Accounting.JournalEntry.Actions do
     end
 
     create :create do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :journal_entries}
+
       change {Zippiker.Accounts.Changes.SetBranch,
               from: [reversal_of_id: Zippiker.Accounting.JournalEntry]}
 
@@ -68,6 +70,8 @@ defmodule Zippiker.Accounting.JournalEntry.Actions do
     end
 
     create :expense do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :journal_entries}
+
       change {Zippiker.Accounts.Changes.SetBranch,
               from: [reversal_of_id: Zippiker.Accounting.JournalEntry]}
 
