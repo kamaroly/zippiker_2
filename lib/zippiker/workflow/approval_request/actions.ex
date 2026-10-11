@@ -28,7 +28,7 @@ defmodule Zippiker.Workflow.ApprovalRequest.Actions do
       description "Starts approval for a document with the matching workflow."
       accept [:document_type, :document_id, :document_label, :amount]
       argument :steps, {:array, :map}, default: []
-      change relate_actor(:requested_by)
+      change relate_actor(:requested_by, allow_nil?: true)
       change Changes.PickWorkflow
       change manage_relationship(:steps, type: :create)
       change Changes.Advance

@@ -127,7 +127,7 @@
           name="workflow[min_amount]"
           id="workflow-min-amount"
           value={@fields["min_amount"]}
-          label={"Applies from (#{@currency})"}
+          label={amount_label(@fields["document_type"], @currency)}
         />
       </div>
 

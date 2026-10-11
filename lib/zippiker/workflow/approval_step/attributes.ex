@@ -9,7 +9,7 @@ defmodule Zippiker.Workflow.ApprovalStep.Attributes do
     attribute :approver_type, :atom do
       allow_nil? false
       public? true
-      constraints one_of: [:manager, :user, :group, :admins]
+      constraints one_of: [:manager, :manager_or_admins, :user, :group, :admins]
     end
   end
 end

@@ -1,7 +1,8 @@
 defmodule Zippiker.Workflow.Approvers do
   @moduledoc """
   Resolves who may decide a request step: the initiator's manager (from HR),
-  a specific user, the members of a group, or the workspace admins. The
+  the manager or else the admins, a specific user, the members of a group,
+  or the workspace admins. The
   initiator never approves their own request.
   """
 
@@ -16,6 +17,7 @@ defmodule Zippiker.Workflow.Approvers do
         :user -> [step.user_id]
         :group -> group_members(step.group_id, opts)
         :manager -> manager(request.requested_by_id, opts)
+        :manager_or_admins -> manager_or_admins(request, tenant, opts)
         :admins -> admins(tenant)
       end
 
@@ -29,6 +31,14 @@ defmodule Zippiker.Workflow.Approvers do
     |> Ash.Query.filter(group_id == ^group_id)
     |> Ash.read!(opts)
     |> Enum.map(& &1.user_id)
+  end
+
+  # The initiator's manager; any admin when they have none (or it's themselves).
+  defp manager_or_admins(request, tenant, opts) do
+    case manager(request.requested_by_id, opts) -- [request.requested_by_id] do
+      [] -> admins(tenant)
+      managers -> managers
+    end
   end
 
   defp manager(nil, _opts), do: []

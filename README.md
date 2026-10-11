@@ -118,7 +118,11 @@ RFQ (`Purchasing.Rfq`) → purchase order mirrors quote → sales order. Every d
 
 Employees are `Parties` people (created from the hire form) with an `EMP-0001` number (non-yearly
 sequence). `user_id` links a login: the actor's record (`HR.my_employee_record`) is used for their own
-leave; their manager's user approves (`LeaveRequest` policies; never yourself).
+leave. Pending requests go through the workflow engine (`:leave_request`, amount = days); with no
+leave workflow the default step is the manager, or the admins when there is none
+(`:manager_or_admins`). `approve_leave` / `reject_leave` decide the current step, the workflow's
+outcome is applied by `HR.apply_leave_approval`, and cancelling or an overdue auto-decision
+withdraws the approval. Requests from before workflows are decided directly.
 
 Leave policies are per leave type (`LeavePolicy`): category `:fixed` (days per year + carry-over),
 `:accrual` (credited per week/month/quarter/year up to a cap), `:manual` (adjustments and claims

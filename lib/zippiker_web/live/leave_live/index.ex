@@ -165,14 +165,33 @@ defmodule ZippikerWeb.LeaveLive.Index do
   end
 
   defp load_requests(socket) do
+    # Requests whose current workflow step the user approves.
+    decidable =
+      socket
+      |> ash_opts()
+      |> Zippiker.Workflow.approval_inbox!()
+      |> Enum.filter(&(&1.document_type == :leave_request))
+      |> MapSet.new(& &1.document_id)
+
+    socket = assign(socket, :decidable, decidable)
+
     filters =
       case socket.assigns.view do
         "mine" -> %{mine?: true}
-        "approve" -> if admin?(socket.assigns), do: %{status: :pending}, else: %{to_decide?: true}
+        "approve" -> %{status: :pending}
         "all" -> %{}
       end
 
-    requests = HR.list_leave_requests!(filters, ash_opts(socket) ++ [page: [limit: 50]]).results
+    requests =
+      filters
+      |> HR.list_leave_requests!(ash_opts(socket) ++ [page: [limit: 50]])
+      |> Map.fetch!(:results)
+      |> then(fn requests ->
+        if socket.assigns.view == "approve" and not admin?(socket.assigns),
+          do: Enum.filter(requests, &can_decide?(&1, socket.assigns)),
+          else: requests
+      end)
+
     stream(socket, :requests, requests, reset: true)
   end
 
@@ -213,6 +232,11 @@ defmodule ZippikerWeb.LeaveLive.Index do
 
     assign(socket, form: form, days: days, balance: balance, policy: policy)
   end
+
+  # Workflow requests: the user approves the current step. Older requests:
+  # the employee's manager or an admin (never yourself).
+  defp can_decide?(%{approval_request_id: id} = request, assigns) when is_binary(id),
+    do: request.status == :pending and MapSet.member?(assigns.decidable, request.id)
 
   defp can_decide?(request, assigns) do
     request.status == :pending and request.employee.user_id != assigns.current_user.id and

@@ -85,6 +85,7 @@ defmodule Zippiker.HR do
       define :request_leave, action: :create
       define :approve_leave, action: :approve
       define :reject_leave, action: :reject
+      define :apply_leave_approval, action: :apply_approval, args: [:request_id, :outcome]
       define :cancel_leave, action: :cancel
     end
 

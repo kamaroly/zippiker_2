@@ -49,25 +49,45 @@ defmodule Zippiker.HR.LeaveRequest.Actions do
       validate Validations.PolicyRules
       validate Validations.WithinAllowance
       change Changes.AutoApprove
+      change Changes.StartApproval
     end
 
     update :approve do
+      description "Decides the current approval step (or the whole request, for legacy requests)."
       require_atomic? false
       accept [:decision_note]
       validate {InStatus, statuses: [:pending]}
       validate Validations.WithinAllowance
-      change set_attribute(:status, :approved)
-      change set_attribute(:decided_at, &DateTime.utc_now/0)
-      change relate_actor(:decided_by)
+      change {Changes.Decide, decision: :approve}
     end
 
     update :reject do
       require_atomic? false
       accept [:decision_note]
       validate {InStatus, statuses: [:pending]}
-      change set_attribute(:status, :rejected)
+      change {Changes.Decide, decision: :reject}
+    end
+
+    update :link_approval do
+      accept [:approval_request_id]
+    end
+
+    update :mark_decided do
+      description "The workflow finished: approved or rejected."
+      require_atomic? false
+      argument :outcome, :atom, allow_nil?: false, constraints: [one_of: [:approved, :rejected]]
+      validate {InStatus, statuses: [:pending]}
+      change set_attribute(:status, arg(:outcome))
       change set_attribute(:decided_at, &DateTime.utc_now/0)
-      change relate_actor(:decided_by)
+      change relate_actor(:decided_by, allow_nil?: true)
+    end
+
+    action :apply_approval, :struct do
+      description "Called by the workflow when the request's approval finishes."
+      constraints instance_of: Zippiker.HR.LeaveRequest
+      argument :request_id, :uuid, allow_nil?: false
+      argument :outcome, :atom, allow_nil?: false, constraints: [one_of: [:approved, :rejected]]
+      run Zippiker.HR.LeaveRequest.Actions.ApplyApproval
     end
 
     update :auto_decide do
@@ -76,12 +96,14 @@ defmodule Zippiker.HR.LeaveRequest.Actions do
       argument :decision, :atom, allow_nil?: false, constraints: [one_of: [:approve, :reject]]
       validate {InStatus, statuses: [:pending]}
       change Changes.AutoDecide
+      change Changes.CloseApproval
     end
 
     update :cancel do
       require_atomic? false
       validate {InStatus, statuses: [:pending, :approved], message: "already closed"}
       change set_attribute(:status, :cancelled)
+      change Changes.CloseApproval
     end
   end
 end

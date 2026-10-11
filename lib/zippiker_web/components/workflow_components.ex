@@ -12,6 +12,7 @@ defmodule ZippikerWeb.WorkflowComponents do
 
   @doc "Where an approval request's document lives in the app."
   def document_path(%{document_type: :expense_claim, document_id: id}), do: ~p"/expenses/#{id}"
+  def document_path(%{document_type: :leave_request}), do: ~p"/hr/leave?view=approve"
   def document_path(_request), do: nil
 
   attr :type, :atom, required: true
@@ -37,6 +38,9 @@ defmodule ZippikerWeb.WorkflowComponents do
   @doc "Who decides a workflow step, in words."
   def approver_label(%{approver_type: :manager}), do: "Initiator's manager"
   def approver_label(%{approver_type: :admins}), do: "Any workspace admin"
+
+  def approver_label(%{approver_type: :manager_or_admins}),
+    do: "Initiator's manager (or an admin)"
 
   def approver_label(%{approver_type: :user, user: %{} = user}), do: Format.user_name(user)
   def approver_label(%{approver_type: :user}), do: "A specific person"

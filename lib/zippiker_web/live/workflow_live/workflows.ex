@@ -13,6 +13,7 @@ defmodule ZippikerWeb.WorkflowLive.Workflows do
 
   @types [
     {"Initiator's manager", "manager"},
+    {"Manager, or an admin if none", "manager_or_admins"},
     {"Specific person", "user"},
     {"Anyone in a group", "group"},
     {"Any workspace admin", "admins"}
@@ -195,9 +196,23 @@ defmodule ZippikerWeb.WorkflowLive.Workflows do
   end
 
   defp threshold(workflow, currency) do
-    if Decimal.eq?(workflow.min_amount, 0),
-      do: "All claims",
-      else: "Claims from #{ZippikerWeb.Format.money(Money.new!(currency, workflow.min_amount))}"
+    cond do
+      Decimal.eq?(workflow.min_amount, 0) ->
+        "Applies to everything"
+
+      Zippiker.Workflow.DocumentTypes.get(workflow.document_type).unit == :days ->
+        "From #{Decimal.normalize(workflow.min_amount)} days"
+
+      true ->
+        "From #{ZippikerWeb.Format.money(Money.new!(currency, workflow.min_amount))}"
+    end
+  end
+
+  defp amount_label(document_type, currency) do
+    case Zippiker.Workflow.DocumentTypes.get(String.to_existing_atom(document_type)) do
+      %{unit: :days} -> "Applies from (days)"
+      _ -> "Applies from (#{currency})"
+    end
   end
 
   defp workflows_for(workflows, type), do: Enum.filter(workflows, &(&1.document_type == type))

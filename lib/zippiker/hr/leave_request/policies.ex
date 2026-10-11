@@ -20,10 +20,12 @@ defmodule Zippiker.HR.LeaveRequest.Policies do
       forbid_if expr(not is_nil(employee.user_id) and employee.user_id == ^actor(:id))
       authorize_if ActorIsAdmin
       authorize_if expr(employee.manager.user_id == ^actor(:id))
+      # Workflow requests: the engine checks the actor approves the current step.
+      authorize_if expr(not is_nil(approval_request_id))
     end
 
     # Run by the overdue-review job with authorization off.
-    policy action(:auto_decide) do
+    policy action([:auto_decide, :link_approval, :mark_decided, :apply_approval]) do
       forbid_if always()
     end
 

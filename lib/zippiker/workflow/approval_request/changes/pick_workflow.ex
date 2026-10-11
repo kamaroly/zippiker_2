@@ -2,7 +2,7 @@ defmodule Zippiker.Workflow.ApprovalRequest.Changes.PickWorkflow do
   @moduledoc """
   Copies the steps of the active workflow for the document type with the
   highest `min_amount` not above the document's amount. Without a workflow,
-  any workspace admin approves.
+  the document type's default steps apply (`Workflow.DocumentTypes`).
   """
   use Ash.Resource.Change
 
@@ -24,7 +24,7 @@ defmodule Zippiker.Workflow.ApprovalRequest.Changes.PickWorkflow do
     steps =
       case workflow do
         nil ->
-          [%{position: 1, label: "Workspace admin", approver_type: :admins}]
+          Zippiker.Workflow.DocumentTypes.default_steps(type)
 
         workflow ->
           Enum.map(workflow.steps, fn step ->
