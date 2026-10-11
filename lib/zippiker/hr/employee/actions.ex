@@ -65,6 +65,7 @@ defmodule Zippiker.HR.Employee.Actions do
               number_field: :employee_number}
 
       validate Validations.ManagerChain
+      change {Changes.StartDefaultChecklist, kind: :onboarding}
     end
 
     update :update do
@@ -88,6 +89,7 @@ defmodule Zippiker.HR.Employee.Actions do
       validate attribute_equals(:status, :active), message: "already left"
       change set_attribute(:status, :terminated)
       change set_new_attribute(:termination_date, &Date.utc_today/0)
+      change {Changes.StartDefaultChecklist, kind: :offboarding}
     end
 
     update :rehire do

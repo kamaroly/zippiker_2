@@ -133,6 +133,13 @@ type's `allowance_days`. `HR.Entitlement` computes balances from the policy, `Le
 rows (accruals, admin adjustments, approved `LeaveClaim`s) and pending/approved requests. Days are
 Mon–Fri minus `Holiday`s (`HR.WorkingDays`) unless the policy counts every day.
 
+Onboarding/offboarding: `ChecklistTemplate` (+ `ChecklistTemplateTask`: assignee role hr / manager /
+employee / user, `due_in_days`, `requires_attachment?`) → `EmployeeChecklist` with `ChecklistTask`s
+(assignee resolved at start, due date from `base_date`) and `ChecklistAttachment`s. The default
+template of each kind starts on `Employee.create` / `terminate` (`StartDefaultChecklist`); a tenant
+migration seeds standard templates. Completing a task needs an attachment when required; the
+checklist completes when all tasks are done.
+
 Background jobs use Oban (`config :zippiker, Oban`): `HR.Workers.RunAccruals` daily and
 `HR.Workers.ReviewOverdueLeave` hourly, for every workspace with HR on. Both call generic actions
 on `HR.Automation` (`run_leave_accruals`, `review_overdue_leave`), which are idempotent. Leave

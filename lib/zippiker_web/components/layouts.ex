@@ -53,13 +53,15 @@ defmodule ZippikerWeb.Layouts do
     {:hr, "People", "hero-user-group",
      [
        {:employees, "Employees", "/hr/employees", :hr},
+       {:checklists, "On/offboarding", "/hr/checklists", :hr},
        {:leave, "Leave", "/hr/leave", :hr},
        {:leave_claims, "Leave claims", "/hr/leave-claims", :hr},
        {:org_chart, "Org chart", "/hr/org-chart", :hr},
        {:departments, "Departments", "/hr/departments", :hr},
        {:leave_policies, "Leave policies", "/hr/leave-policies", :hr},
        {:leave_types, "Leave types", "/hr/leave-types", :hr},
-       {:holidays, "Public holidays", "/hr/holidays", :hr}
+       {:holidays, "Public holidays", "/hr/holidays", :hr},
+       {:checklist_templates, "Checklists", "/hr/checklist-templates", :hr}
      ]},
     {:expenses, "Expenses", "hero-receipt-percent",
      [

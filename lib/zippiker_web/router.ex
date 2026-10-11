@@ -27,6 +27,7 @@ defmodule ZippikerWeb.Router do
     get "/invitations/:token", WorkspaceController, :invitation
     post "/workspaces/:id/switch", WorkspaceController, :switch
     get "/hr/leave/:id/attachment", LeaveAttachmentController, :show
+    get "/hr/checklist-attachments/:id", LeaveAttachmentController, :checklist
 
     post "/workspaces/:organization_id/impersonate/:user_id",
          WorkspaceController,
@@ -195,6 +196,13 @@ defmodule ZippikerWeb.Router do
       live "/hr/leave-policies/new", HRLive.LeavePolicies, :new
       live "/hr/leave-policies/:id/edit", HRLive.LeavePolicies, :edit
       live "/hr/leave-policies/:id/assign", HRLive.LeavePolicies, :assign
+      live "/hr/checklists", ChecklistLive.Index, :index
+      live "/hr/checklists/new", ChecklistLive.Index, :new
+      live "/hr/checklists/:id", ChecklistLive.Show, :show
+      live "/hr/checklists/:id/tasks/:task_id", ChecklistLive.Show, :task
+      live "/hr/checklist-templates", ChecklistLive.Templates, :index
+      live "/hr/checklist-templates/new", ChecklistLive.Templates, :new
+      live "/hr/checklist-templates/:id/edit", ChecklistLive.Templates, :edit
       live "/hr/leave-claims", LeaveLive.Claims, :index
       live "/hr/leave-claims/new", LeaveLive.Claims, :new
       live "/hr/holidays", HRLive.Holidays, :index

@@ -95,6 +95,36 @@
         </div>
       </.card>
 
+      <.card title="Onboarding & offboarding" padded={false} id="employee-checklists">
+        <:action>
+          <.link
+            :if={admin?(assigns)}
+            navigate={~p"/hr/checklists/new?employee_id=#{@employee.id}"}
+            class="text-muted hover:text-ink"
+          >
+            Start checklist
+          </.link>
+        </:action>
+        <ul class="divide-y divide-line px-5 pb-2">
+          <li :for={checklist <- @checklists} class="py-2.5">
+            <.link
+              navigate={~p"/hr/checklists/#{checklist}"}
+              class="flex items-center gap-3 hover:opacity-80"
+            >
+              <.badge color={if(checklist.kind == :onboarding, do: :emerald, else: :orange)}>
+                {Format.humanize(checklist.kind)}
+              </.badge>
+              <span class="min-w-0 flex-1 truncate text-sm text-ink">{checklist.name}</span>
+              <span class="tabular text-xs text-muted">
+                {checklist.done_count}/{checklist.tasks_count}
+                {if checklist.status == :completed, do: "· done", else: ""}
+              </span>
+            </.link>
+          </li>
+          <li :if={@checklists == []} class="py-3 text-sm text-muted">No checklists yet.</li>
+        </ul>
+      </.card>
+
       <.card title="Leave history" padded={false}>
         <ul id="employee-leave" phx-update="stream" class="divide-y divide-line px-5 pb-2">
           <li id="employee-leave-empty" class="hidden py-4 text-sm text-muted only:block">

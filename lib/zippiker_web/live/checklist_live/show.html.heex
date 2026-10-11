@@ -1,0 +1,200 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:checklists}
+>
+  <.header>
+    <:breadcrumb>
+      <.link navigate={~p"/hr/checklists"} class="hover:text-ink">On/offboarding</.link>
+    </:breadcrumb>
+    <span class="flex items-center gap-3">
+      {@checklist.employee.name}
+      <.badge color={if(@checklist.kind == :onboarding, do: :emerald, else: :orange)}>
+        {Format.humanize(@checklist.kind)}
+      </.badge>
+      <.badge
+        :if={@checklist.status != :in_progress}
+        color={if(@checklist.status == :completed, do: :emerald, else: :slate)}
+      >
+        {Format.humanize(@checklist.status)}
+      </.badge>
+    </span>
+    <:subtitle>
+      {@checklist.name} · from {Format.date(@checklist.base_date)} · {@checklist.done_count} of {@checklist.tasks_count} done
+    </:subtitle>
+    <:actions>
+      <.button navigate={~p"/hr/employees/#{@checklist.employee}"}>
+        <.icon name="hero-user-micro" /> Employee
+      </.button>
+      <.button
+        :if={admin?(assigns) and @checklist.status == :in_progress}
+        phx-click="cancel_checklist"
+        data-confirm="Cancel this checklist?"
+        id="cancel-checklist"
+      >
+        Cancel checklist
+      </.button>
+    </:actions>
+  </.header>
+
+  <ol id="checklist-tasks" class="space-y-2">
+    <li
+      :for={task <- @checklist.tasks}
+      id={"task-#{task.id}"}
+      class={[
+        "rounded-2xl border bg-surface p-4 shadow-card",
+        if(task.status == :done, do: "border-line opacity-80", else: "border-line")
+      ]}
+    >
+      <div class="flex flex-wrap items-start gap-3">
+        <span class={[
+          "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full",
+          if(task.status == :done, do: "bg-success text-white", else: "ring-2 ring-line")
+        ]}>
+          <.icon :if={task.status == :done} name="hero-check-micro" class="size-4" />
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class={[
+            "text-sm font-medium text-ink",
+            task.status == :done && "line-through decoration-muted"
+          ]}>
+            {task.title}
+            <.badge :if={task.requires_attachment?} class="ml-1">
+              <.icon name="hero-paper-clip-micro" /> proof needed
+            </.badge>
+          </p>
+          <p class="text-xs text-muted">
+            {assignee(task)} ·
+            <span class={overdue?(task) && "font-medium text-danger"}>due {Format.date(
+              task.due_on
+            )}</span>
+            <span :if={task.done_at}>
+              · done by {Format.user_name(task.done_by)} {Format.date(task.done_at)}
+            </span>
+          </p>
+          <p :if={task.description} class="mt-1 text-xs text-ink-soft">{task.description}</p>
+          <p
+            :if={task.note}
+            class="mt-1.5 rounded-lg bg-canvas px-2.5 py-1.5 text-xs text-ink-soft"
+          >
+            “{task.note}”
+          </p>
+          <ul :if={task.attachments != []} class="mt-2 flex flex-wrap gap-2">
+            <li
+              :for={file <- task.attachments}
+              class="flex items-center gap-1 rounded-lg bg-canvas px-2 py-1 text-xs"
+            >
+              <.link
+                href={~p"/hr/checklist-attachments/#{file.id}"}
+                target="_blank"
+                class="text-ink-soft hover:text-ink"
+              >
+                <.icon name="hero-paper-clip-micro" /> {file.name}
+              </.link>
+              <button
+                :if={can_act?(task, assigns) and task.status == :open}
+                phx-click="remove_file"
+                phx-value-id={file.id}
+                class="text-muted hover:text-danger"
+                aria-label="Remove"
+              >
+                <.icon name="hero-x-mark-micro" />
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div
+          :if={can_act?(task, assigns) and @checklist.status != :cancelled}
+          class="flex items-center gap-2"
+        >
+          <.button
+            patch={~p"/hr/checklists/#{@checklist}/tasks/#{task.id}"}
+            size="sm"
+            id={"attach-#{task.id}"}
+          >
+            <.icon name="hero-paper-clip-micro" /> Files &amp; note
+          </.button>
+          <.button
+            :if={task.status == :open}
+            phx-click="complete"
+            phx-value-id={task.id}
+            size="sm"
+            variant="primary"
+            id={"complete-#{task.id}"}
+          >
+            <.icon name="hero-check-micro" /> Done
+          </.button>
+          <button
+            :if={task.status == :done}
+            phx-click="reopen"
+            phx-value-id={task.id}
+            class="text-xs text-muted hover:text-ink"
+            id={"reopen-#{task.id}"}
+          >
+            Reopen
+          </button>
+        </div>
+      </div>
+    </li>
+  </ol>
+
+  <.modal
+    :if={@task}
+    id="task-modal"
+    show
+    title={@task.title}
+    on_cancel={JS.patch(~p"/hr/checklists/#{@checklist}")}
+  >
+    <form id="task-form" phx-submit="save_task" phx-change="validate_files" class="space-y-4">
+      <label
+        for={@uploads.file.ref}
+        phx-drop-target={@uploads.file.ref}
+        class="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-line-strong px-4 py-3 text-sm text-muted transition hover:border-ink hover:text-ink"
+      >
+        <.icon name="hero-arrow-up-tray" class="size-5" />
+        <span>Drop files or click to choose (PDF, images, Office; up to 10 MB each)</span>
+        <.live_file_input upload={@uploads.file} class="sr-only" />
+      </label>
+      <div :for={entry <- @uploads.file.entries} class="flex items-center gap-2 text-sm text-ink">
+        <.icon name="hero-paper-clip" class="size-4 text-muted" />
+        <span class="min-w-0 flex-1 truncate">{entry.client_name}</span>
+        <span class="tabular text-xs text-muted">{entry.progress}%</span>
+        <button
+          type="button"
+          phx-click="cancel_upload"
+          phx-value-ref={entry.ref}
+          class="text-muted hover:text-danger"
+        >
+          <.icon name="hero-x-mark-micro" />
+        </button>
+        <span :for={error <- upload_errors(@uploads.file, entry)} class="text-xs text-danger">
+          {upload_error(error)}
+        </span>
+      </div>
+      <.input
+        :if={@task.status == :open}
+        type="textarea"
+        name="note"
+        id="task-note"
+        value=""
+        label="Note"
+        rows="2"
+      />
+      <label :if={@task.status == :open} class="flex items-center gap-2 text-sm text-ink">
+        <input type="hidden" name="mark_done" value="false" />
+        <input
+          type="checkbox"
+          name="mark_done"
+          value="true"
+          id="task-mark-done"
+          checked
+          class="size-4 rounded border-line"
+        /> Mark as done
+      </label>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-task">Save</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

@@ -1,0 +1,124 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:checklists}
+>
+  <.header>
+    Onboarding &amp; offboarding
+    <:subtitle>
+      Checklists start automatically when someone is hired or leaves; you can also start one by hand.
+    </:subtitle>
+    <:actions>
+      <.button :if={admin?(assigns)} navigate={~p"/hr/checklist-templates"} id="manage-templates">
+        <.icon name="hero-clipboard-document-list-micro" /> Templates
+      </.button>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/hr/checklists/new"}
+        variant="primary"
+        id="start-checklist"
+      >
+        <.icon name="hero-play-micro" /> Start checklist
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.segmented
+      current={@kind}
+      options={[
+        {"All", nil, list_path(%{status: @status})},
+        {"Onboarding", :onboarding, list_path(%{kind: :onboarding, status: @status})},
+        {"Offboarding", :offboarding, list_path(%{kind: :offboarding, status: @status})}
+      ]}
+    />
+    <.segmented
+      current={@status}
+      options={[
+        {"In progress", :in_progress, list_path(%{kind: @kind})},
+        {"Completed", :completed, list_path(%{kind: @kind, status: :completed})},
+        {"All", nil, list_path(%{kind: @kind, status: "all"})}
+      ]}
+    />
+  </div>
+
+  <ul id="checklists" phx-update="stream" class="grid gap-3 md:grid-cols-2">
+    <li id="checklists-empty" class="hidden only:block md:col-span-2">
+      <.card>
+        <.empty_state icon="hero-clipboard-document-check" title="Nothing here">
+          Hire someone (or mark someone as leaving) and their checklist appears here.
+        </.empty_state>
+      </.card>
+    </li>
+    <li :for={{id, checklist} <- @streams.checklists} id={id}>
+      <.link
+        navigate={~p"/hr/checklists/#{checklist}"}
+        class="block rounded-2xl border border-line bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:shadow-pop"
+      >
+        <div class="flex items-center gap-3">
+          <.avatar name={checklist.employee.name} size="sm" />
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold text-ink">{checklist.employee.name}</p>
+            <p class="truncate text-xs text-muted">
+              {checklist.name} · from {Format.date(checklist.base_date)}
+            </p>
+          </div>
+          <.badge color={if(checklist.kind == :onboarding, do: :emerald, else: :orange)}>
+            {Format.humanize(checklist.kind)}
+          </.badge>
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-canvas ring-1 ring-line">
+            <div
+              class="h-full rounded-full bg-success transition-all"
+              style={"width: #{percent(checklist)}%"}
+            />
+          </div>
+          <span class="tabular text-xs text-muted">
+            {checklist.done_count}/{checklist.tasks_count}
+          </span>
+        </div>
+      </.link>
+    </li>
+  </ul>
+
+  <.modal
+    :if={@starting}
+    id="start-checklist-modal"
+    show
+    title="Start a checklist"
+    on_cancel={JS.patch(~p"/hr/checklists")}
+  >
+    <form id="start-checklist-form" phx-submit="start" class="space-y-4">
+      <.input
+        type="select"
+        name="start[employee_id]"
+        id="start-employee"
+        value={@employee_id}
+        label="Employee"
+        prompt="Choose…"
+        options={@employees}
+      />
+      <.input
+        type="select"
+        name="start[template_id]"
+        id="start-template"
+        value=""
+        label="Checklist"
+        options={@templates}
+      />
+      <.input
+        type="date"
+        name="start[base_date]"
+        id="start-date"
+        value={Date.utc_today()}
+        label="Start / leaving date"
+        hint="Task due dates count from this day."
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Starting…">Start</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

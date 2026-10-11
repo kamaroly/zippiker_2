@@ -105,7 +105,10 @@ defmodule ZippikerWeb.Modules do
       ZippikerWeb.HRLive.LeaveTypes,
       ZippikerWeb.HRLive.LeavePolicies,
       ZippikerWeb.HRLive.Holidays,
-      ZippikerWeb.LeaveLive.Claims
+      ZippikerWeb.LeaveLive.Claims,
+      ZippikerWeb.ChecklistLive.Index,
+      ZippikerWeb.ChecklistLive.Show,
+      ZippikerWeb.ChecklistLive.Templates
     ],
     expenses: [
       ZippikerWeb.ExpenseLive.Index,

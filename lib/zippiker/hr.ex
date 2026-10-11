@@ -66,6 +66,36 @@ defmodule Zippiker.HR do
       define :cancel_leave_claim, action: :cancel
     end
 
+    resource Zippiker.HR.ChecklistTemplate do
+      define :list_checklist_templates, action: :list
+      define :get_checklist_template, action: :read, get_by: [:id]
+      define :create_checklist_template, action: :create
+      define :update_checklist_template, action: :update
+      define :delete_checklist_template, action: :destroy
+    end
+
+    resource Zippiker.HR.ChecklistTemplateTask
+
+    resource Zippiker.HR.EmployeeChecklist do
+      define :list_checklists, action: :search
+      define :get_checklist, action: :read, get_by: [:id]
+      define :start_checklist, action: :start
+      define :cancel_checklist, action: :cancel
+    end
+
+    resource Zippiker.HR.ChecklistTask do
+      define :my_checklist_tasks, action: :assigned_to_me
+      define :get_checklist_task, action: :read, get_by: [:id]
+      define :complete_checklist_task, action: :complete
+      define :reopen_checklist_task, action: :reopen
+    end
+
+    resource Zippiker.HR.ChecklistAttachment do
+      define :attach_to_checklist_task, action: :create
+      define :get_checklist_attachment, action: :read, get_by: [:id]
+      define :delete_checklist_attachment, action: :destroy
+    end
+
     resource Zippiker.HR.Holiday do
       define :list_holidays, action: :list
       define :get_holiday, action: :read, get_by: [:id]

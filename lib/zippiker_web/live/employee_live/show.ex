@@ -107,6 +107,7 @@ defmodule ZippikerWeb.EmployeeLive.Show do
     |> assign(employee: employee, page_title: employee.name)
     |> assign(:balances, HR.leave_balances!(employee.id, opts))
     |> assign(:membership, membership(socket, employee))
+    |> assign(:checklists, HR.list_checklists!(%{employee_id: employee.id}, opts))
     |> stream(
       :requests,
       HR.list_leave_requests!(%{employee_id: employee.id}, opts ++ [page: [limit: 20]]).results,

@@ -1,0 +1,218 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:checklist_templates}
+>
+  <.header>
+    Checklist templates
+    <:subtitle>
+      What happens when someone joins or leaves. Defaults start automatically on hiring and leaving.
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/hr/checklist-templates/new"}
+        variant="primary"
+        id="new-template"
+      >
+        <.icon name="hero-plus-micro" /> Template
+      </.button>
+    </:actions>
+  </.header>
+
+  <div id="checklist-templates" class="grid gap-4 lg:grid-cols-2">
+    <.card
+      :for={template <- @templates}
+      id={"template-#{template.id}"}
+      class={!template.active? && "opacity-60"}
+    >
+      <div class="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h2 class="flex flex-wrap items-center gap-2 text-base font-semibold text-ink">
+            {template.name}
+            <.badge color={if(template.kind == :onboarding, do: :emerald, else: :orange)}>
+              {Format.humanize(template.kind)}
+            </.badge>
+            <.badge :if={template.default?} color={:blue}>Default</.badge>
+          </h2>
+          <p :if={template.description} class="text-xs text-muted">{template.description}</p>
+        </div>
+        <span :if={admin?(assigns)} class="flex shrink-0 gap-3 text-sm">
+          <.link
+            patch={~p"/hr/checklist-templates/#{template}/edit"}
+            class="text-ink-soft hover:text-ink"
+            id={"edit-template-#{template.id}"}
+          >
+            Edit
+          </.link>
+          <.link
+            phx-click="delete"
+            phx-value-id={template.id}
+            data-confirm={"Delete #{template.name}?"}
+            class="text-danger hover:opacity-80"
+          >
+            Delete
+          </.link>
+        </span>
+      </div>
+      <ol class="space-y-1.5 text-sm">
+        <li :for={task <- template.tasks} class="flex items-center gap-2">
+          <span class="tabular w-20 shrink-0 text-xs text-muted">{due_label(task.due_in_days)}</span>
+          <span class="min-w-0 flex-1 truncate text-ink-soft">{task.title}</span>
+          <.icon
+            :if={task.requires_attachment?}
+            name="hero-paper-clip-micro"
+            class="size-3.5 text-muted"
+          />
+          <.badge>{role_label(task.assignee_role)}</.badge>
+        </li>
+      </ol>
+    </.card>
+  </div>
+
+  <.modal
+    :if={@editing?}
+    id="template-modal"
+    show
+    size="lg"
+    title={if(@template, do: "Edit #{@template.name}", else: "New checklist template")}
+    on_cancel={JS.patch(~p"/hr/checklist-templates")}
+  >
+    <form id="template-form" phx-change="change" phx-submit="save" class="space-y-5">
+      <div class="grid gap-4 sm:grid-cols-[1fr_12rem]">
+        <.input
+          name="template[name]"
+          id="template-name"
+          value={@fields["name"]}
+          label="Name"
+          required
+        />
+        <.input
+          :if={!@template}
+          type="select"
+          name="template[kind]"
+          id="template-kind"
+          value={@fields["kind"]}
+          label="Kind"
+          options={[{"Onboarding", "onboarding"}, {"Offboarding", "offboarding"}]}
+        />
+      </div>
+      <.input
+        name="template[description]"
+        id="template-description"
+        value={@fields["description"]}
+        label="Description"
+      />
+
+      <div>
+        <p class="mb-2 text-sm font-medium text-ink">Tasks</p>
+        <ol id="template-tasks" class="space-y-2">
+          <li
+            :for={task <- @tasks}
+            id={"template-task-#{task["key"]}"}
+            class="rounded-xl border border-line bg-canvas/50 p-3"
+          >
+            <div class="grid gap-3 sm:grid-cols-[1fr_10rem_6rem_2rem]">
+              <.input
+                name={"tasks[#{task["key"]}][title]"}
+                id={"task-title-#{task["key"]}"}
+                value={task["title"]}
+                placeholder="Task"
+              />
+              <.input
+                type="select"
+                name={"tasks[#{task["key"]}][assignee_role]"}
+                id={"task-role-#{task["key"]}"}
+                value={task["assignee_role"]}
+                options={@roles}
+              />
+              <.input
+                type="number"
+                name={"tasks[#{task["key"]}][due_in_days]"}
+                id={"task-due-#{task["key"]}"}
+                value={task["due_in_days"]}
+                title="Days from the start/leaving date (negative = before)"
+              />
+              <button
+                type="button"
+                phx-click="remove_task"
+                phx-value-key={task["key"]}
+                class="mb-2 self-end rounded p-1 text-muted hover:bg-danger-soft hover:text-danger"
+                title="Remove"
+              >
+                <.icon name="hero-trash-micro" />
+              </button>
+            </div>
+            <div class="mt-2 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <.input
+                :if={task["assignee_role"] == "user"}
+                type="select"
+                name={"tasks[#{task["key"]}][user_id]"}
+                id={"task-user-#{task["key"]}"}
+                value={task["user_id"]}
+                prompt="Choose a person"
+                options={@members}
+              />
+              <.input
+                :if={task["assignee_role"] != "user"}
+                name={"tasks[#{task["key"]}][description]"}
+                id={"task-description-#{task["key"]}"}
+                value={task["description"]}
+                placeholder="Details (optional)"
+              />
+              <label class="flex items-center gap-2 text-xs text-ink-soft">
+                <input
+                  type="hidden"
+                  name={"tasks[#{task["key"]}][requires_attachment?]"}
+                  value="false"
+                />
+                <input
+                  type="checkbox"
+                  name={"tasks[#{task["key"]}][requires_attachment?]"}
+                  value="true"
+                  checked={task["requires_attachment?"] == "true"}
+                  class="size-4 rounded border-line"
+                /> Proof needed
+              </label>
+            </div>
+          </li>
+        </ol>
+        <button
+          type="button"
+          phx-click="add_task"
+          id="add-template-task"
+          class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-ink-soft hover:text-ink"
+        >
+          <.icon name="hero-plus-micro" /> Add task
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-6">
+        <label class="flex items-center gap-2 text-sm text-ink">
+          <input type="hidden" name="template[default?]" value="false" />
+          <input
+            type="checkbox"
+            name="template[default?]"
+            value="true"
+            checked={@fields["default?"] == "true"}
+            class="size-4 rounded border-line"
+          /> Start automatically (default)
+        </label>
+        <label class="flex items-center gap-2 text-sm text-ink">
+          <input type="hidden" name="template[active?]" value="false" />
+          <input
+            type="checkbox"
+            name="template[active?]"
+            value="true"
+            checked={@fields["active?"] == "true"}
+            class="size-4 rounded border-line"
+          /> Active
+        </label>
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-template">Save template</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>
