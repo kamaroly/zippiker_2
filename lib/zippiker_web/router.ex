@@ -202,6 +202,7 @@ defmodule ZippikerWeb.Router do
       live "/accounting/journal/:id", AccountingLive.Entry, :show
       live "/accounting/reports", AccountingLive.Reports, :index
 
+      live "/assistant", AssistantLive, :index
       live "/reports", ReportLive.Index, :index
       live "/reports/:key", ReportLive.Show, :show
 

@@ -54,6 +54,7 @@ defmodule ZippikerWeb.Commands do
     {"New branch", "/settings/branches/new", nil, "branches.manage", "location office shop"},
     {"New tax rate", "/settings/taxes/new", :sales, "taxes.manage", "vat tax"},
     {"My workspace", "/me", :hr, nil, "self service profile balances"},
+    {"Ask the assistant", "/assistant", nil, "assistant.use", "ai claude chat question help"},
     {"Help center", "/help", nil, nil, "docs how to support"}
   ]
 

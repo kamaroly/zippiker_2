@@ -81,6 +81,7 @@ config :zippiker,
     Zippiker.Portal,
     Zippiker.Compliance,
     Zippiker.Reporting,
+    Zippiker.Assistant,
     Zippiker.Platform
   ]
 

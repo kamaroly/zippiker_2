@@ -38,3 +38,6 @@ npm-debug.log
 
 # Uploaded files
 /priv/uploads/
+
+# Local secrets (e.g. ANTHROPIC_API_KEY, see docs/ai-assistant.md)
+.env

@@ -36,6 +36,7 @@ defmodule ZippikerWeb.Access do
       key in @self_service_pages -> nil
       key in [:contacts, :companies] -> "view.contacts"
       key == :report_center -> "view.reports"
+      key == :assistant -> "assistant.use"
       true -> module_permission(module)
     end
   end
@@ -71,19 +72,7 @@ defmodule ZippikerWeb.Access do
     if key in Permissions.views(), do: key
   end
 
-  @doc "Reports a member can run: they see reports and every module the report reads."
-  def reports(organization, permissions) do
-    if can?(permissions, "view.reports") do
-      Enum.filter(Zippiker.Reporting.Catalog.available(organization), fn report ->
-        Enum.all?(report.modules, fn module ->
-          case module_permission(module) do
-            nil -> true
-            key -> can?(permissions, key)
-          end
-        end)
-      end)
-    else
-      []
-    end
-  end
+  @doc "Reports a member can run (see `Zippiker.Reporting.Catalog.visible/2`)."
+  def reports(organization, permissions),
+    do: Zippiker.Reporting.Catalog.visible(organization, permissions)
 end

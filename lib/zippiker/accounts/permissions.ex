@@ -216,6 +216,7 @@ defmodule Zippiker.Accounts.Permissions do
 
     # Reports
     {"view.reports", :reports, "See reports", []},
+    {"assistant.use", :reports, "Use the AI assistant", []},
 
     # Company secretarial
     {"view.compliance", :compliance, "See company secretarial records", []},
@@ -358,18 +359,18 @@ defmodule Zippiker.Accounts.Permissions do
 
   # Built-in roles
 
-  @sales_rep ~w(view.contacts contacts.manage view.crm leads.manage leads.convert deals.manage
+  @sales_rep ~w(view.contacts assistant.use contacts.manage view.crm leads.manage leads.convert deals.manage
                 tasks.manage activities.manage view.sales quotes.manage sales_orders.manage
                 deliveries.manage invoices.create invoices.issue payments.record view.reports)
 
-  @purchasing ~w(view.contacts contacts.manage view.purchasing rfqs.manage rfqs.decide
+  @purchasing ~w(view.contacts assistant.use contacts.manage view.purchasing rfqs.manage rfqs.decide
                  purchase_orders.manage purchase_orders.cancel goods.receive bills.create
                  view.inventory view.reports)
 
-  @hr ~w(view.contacts view.hr employees.manage departments.manage leave.setup leave.request
+  @hr ~w(view.contacts assistant.use view.hr employees.manage departments.manage leave.setup leave.request
          leave.approve time.log checklists.manage checklist_tasks.manage expenses.claim view.reports)
 
-  @accountant ~w(view.contacts contacts.manage view.sales invoices.create invoices.issue
+  @accountant ~w(view.contacts assistant.use contacts.manage view.sales invoices.create invoices.issue
                  invoices.void payments.record payments.delete taxes.manage view.purchasing
                  bills.create bills.approve bills.void bill_payments.record bill_payments.delete
                  expenses.reimburse expense_categories.manage expenses.manage view.accounting journal.expense journal.post
@@ -393,7 +394,7 @@ defmodule Zippiker.Accounts.Permissions do
         default?: false,
         description:
           "Self-service only: their own leave, time, expense claims, tasks and profile.",
-        permissions: ~w(view.contacts expenses.claim tasks.manage)
+        permissions: ~w(view.contacts expenses.claim tasks.manage assistant.use)
       },
       %{
         key: "sales_rep",

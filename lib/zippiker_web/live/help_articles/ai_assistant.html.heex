@@ -1,0 +1,112 @@
+<p>
+  The assistant is a chat that knows your workspace. Ask it about your numbers, customers,
+  invoices or stock in plain words, or ask it to prepare something: a contact, a lead, a task,
+  a draft quote or invoice, a time entry. It works as <strong>you</strong>: it only sees
+  what you can see and only does what your role allows.
+</p>
+
+<h2>Opening it</h2>
+<ul>
+  <li><strong>Assistant</strong> in the sidebar, or <strong>Ask AI</strong> at the top right.</li>
+  <li>
+    Press <strong>⌘K</strong>
+    (<strong>Ctrl+K</strong>), type your question and press <strong>Enter</strong>
+    when nothing in the list matches: the assistant opens with your question.
+  </li>
+</ul>
+<p>
+  Don't see it? Your role doesn't include <em>Use the AI assistant</em>
+  yet; ask an admin. If the page says the assistant <em>isn't switched on yet</em>, whoever
+  runs Zippiker needs to add an API key (see <em>For administrators</em>
+  below).
+</p>
+
+<h2>Asking questions</h2>
+<p>Write the way you'd ask a colleague. For example:</p>
+<ul>
+  <li>Who owes us the most money right now?</li>
+  <li>How did sales this month compare with last month?</li>
+  <li>Which invoices to Globex are still unpaid?</li>
+  <li>What's our profit so far this year? And as a percentage of sales?</li>
+  <li>Which products are below their reorder level?</li>
+  <li>How much VAT do we owe for last quarter?</li>
+  <li>Show me open deals closing this month.</li>
+</ul>
+<p>
+  While it works you'll see short lines such as <em>Searched invoices for “Globex”</em>
+  or <em>Ran the profit and loss report</em>: that's where its answer comes from. Figures
+  come from the same <.link navigate="/reports">standard reports</.link>
+  you can open yourself, and it often adds a button to open the page it used.
+</p>
+<p>
+  Ask follow-up questions in the same chat: “and last year?”, “only the overdue ones”,
+  “who is their contact?”. <strong>New chat</strong>
+  starts over. Reloading the page also starts a new chat.
+</p>
+
+<h2>Asking it to do things</h2>
+<p>The assistant can prepare:</p>
+<ul>
+  <li>a contact or company (as a customer or supplier)</li>
+  <li>a lead</li>
+  <li>a task, e.g. “remind me to call Ann at Globex on Friday”</li>
+  <li>a note, call, email or meeting on a contact's history</li>
+  <li>
+    a <strong>draft</strong>
+    quote or invoice, e.g. “draft an invoice to Globex for 10 hours of consulting at 50”
+  </li>
+  <li>a time entry, e.g. “log 3 hours today for Globex, billable at 40”</li>
+</ul>
+<p>
+  Before anything is saved, an <strong>Approve?</strong>
+  card shows exactly what it's about to do. Click <strong>Approve</strong>
+  to save it or <strong>Decline</strong>
+  to cancel. When it's done, click <strong>Open</strong>
+  to see the record.
+</p>
+<.callout>
+  The assistant never issues, sends, pays, approves, voids or deletes anything. Quotes and
+  invoices are always drafts: open them, check them and issue them yourself.
+</.callout>
+
+<h2>Tips</h2>
+<ul>
+  <li>Be specific about names and periods: “Globex”, “last quarter”, “since 1 March”.</li>
+  <li>
+    If it picks the wrong customer or product, say so (“no, Globex Kenya”) and it will try again.
+  </li>
+  <li>
+    Check important figures in the report or document it links to. AI can misread a question
+    or a table.
+  </li>
+  <li>
+    If it says your role doesn't allow something, that's the same rule as everywhere else in
+    Zippiker: ask an admin for a role that includes it.
+  </li>
+</ul>
+
+<h2>Privacy</h2>
+<p>
+  To answer, your question and the records the assistant looks up are sent to Anthropic, the
+  company that makes the Claude AI model. Chats aren't saved in Zippiker.
+</p>
+
+<h2>For administrators</h2>
+<ul>
+  <li>
+    <strong>Who can use it:</strong>
+    owners and admins always; members whose role includes <em>Use the AI assistant</em>
+    (<.link navigate="/settings/roles">Settings → Roles &amp; permissions</.link>).
+  </li>
+  <li>
+    <strong>Switching it on:</strong>
+    the server needs an Anthropic API key in the <code>ANTHROPIC_API_KEY</code>
+    environment variable, then a restart. Step-by-step instructions are in
+    <code>docs/ai-assistant.md</code>
+    in the code repository.
+  </li>
+  <li>
+    <strong>Costs:</strong>
+    usage is billed by Anthropic per question; set a monthly limit in the Claude Console.
+  </li>
+</ul>

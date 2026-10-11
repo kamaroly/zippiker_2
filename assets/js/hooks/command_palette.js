@@ -75,8 +75,17 @@ export default {
     })
   },
 
+  // Enter opens the highlighted result; with no match, it asks the assistant
+  // (when this user has it).
   go() {
     const link = this.visible()[this.active]?.querySelector("a")
-    if (link) link.click()
+    const question = this.input.value.trim()
+
+    if (link) {
+      link.click()
+    } else if (question && this.el.dataset.assistant === "true") {
+      this.close()
+      window.location.href = `/assistant?q=${encodeURIComponent(question)}`
+    }
   }
 }

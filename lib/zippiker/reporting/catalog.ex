@@ -276,6 +276,30 @@ defmodule Zippiker.Reporting.Catalog do
     Enum.filter(all(), fn report -> Enum.all?(report.modules, &(&1 in enabled)) end)
   end
 
+  @doc """
+  The reports someone can run, given their permissions (`:all` or a
+  MapSet, see `Zippiker.Accounts.Permissions`): they need "view.reports"
+  and the view permission of every module the report reads.
+  """
+  def visible(organization, permissions) do
+    alias Zippiker.Accounts.Permissions
+
+    granted? = fn key ->
+      permissions == :all or (is_struct(permissions, MapSet) and MapSet.member?(permissions, key))
+    end
+
+    if granted?.("view.reports") do
+      Enum.filter(available(organization), fn report ->
+        Enum.all?(report.modules, fn module ->
+          key = "view.#{module}"
+          key not in Permissions.views() or granted?.(key)
+        end)
+      end)
+    else
+      []
+    end
+  end
+
   @doc "A report by key, or nil."
   def get(key), do: Enum.find(all(), &(&1.key == key))
 

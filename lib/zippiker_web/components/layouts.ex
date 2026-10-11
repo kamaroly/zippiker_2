@@ -12,6 +12,7 @@ defmodule ZippikerWeb.Layouts do
   # nil means always available; a module with no visible pages is hidden.
   @modules [
     {:home, "Dashboard", "hero-squares-2x2", [{:dashboard, "Dashboard", "/", nil}]},
+    {:ai, "Assistant", "hero-sparkles", [{:assistant, "Assistant", "/assistant", nil}]},
     {:me, "My workspace", "hero-user-circle",
      [
        {:me, "Overview", "/me", :hr},
@@ -177,10 +178,24 @@ defmodule ZippikerWeb.Layouts do
           </button>
           <div class="lg:hidden"><.brand /></div>
         </div>
-        <.command_palette commands={
-          ZippikerWeb.Commands.list(@current_organization, @role, @permissions)
-        } />
+        <.command_palette
+          commands={ZippikerWeb.Commands.list(@current_organization, @role, @permissions)}
+          assistant?={ZippikerWeb.Access.can?(@permissions, "assistant.use")}
+        />
         <div class="ml-auto flex items-center justify-end gap-1 sm:flex-1">
+          <.link
+            :if={ZippikerWeb.Access.can?(@permissions, "assistant.use")}
+            navigate="/assistant"
+            id="top-assistant"
+            class={[
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition hover:bg-canvas hover:text-ink",
+              if(@active == :assistant, do: "text-brand", else: "text-ink-soft")
+            ]}
+            title="Ask the AI assistant"
+          >
+            <.icon name="hero-sparkles" class="size-5" />
+            <span class="hidden sm:inline">Ask AI</span>
+          </.link>
           <.link
             navigate="/help"
             id="top-help"
@@ -607,11 +622,13 @@ defmodule ZippikerWeb.Layouts do
   (`CommandPalette` hook) over the list rendered here.
   """
   attr :commands, :list, required: true
+  attr :assistant?, :boolean, default: false
 
   def command_palette(assigns) do
     ~H"""
     <div
       id="command-palette"
+      data-assistant={to_string(@assistant?)}
       phx-hook="CommandPalette"
       phx-update="ignore"
       class="min-w-0 flex-1 sm:max-w-md"
@@ -657,7 +674,12 @@ defmodule ZippikerWeb.Layouts do
               </.link>
             </li>
             <li data-palette-empty class="hidden px-3 py-6 text-center text-sm text-muted">
-              Nothing matches. Try “invoice”, “leave” or “new employee”.
+              <%= if @assistant? do %>
+                Nothing matches. Press <kbd class="rounded border border-line px-1">Enter</kbd>
+                to ask the assistant.
+              <% else %>
+                Nothing matches. Try “invoice”, “leave” or “new employee”.
+              <% end %>
             </li>
           </ul>
         </div>

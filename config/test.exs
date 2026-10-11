@@ -50,3 +50,8 @@ config :zippiker, :uploads_dir, "tmp/test_uploads"
 
 # Tests reuse pre-built team schemas instead of building one per team.
 config :zippiker, :tenant_pool, Zippiker.TenantPool
+
+# The assistant talks to a Req.Test stub instead of the Claude API.
+config :zippiker, Zippiker.Assistant,
+  api_key: "test-key",
+  req_options: [plug: {Req.Test, Zippiker.Assistant.Claude}, retry: false]

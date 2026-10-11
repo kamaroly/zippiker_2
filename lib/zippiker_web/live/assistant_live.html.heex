@@ -1,0 +1,222 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:assistant}
+>
+  <div class="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl flex-col">
+    <header class="mb-4 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-amber-400 text-white shadow-card">
+          <.icon name="hero-sparkles" class="size-5" />
+        </span>
+        <div>
+          <h1 class="text-xl font-semibold tracking-tight text-ink">Assistant</h1>
+          <p class="text-xs text-muted">
+            Searches, reports and drafts as you. Nothing is saved without your approval.
+          </p>
+        </div>
+      </div>
+      <.button :if={@history != []} phx-click="reset" variant="ghost" size="sm" id="new-chat">
+        <.icon name="hero-plus-micro" /> New chat
+      </.button>
+    </header>
+
+    <%= if not @configured? do %>
+      <div
+        id="assistant-not-configured"
+        class="rounded-2xl border border-dashed border-line bg-surface p-8 text-center shadow-card"
+      >
+        <.icon name="hero-key" class="mx-auto size-8 text-muted" />
+        <h2 class="mt-3 font-semibold text-ink">The assistant isn't switched on yet</h2>
+        <p class="mx-auto mt-1 max-w-md text-sm text-muted">
+          It needs an Anthropic API key on the server. Whoever runs Zippiker can add one in a
+          couple of minutes.
+        </p>
+        <.button navigate={~p"/help/ai-assistant"} class="mt-4" id="assistant-setup-help">
+          How to add the API key
+        </.button>
+      </div>
+    <% else %>
+      <div id="assistant-messages" class="flex-1 space-y-4 pb-4">
+        <div :if={@history == []} id="assistant-empty" class="py-10 text-center">
+          <p class="text-lg font-medium text-ink">What can I help with?</p>
+          <p class="mt-1 text-sm text-muted">
+            Ask about your numbers, customers or stock, or ask me to prepare something.
+          </p>
+          <div class="mx-auto mt-6 grid max-w-2xl gap-2 sm:grid-cols-2">
+            <button
+              :for={{suggestion, index} <- Enum.with_index(@suggestions)}
+              type="button"
+              phx-click="suggest"
+              phx-value-text={suggestion}
+              id={"suggestion-#{index}"}
+              class="rounded-xl border border-line bg-surface px-4 py-3 text-left text-sm text-ink-soft shadow-card transition hover:-translate-y-0.5 hover:border-brand/40 hover:text-ink"
+            >
+              {suggestion}
+            </button>
+          </div>
+        </div>
+
+        <%= for {item, index} <- Enum.with_index(items(@history)) do %>
+          <%= case item do %>
+            <% {:user, text} -> %>
+              <div id={"msg-#{index}"} class="flex justify-end">
+                <p class="max-w-[85%] rounded-2xl rounded-br-md bg-ink px-4 py-2.5 text-sm whitespace-pre-line text-canvas">
+                  {text}
+                </p>
+              </div>
+            <% {:assistant, text} -> %>
+              <div id={"msg-#{index}"} class="flex gap-3">
+                <span class="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+                  <.icon name="hero-sparkles-micro" class="size-4" />
+                </span>
+                <p class="max-w-[85%] rounded-2xl rounded-tl-md border border-line bg-surface px-4 py-2.5 text-sm leading-relaxed whitespace-pre-line text-ink shadow-card">
+                  {text}
+                </p>
+              </div>
+            <% {:tool, %{"name" => "open_page", "input" => input}, _result} -> %>
+              <div :if={safe_path(input["path"])} id={"msg-#{index}"} class="pl-10">
+                <.link
+                  navigate={safe_path(input["path"])}
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink shadow-card transition hover:border-brand/40 hover:text-brand"
+                >
+                  {input["label"] || "Open"}
+                  <.icon name="hero-arrow-right-micro" class="size-4" />
+                </.link>
+              </div>
+            <% {:tool, call, result} -> %>
+              <%= if write?(call) do %>
+                <div id={"msg-#{index}"} class="pl-10">
+                  <div class={[
+                    "rounded-xl border px-4 py-3 text-sm",
+                    outcome(result) == :pending && "border-brand/40 bg-brand/5",
+                    outcome(result) != :pending && "border-line bg-surface"
+                  ]}>
+                    <p class="flex items-center gap-2 font-medium text-ink">
+                      <.icon name="hero-pencil-square-micro" class="size-4 text-brand" />
+                      {Format.humanize(call["name"])}
+                    </p>
+                    <%= case outcome(result) do %>
+                      <% {:ok, data} -> %>
+                        <p class="mt-1 flex items-center gap-2 text-emerald-700">
+                          <.icon name="hero-check-circle-micro" class="size-4" /> Done
+                          <.link
+                            :if={safe_path(data["link"])}
+                            navigate={safe_path(data["link"])}
+                            class="font-medium text-ink underline hover:text-brand"
+                          >
+                            Open
+                          </.link>
+                        </p>
+                      <% {:error, message} -> %>
+                        <p class="mt-1 text-danger">{message}</p>
+                      <% {:declined, _} -> %>
+                        <p class="mt-1 text-muted">Declined</p>
+                      <% :pending -> %>
+                        <p class="mt-1 text-muted">Waiting for your approval…</p>
+                    <% end %>
+                  </div>
+                </div>
+              <% else %>
+                <p id={"msg-#{index}"} class="flex items-center gap-1.5 pl-10 text-xs text-muted">
+                  <.icon name={tool_icon(call)} class="size-3.5" /> {tool_label(call)}
+                  <span :if={match?({:error, _}, outcome(result))} class="text-danger">
+                    · {elem(outcome(result), 1)}
+                  </span>
+                </p>
+              <% end %>
+          <% end %>
+        <% end %>
+
+        <div
+          :if={@pending}
+          id="assistant-approval"
+          class="ml-10 rounded-2xl border border-brand/40 bg-surface p-4 shadow-pop"
+        >
+          <p class="text-sm font-semibold text-ink">
+            Approve {if length(@pending["calls"]) == 1, do: "this", else: "these"}?
+          </p>
+          <ul class="mt-2 space-y-1 text-sm text-ink-soft">
+            <li :for={summary <- @pending["summaries"]} class="flex items-start gap-2">
+              <.icon name="hero-arrow-right-micro" class="mt-0.5 size-4 text-brand" /> {summary}
+            </li>
+          </ul>
+          <div class="mt-3 flex gap-2">
+            <.button
+              phx-click="decide"
+              phx-value-approved="true"
+              variant="primary"
+              size="sm"
+              id="approve-actions"
+              disabled={@busy?}
+            >
+              Approve
+            </.button>
+            <.button
+              phx-click="decide"
+              phx-value-approved="false"
+              size="sm"
+              id="decline-actions"
+              disabled={@busy?}
+            >
+              Decline
+            </.button>
+          </div>
+        </div>
+
+        <div :if={@busy?} id="assistant-thinking" class="flex items-center gap-3 pl-1">
+          <span class="flex size-7 items-center justify-center rounded-full bg-brand/10 text-brand">
+            <.icon name="hero-sparkles-micro" class="size-4 animate-pulse" />
+          </span>
+          <span class="flex gap-1">
+            <span class="size-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.3s]" />
+            <span class="size-1.5 animate-bounce rounded-full bg-muted [animation-delay:-0.15s]" />
+            <span class="size-1.5 animate-bounce rounded-full bg-muted" />
+          </span>
+        </div>
+
+        <p :if={@note} id="assistant-note" class="pl-10 text-xs text-muted">{@note}</p>
+        <p
+          :if={@error}
+          id="assistant-error"
+          class="rounded-xl bg-danger-soft px-4 py-2.5 text-sm text-danger"
+        >
+          {@error}
+        </p>
+      </div>
+
+      <.form
+        for={@form}
+        id="assistant-form"
+        phx-submit="send"
+        class="sticky bottom-4 flex items-end gap-2 rounded-2xl border border-line bg-surface p-2 shadow-pop"
+      >
+        <textarea
+          name="text"
+          id="assistant-input"
+          rows="1"
+          placeholder={
+            if @pending,
+              do: "Approve or decline first…",
+              else: "Ask anything about your business…"
+          }
+          disabled={@busy? or @pending != nil}
+          phx-mounted={JS.focus()}
+          class="max-h-40 min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm text-ink placeholder:text-muted focus:ring-0 focus:outline-none"
+        >{@form[:text].value}</textarea>
+        <.button
+          type="submit"
+          variant="primary"
+          id="send-message"
+          disabled={@busy? or @pending != nil}
+        >
+          <.icon name="hero-paper-airplane-micro" /> Send
+        </.button>
+      </.form>
+      <p class="mt-2 text-center text-[11px] text-muted">
+        AI can make mistakes; check figures before you rely on them. Model: {@model}
+      </p>
+    <% end %>
+  </div>
+</Layouts.app>

@@ -12,6 +12,9 @@ mix phx.server                   # http://localhost:4000 (PORT=4100 mix phx.serv
 ```
 
 Database credentials come from `PGUSER` / `PGPASSWORD` (see `config/dev.exs`).
+
+The AI assistant needs `ANTHROPIC_API_KEY`; see [docs/ai-assistant.md](docs/ai-assistant.md).
+Everything else works without it.
 Before committing, run `mix precommit`.
 
 ## Architecture

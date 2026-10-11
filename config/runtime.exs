@@ -23,6 +23,15 @@ end
 config :zippiker, ZippikerWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# AI assistant (docs/ai-assistant.md). Without a key the assistant page
+# explains how to add one; everything else works as usual.
+if config_env() != :test do
+  config :zippiker, Zippiker.Assistant,
+    api_key: System.get_env("ANTHROPIC_API_KEY"),
+    model: System.get_env("ANTHROPIC_MODEL", "claude-opus-5-5"),
+    effort: System.get_env("ANTHROPIC_EFFORT", "medium")
+end
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :zippiker, ZippikerWeb.Endpoint,

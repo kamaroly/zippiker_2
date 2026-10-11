@@ -9,6 +9,14 @@ defmodule ZippikerWeb.HelpArticles do
 
   @articles [
     %{
+      slug: "ai-assistant",
+      title: "AI assistant",
+      section: "Basics",
+      icon: "hero-sparkles",
+      summary: "Ask questions about your business and let the assistant prepare records for you.",
+      render: &__MODULE__.ai_assistant/1
+    },
+    %{
       slug: "getting-started",
       title: "Getting started",
       section: "Basics",
