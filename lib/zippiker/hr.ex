@@ -38,6 +38,7 @@ defmodule Zippiker.HR do
       define :get_leave_type, action: :read, get_by: [:id]
       define :create_leave_type, action: :create
       define :update_leave_type, action: :update
+      define :delete_leave_type, action: :destroy
     end
 
     resource Zippiker.HR.LeavePolicy do

@@ -6,7 +6,7 @@
 >
   <.header>
     Leave types
-    <:subtitle>Allowances are counted in working days per calendar year.</:subtitle>
+    <:subtitle>Manage leave types. You can add new ones or change the existing ones.</:subtitle>
     <:actions>
       <.button
         :if={admin?(assigns)}
@@ -24,6 +24,9 @@
       <.leave_type_badge type={type} />
       <.badge :if={!type.active?} class="ml-2">Inactive</.badge>
     </:col>
+    <:col :let={{_id, type}} label="Description">
+      <span class="text-ink-soft">{type.description || "—"}</span>
+    </:col>
     <:col :let={{_id, type}} label="Allowance">
       {if type.allowance_days,
         do: "#{Decimal.normalize(type.allowance_days)} days / year",
@@ -34,13 +37,24 @@
       {if type.requires_approval?, do: "Manager approves", else: "Automatic"}
     </:col>
     <:action :let={{_id, type}}>
-      <.link
-        :if={admin?(assigns)}
-        patch={~p"/hr/leave-types/#{type}/edit"}
-        class="text-ink-soft hover:text-ink"
-      >
-        Edit
-      </.link>
+      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+        <.link
+          patch={~p"/hr/leave-types/#{type}/edit"}
+          class="text-ink-soft hover:text-ink"
+          id={"edit-leave-type-#{type.id}"}
+        >
+          Edit
+        </.link>
+        <.link
+          phx-click="delete"
+          phx-value-id={type.id}
+          data-confirm={"Delete #{type.name}?"}
+          class="text-danger hover:opacity-80"
+          id={"delete-leave-type-#{type.id}"}
+        >
+          Delete
+        </.link>
+      </span>
     </:action>
     <:empty>
       <.empty_state icon="hero-calendar-days" title="No leave types yet">
@@ -85,6 +99,11 @@
           options={Enum.map(@colors, &{Format.humanize(&1), &1})}
         />
       </div>
+      <.input
+        field={@form[:description]}
+        label="Description"
+        placeholder="Leave for those attending a conference"
+      />
       <.input field={@form[:paid?]} type="checkbox" label="Paid leave" />
       <.input
         field={@form[:requires_approval?]}

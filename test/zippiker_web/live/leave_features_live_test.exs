@@ -26,6 +26,40 @@ defmodule ZippikerWeb.LeaveFeaturesLiveTest do
     refute has_element?(view, "#top-bar #top-platform")
   end
 
+  test "every team starts with the standard leave types; unused ones can be deleted", %{
+    conn: conn,
+    opts: opts,
+    me: me
+  } do
+    names = opts |> HR.list_leave_types!() |> Enum.map(& &1.name)
+
+    for name <-
+          ~w(Annual Compassionate Sick Maternity Paternity Conference Overtime) do
+      assert "#{name} Leave" in names
+    end
+
+    assert "Annual Leave Claim" in names
+
+    {:ok, view, _html} = live(conn, ~p"/hr/leave-types")
+    conference = Enum.find(HR.list_leave_types!(opts), &(&1.name == "Conference Leave"))
+    assert has_element?(view, "#leave-types", "Leave for those attending conference")
+
+    view |> element("#delete-leave-type-#{conference.id}") |> render_click()
+    refute Enum.any?(HR.list_leave_types!(opts), &(&1.name == "Conference Leave"))
+
+    # A type with requests is kept.
+    sick = Enum.find(HR.list_leave_types!(opts), &(&1.name == "Sick Leave"))
+    monday = Date.add(Date.utc_today(), 8 - Date.day_of_week(Date.utc_today()))
+
+    HR.request_leave!(
+      %{employee_id: me.id, leave_type_id: sick.id, start_date: monday, end_date: monday},
+      opts
+    )
+
+    view |> element("#delete-leave-type-#{sick.id}") |> render_click()
+    assert Enum.any?(HR.list_leave_types!(opts), &(&1.name == "Sick Leave"))
+  end
+
   test "adds a holiday", %{conn: conn, opts: opts} do
     {:ok, view, _html} = live(conn, ~p"/hr/holidays/new")
 

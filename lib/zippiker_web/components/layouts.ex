@@ -59,7 +59,7 @@ defmodule ZippikerWeb.Layouts do
        {:departments, "Departments", "/hr/departments", :hr},
        {:leave_policies, "Leave policies", "/hr/leave-policies", :hr},
        {:leave_types, "Leave types", "/hr/leave-types", :hr},
-       {:holidays, "Holidays", "/hr/holidays", :hr}
+       {:holidays, "Public holidays", "/hr/holidays", :hr}
      ]},
     {:expenses, "Expenses", "hero-receipt-percent",
      [

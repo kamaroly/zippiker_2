@@ -65,6 +65,23 @@ defmodule ZippikerWeb.HRLive.LeaveTypes do
     end
   end
 
+  def handle_event("delete", %{"id" => id}, socket) do
+    type = HR.get_leave_type!(id, ash_opts(socket))
+
+    case HR.delete_leave_type(type, ash_opts(socket)) do
+      :ok ->
+        {:noreply, socket |> put_flash(:info, "#{type.name} deleted") |> load()}
+
+      {:error, _error} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           "#{type.name} has leave requests or claims; untick Active to retire it instead"
+         )}
+    end
+  end
+
   defp load(socket),
     do: stream(socket, :leave_types, HR.list_leave_types!(ash_opts(socket)), reset: true)
 end
