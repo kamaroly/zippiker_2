@@ -352,6 +352,47 @@ defmodule ZippikerWeb.Layouts do
     {:billing, "Billing", "/platform/billing"}
   ]
 
+  @doc "The customer/supplier portal shell: the team, the person's portals and their menu."
+  attr :flash, :map, required: true
+  attr :current_user, :map, required: true
+  attr :access, :map, default: nil, doc: "the portal being shown"
+  attr :accesses, :list, default: []
+  slot :inner_block, required: true
+
+  def portal(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-canvas">
+      <header class="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
+        <div class="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4 sm:px-6">
+          <.link navigate={~p"/portal"} class="flex items-center gap-2">
+            <.avatar :if={@access} name={@access.organization.name} size="sm" square />
+            <span class="text-sm font-semibold text-ink">
+              {if @access, do: @access.organization.name, else: "Your portals"}
+            </span>
+          </.link>
+          <span :if={@access} class="hidden text-xs text-muted sm:inline">
+            {if @access.kind == :customer, do: "Customer portal", else: "Supplier portal"} · {@access.party_name}
+          </span>
+          <div class="ml-auto flex items-center gap-1">
+            <.link
+              :if={length(@accesses) > 1}
+              navigate={~p"/portal"}
+              class="rounded-lg px-2.5 py-1.5 text-sm text-ink-soft hover:bg-canvas hover:text-ink"
+            >
+              Switch portal
+            </.link>
+            <.user_menu current_user={@current_user} />
+          </div>
+        </div>
+      </header>
+      <main class="animate-rise mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+        {render_slot(@inner_block)}
+      </main>
+      <.flash_group flash={@flash} />
+    </div>
+    """
+  end
+
   @doc """
   The super admin shell: a dark top bar with tabs, distinct from workspaces
   so it's always obvious you're operating the platform.

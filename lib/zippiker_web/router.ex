@@ -65,6 +65,15 @@ defmodule ZippikerWeb.Router do
       live "/deliveries/:id/print", DeliveryLive.Show, :print
     end
 
+    get "/portal/join/:token", PortalController, :join
+
+    ash_authentication_live_session :portal,
+      on_mount: {ZippikerWeb.LiveUserAuth, :live_portal} do
+      live "/portal", PortalLive.Home, :index
+      live "/portal/:access_id", PortalLive.Overview, :index
+      live "/portal/:access_id/:type/:id", PortalLive.Document, :show
+    end
+
     ash_authentication_live_session :onboarding,
       on_mount: {ZippikerWeb.LiveUserAuth, :live_user_required} do
       live "/onboarding", OnboardingLive

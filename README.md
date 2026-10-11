@@ -196,6 +196,17 @@ components out at average cost, finished goods in at components + labour per uni
 the net (the labour/overhead) as DR inventory / CR "Manufacturing overhead applied"
 (`:production_overhead`). The job card prints at `/manufacturing/orders/:id/print`.
 
+### Customer & supplier portals
+
+`Accounts.PortalAccess` (public schema, like invitations) links an outside user to one party of a
+team as `:customer` or `:supplier`; admins invite from the party page (email with
+`/portal/join/:token`, claimed by the signed-in user with that email in `PortalController`).
+Portal pages (`/portal`, live session `:live_portal`) call `Zippiker.Portal` generic actions, which
+verify the access (`Portal.Access.verify`) and read with authorization off, always filtered to
+the access's party and never drafts: customers accept/decline quotes and see orders/invoices;
+suppliers price RFQs and acknowledge purchase orders (`acknowledged_at`). Users with portals but
+no workspace are sent to `/portal`.
+
 ### Modules, plans and the platform panel
 
 - `Organization.enabled_modules` (`:crm`, `:sales`, `:purchasing`, `:inventory`, `:hr`, `:expenses`, `:manufacturing`, `:accounting`) hides navigation and

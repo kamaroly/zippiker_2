@@ -50,13 +50,36 @@ defmodule ZippikerWeb.LiveUserAuth do
 
       case pick_workspace(user, session["organization_id"]) do
         nil ->
-          to = if user.super_admin?, do: ~p"/platform", else: ~p"/onboarding"
+          to =
+            cond do
+              user.super_admin? -> ~p"/platform"
+              Zippiker.Accounts.my_portals!(actor: user) != [] -> ~p"/portal"
+              true -> ~p"/onboarding"
+            end
+
           {:halt, Phoenix.LiveView.redirect(socket, to: to)}
 
         {organization, role} ->
           socket
           |> assign(current_user: user, current_organization: organization, current_role: role)
           |> require_module()
+      end
+    end
+  end
+
+  # Customer/supplier portal: a signed-in user with at least one active
+  # portal access; assigns them all (`portal_accesses`).
+  def on_mount(:live_portal, params, session, socket) do
+    with {:cont, socket} <- on_mount(:live_user_required, params, session, socket) do
+      case Zippiker.Accounts.my_portals!(actor: socket.assigns.current_user) do
+        [] ->
+          {:halt,
+           socket
+           |> Phoenix.LiveView.put_flash(:error, "You don't have a portal yet")
+           |> Phoenix.LiveView.redirect(to: ~p"/")}
+
+        accesses ->
+          {:cont, assign(socket, :portal_accesses, accesses)}
       end
     end
   end

@@ -20,6 +20,11 @@ defmodule Zippiker.Purchasing.PurchaseOrder.Attributes do
     attribute :tax_total, :money, public?: true
     attribute :total, :money, public?: true
 
+    attribute :acknowledged_at, :utc_datetime_usec do
+      description "When the supplier confirmed the order (in their portal)."
+      public? true
+    end
+
     timestamps()
   end
 end

@@ -19,6 +19,7 @@ defmodule ZippikerWeb.PartyLive.Show do
          |> assign(:people, people(party, opts))
          |> assign_transactions(party)
          |> assign(:address_form, nil)
+         |> load_portal_accesses()
          |> load_addresses()}
 
       {:error, _} ->
@@ -81,6 +82,41 @@ defmodule ZippikerWeb.PartyLive.Show do
            number -> put_flash(socket, :info, change_requested_message(number))
          end}
     end
+  end
+
+  def handle_event("invite_portal", %{"portal" => params}, socket) do
+    party = socket.assigns.party
+
+    case Zippiker.Accounts.invite_to_portal(
+           %{
+             email: params["email"],
+             kind: params["kind"],
+             party_id: party.id,
+             party_name: party.name
+           },
+           actor: socket.assigns.current_user,
+           tenant: socket.assigns.current_organization.id
+         ) do
+      {:ok, access} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Portal invitation sent to #{access.email}")
+         |> load_portal_accesses()}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, error_message(error))}
+    end
+  end
+
+  def handle_event("revoke_portal", %{"id" => id}, socket) do
+    access = Enum.find(socket.assigns.portal_accesses, &(&1.id == id))
+
+    Zippiker.Accounts.revoke_portal_access!(access,
+      actor: socket.assigns.current_user,
+      tenant: socket.assigns.current_organization.id
+    )
+
+    {:noreply, socket |> put_flash(:info, "Portal access revoked") |> load_portal_accesses()}
   end
 
   def handle_event("new_address", _params, socket) do
@@ -154,6 +190,9 @@ defmodule ZippikerWeb.PartyLive.Show do
      |> push_patch(to: Index.show_path(socket.assigns.party))}
   end
 
+  # Sent emails are echoed to the process in tests (Swoosh test adapter).
+  def handle_info({:email, _email}, socket), do: {:noreply, socket}
+
   def handle_info({ZippikerWeb.PartyLive.FormComponent, {:saved, party}}, socket) do
     party = Ash.load!(party, [:employer, :owner], ash_opts(socket))
 
@@ -162,6 +201,19 @@ defmodule ZippikerWeb.PartyLive.Show do
      |> assign(party: party, page_title: party.name)
      |> put_flash(:info, "Saved")
      |> push_patch(to: Index.show_path(party))}
+  end
+
+  defp load_portal_accesses(socket) do
+    accesses =
+      if admin?(socket.assigns),
+        do:
+          Zippiker.Accounts.portal_accesses_for_party!(socket.assigns.party.id,
+            actor: socket.assigns.current_user,
+            tenant: socket.assigns.current_organization.id
+          ),
+        else: []
+
+    assign(socket, :portal_accesses, accesses)
   end
 
   defp load_addresses(socket),

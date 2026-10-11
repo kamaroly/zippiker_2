@@ -18,6 +18,8 @@ defmodule Zippiker.Accounts.Organization.Policies do
 
     policy action_type(:read) do
       authorize_if expr(exists(memberships, user_id == ^actor(:id)))
+      # Customers and suppliers see the team whose portal they use.
+      authorize_if expr(exists(portal_accesses, user_id == ^actor(:id) and status == :active))
     end
 
     policy action_type(:update) do

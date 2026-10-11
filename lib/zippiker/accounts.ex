@@ -40,6 +40,15 @@ defmodule Zippiker.Accounts do
       define :update_legal_entity, action: :update
     end
 
+    resource Zippiker.Accounts.PortalAccess do
+      define :invite_to_portal, action: :invite
+      define :portal_accesses_for_party, action: :for_party, args: [:party_id]
+      define :my_portals, action: :mine
+      define :portal_invitation, action: :by_token, args: [:token], get?: true
+      define :accept_portal_invitation, action: :accept
+      define :revoke_portal_access, action: :revoke
+    end
+
     resource Zippiker.Accounts.Branch do
       define :list_branches, action: :list
       define :get_branch, action: :read, get_by: [:id]

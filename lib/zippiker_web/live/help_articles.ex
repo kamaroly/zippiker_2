@@ -41,6 +41,14 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.quotes_and_invoices/1
     },
     %{
+      slug: "portals",
+      title: "Customer & supplier portals",
+      section: "Sales",
+      icon: "hero-globe-alt",
+      summary: "Let customers accept quotes and suppliers send prices, in their own portal.",
+      render: &__MODULE__.portals/1
+    },
+    %{
       slug: "purchasing",
       title: "Purchase orders & bills",
       section: "Purchasing",

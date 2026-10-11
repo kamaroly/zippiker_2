@@ -1,0 +1,146 @@
+<Layouts.portal
+  flash={@flash}
+  current_user={@current_user}
+  access={@access}
+  accesses={@portal_accesses}
+>
+  <.header>
+    {@overview.party.name}
+    <:subtitle>
+      Your documents with {@overview.organization.name}.
+    </:subtitle>
+  </.header>
+
+  <%= if @access.kind == :customer do %>
+    <div class="mb-4 grid gap-4 sm:grid-cols-3">
+      <.stat
+        id="portal-outstanding"
+        label="You owe"
+        value={Format.money_short(@overview.outstanding)}
+        icon="hero-banknotes"
+      />
+      <.stat
+        id="portal-quotes"
+        label="Quotes"
+        value={length(@overview.quotes)}
+        icon="hero-document-text"
+      />
+      <.stat
+        id="portal-invoices"
+        label="Invoices"
+        value={length(@overview.invoices)}
+        icon="hero-receipt-percent"
+      />
+    </div>
+
+    <div class="space-y-4">
+      <.card title="Quotes" padded={false}>
+        <ul id="portal-quote-list" class="divide-y divide-line px-5 pb-2">
+          <li :for={quote <- @overview.quotes}>
+            <.link
+              navigate={doc_path(@access, :quote, quote)}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <span class="font-medium text-ink">{quote.number}</span>
+              <span class="flex-1 text-xs text-muted">{Format.date(quote.issued_on)}</span>
+              <span class="tabular text-sm text-ink">{Format.money(quote.total)}</span>
+              <.quote_status status={quote.status} />
+            </.link>
+          </li>
+          <li :if={@overview.quotes == []} class="py-3 text-sm text-muted">No quotes.</li>
+        </ul>
+      </.card>
+      <.card title="Orders" padded={false}>
+        <ul id="portal-order-list" class="divide-y divide-line px-5 pb-2">
+          <li :for={order <- @overview.orders}>
+            <.link
+              navigate={doc_path(@access, :sales_order, order)}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <span class="font-medium text-ink">{order.number}</span>
+              <span class="flex-1 text-xs text-muted">{Format.date(order.issued_on)}</span>
+              <span class="tabular text-sm text-ink">{Format.money(order.total)}</span>
+              <.order_status status={order.status} />
+            </.link>
+          </li>
+          <li :if={@overview.orders == []} class="py-3 text-sm text-muted">No orders.</li>
+        </ul>
+      </.card>
+      <.card title="Invoices" padded={false}>
+        <ul id="portal-invoice-list" class="divide-y divide-line px-5 pb-2">
+          <li :for={invoice <- @overview.invoices}>
+            <.link
+              navigate={doc_path(@access, :invoice, invoice)}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <span class="font-medium text-ink">{invoice.number}</span>
+              <span class="flex-1 text-xs text-muted">due {Format.date(invoice.due_on)}</span>
+              <span class="tabular text-sm text-ink">{Format.money(
+                invoice.amount_due || invoice.total
+              )}</span>
+              <.badge color={if(invoice.status == :paid, do: :emerald, else: :amber)}>
+                {Format.humanize(invoice.status)}
+              </.badge>
+            </.link>
+          </li>
+          <li :if={@overview.invoices == []} class="py-3 text-sm text-muted">No invoices.</li>
+        </ul>
+      </.card>
+    </div>
+  <% else %>
+    <div class="space-y-4">
+      <.card title="Requests for quotation" padded={false}>
+        <ul id="portal-rfq-list" class="divide-y divide-line px-5 pb-2">
+          <li :for={rfq <- @overview.rfqs}>
+            <.link
+              navigate={doc_path(@access, :rfq, rfq)}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <span class="font-medium text-ink">{rfq.number}</span>
+              <span class="flex-1 text-xs text-muted">reply by {Format.date(rfq.valid_until)}</span>
+              <.rfq_status status={rfq.status} />
+            </.link>
+          </li>
+          <li :if={@overview.rfqs == []} class="py-3 text-sm text-muted">No requests.</li>
+        </ul>
+      </.card>
+      <.card title="Purchase orders" padded={false}>
+        <ul id="portal-po-list" class="divide-y divide-line px-5 pb-2">
+          <li :for={order <- @overview.purchase_orders}>
+            <.link
+              navigate={doc_path(@access, :purchase_order, order)}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <span class="font-medium text-ink">{order.number}</span>
+              <span class="flex-1 text-xs text-muted">{Format.date(order.issued_on)}</span>
+              <span class="tabular text-sm text-ink">{Format.money(order.total)}</span>
+              <.badge :if={order.acknowledged_at} color={:emerald}>Acknowledged</.badge>
+              <.badge :if={!order.acknowledged_at} color={:amber}>To acknowledge</.badge>
+            </.link>
+          </li>
+          <li :if={@overview.purchase_orders == []} class="py-3 text-sm text-muted">
+            No purchase orders.
+          </li>
+        </ul>
+      </.card>
+      <.card title="Bills &amp; payments" padded={false}>
+        <ul id="portal-bill-list" class="divide-y divide-line px-5 pb-2">
+          <li :for={bill <- @overview.bills}>
+            <.link
+              navigate={doc_path(@access, :bill, bill)}
+              class="flex items-center gap-3 py-2.5 hover:opacity-80"
+            >
+              <span class="font-medium text-ink">{bill.supplier_reference || bill.number}</span>
+              <span class="flex-1 text-xs text-muted">due {Format.date(bill.due_on)}</span>
+              <span class="tabular text-sm text-ink">{Format.money(bill.total)}</span>
+              <.badge color={if(bill.status == :paid, do: :emerald, else: :amber)}>
+                {if bill.status == :paid, do: "Paid", else: "To be paid"}
+              </.badge>
+            </.link>
+          </li>
+          <li :if={@overview.bills == []} class="py-3 text-sm text-muted">No bills.</li>
+        </ul>
+      </.card>
+    </div>
+  <% end %>
+</Layouts.portal>

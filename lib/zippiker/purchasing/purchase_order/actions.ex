@@ -92,6 +92,12 @@ defmodule Zippiker.Purchasing.PurchaseOrder.Actions do
       change Zippiker.Purchasing.PurchaseOrder.Changes.Receive
     end
 
+    update :acknowledge do
+      description "The supplier confirms they received the order."
+      validate attribute_does_not_equal(:status, :draft), message: "not sent to the supplier yet"
+      change set_attribute(:acknowledged_at, &DateTime.utc_now/0)
+    end
+
     update :cancel do
       require_atomic? false
 

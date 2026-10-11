@@ -1,0 +1,102 @@
+<Layouts.portal
+  flash={@flash}
+  current_user={@current_user}
+  access={@access}
+  accesses={@portal_accesses}
+>
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+    <.link navigate={~p"/portal/#{@access.id}"} class="text-sm text-muted hover:text-ink">← All documents</.link>
+    <div class="flex flex-wrap gap-2">
+      <%= if @type == :quote and @document.status == :sent do %>
+        <.button
+          phx-click="respond"
+          phx-value-decision="decline"
+          data-confirm="Decline this quote?"
+          id="decline-quote"
+        >
+          Decline
+        </.button>
+        <.button
+          phx-click="respond"
+          phx-value-decision="accept"
+          variant="primary"
+          id="accept-quote"
+        >
+          <.icon name="hero-check-micro" /> Accept quote
+        </.button>
+      <% end %>
+      <.button
+        :if={@type == :purchase_order and is_nil(@document.acknowledged_at)}
+        phx-click="acknowledge"
+        variant="primary"
+        id="acknowledge-order"
+      >
+        <.icon name="hero-check-micro" /> Acknowledge order
+      </.button>
+      <.badge :if={@type == :purchase_order and @document.acknowledged_at} color={:emerald}>
+        Acknowledged {Format.date(@document.acknowledged_at)}
+      </.badge>
+      <.badge
+        :if={@type == :quote and @document.status in [:accepted, :declined]}
+        color={if(@document.status == :accepted, do: :emerald, else: :rose)}
+      >
+        {Format.humanize(@document.status)}
+      </.badge>
+      <.button phx-click={JS.dispatch("zippiker:print")} id="print-document">
+        <.icon name="hero-printer-micro" /> Print / PDF
+      </.button>
+    </div>
+  </div>
+
+  <.card
+    :if={@type == :rfq and @document.status in [:sent, :quoted]}
+    title="Send your prices"
+    class="mb-4 print:hidden"
+  >
+    <form id="rfq-prices-form" phx-submit="submit_prices" class="space-y-3">
+      <div class="divide-y divide-line rounded-xl border border-line">
+        <div :for={line <- @document.lines} class="flex items-center gap-4 px-4 py-2.5">
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm text-ink">{line.description}</p>
+            <p class="text-xs text-muted">{Decimal.normalize(line.quantity)} {line.unit}</p>
+          </div>
+          <div class="w-36">
+            <.input
+              type="number"
+              step="0.01"
+              min="0"
+              name={"prices[#{line.id}]"}
+              id={"price-#{line.id}"}
+              value={price(line)}
+              placeholder="Unit price"
+            />
+          </div>
+        </div>
+      </div>
+      <.input
+        name="reference"
+        id="rfq-reference"
+        value=""
+        label="Your quote reference (optional)"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Sending…" id="send-prices">Send prices</.button>
+      </div>
+    </form>
+  </.card>
+
+  <%= if @type == :bill do %>
+    <.card title={"Bill #{@document.supplier_reference || @document.number}"}>
+      <.list>
+        <:item title="Date">{Format.date(@document.issued_on)}</:item>
+        <:item title="Due">{Format.date(@document.due_on)}</:item>
+        <:item title="Total">{Format.money(@document.total)}</:item>
+        <:item title="Status">
+          {if @document.status == :paid, do: "Paid", else: "To be paid"}
+        </:item>
+      </.list>
+    </.card>
+  <% else %>
+    <.paper document={@document} kind={@type} />
+  <% end %>
+</Layouts.portal>

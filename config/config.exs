@@ -78,6 +78,7 @@ config :zippiker,
     Zippiker.Workflow,
     Zippiker.Expenses,
     Zippiker.Manufacturing,
+    Zippiker.Portal,
     Zippiker.Platform
   ]
 
