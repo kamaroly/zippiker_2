@@ -24,6 +24,7 @@ defmodule Zippiker.Expenses.ExpenseClaim do
     repo Zippiker.Repo
 
     references do
+      reference :branch, on_delete: :restrict
       reference :legal_entity, on_delete: :restrict
       reference :claimant, on_delete: :restrict
       reference :employee, on_delete: :nilify

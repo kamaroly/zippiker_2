@@ -27,6 +27,7 @@ defmodule Zippiker.Sales.Invoice do
     identity_wheres_to_sql unique_number: "number IS NOT NULL"
 
     references do
+      reference :branch, on_delete: :restrict
       reference :legal_entity, on_delete: :restrict
       reference :customer, on_delete: :restrict
       reference :contact, on_delete: :nilify

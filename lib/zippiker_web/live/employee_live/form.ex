@@ -12,6 +12,7 @@ defmodule ZippikerWeb.EmployeeLive.Form do
       {:ok,
        socket
        |> assign(:departments, Enum.map(HR.list_departments!(opts), &{&1.name, &1.id}))
+       |> assign(:branch_options, branch_options(socket.assigns))
        |> assign(:definitions, Extensibility.list_custom_fields!(:employee, opts))
        |> assign(:members, member_options(socket.assigns))
        |> assign_employee(params)}

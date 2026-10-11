@@ -24,6 +24,7 @@ defmodule Zippiker.Purchasing.Bill do
     repo Zippiker.Repo
 
     references do
+      reference :branch, on_delete: :restrict
       reference :legal_entity, on_delete: :restrict
       reference :supplier, on_delete: :restrict
       reference :purchase_order, on_delete: :nilify

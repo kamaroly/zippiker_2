@@ -105,6 +105,9 @@ defmodule ZippikerWeb.Router do
       live "/settings/company", Settings.CompanyLive, :index
       live "/settings/company/new", Settings.CompanyLive, :new
       live "/settings/company/:id", Settings.CompanyLive, :edit
+      live "/settings/branches", Settings.BranchesLive, :index
+      live "/settings/branches/new", Settings.BranchesLive, :new
+      live "/settings/branches/:id/edit", Settings.BranchesLive, :edit
       live "/settings/taxes", Settings.TaxesLive, :index
       live "/settings/taxes/new", Settings.TaxesLive, :new
       live "/settings/taxes/:id/edit", Settings.TaxesLive, :edit

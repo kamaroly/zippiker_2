@@ -6,7 +6,7 @@ defmodule Zippiker.Accounts.LegalEntity.Policies do
       authorize_if Zippiker.Accounts.Checks.ActorIsMember
     end
 
-    policy action_type([:create, :update]) do
+    policy action_type([:create, :update, :destroy]) do
       authorize_if Zippiker.Accounts.Checks.ActorIsAdmin
     end
   end

@@ -17,6 +17,8 @@ defmodule ZippikerWeb.ExpenseLive.Form do
       assign(socket,
         categories: categories,
         currency: Zippiker.Accounts.default_legal_entity!(opts).currency,
+        branch_options: branch_options(socket.assigns),
+        branch_id: nil,
         errors: []
       )
 
@@ -42,6 +44,7 @@ defmodule ZippikerWeb.ExpenseLive.Form do
         currency: claim.currency,
         page_title: "Edit #{claim.number}",
         title: claim.title,
+        branch_id: claim.branch_id,
         notes: claim.notes || "",
         items: Enum.map(claim.items, &item_row/1)
       )
@@ -119,6 +122,7 @@ defmodule ZippikerWeb.ExpenseLive.Form do
     assign(socket,
       title: Map.get(claim, "title", socket.assigns.title),
       notes: Map.get(claim, "notes", socket.assigns.notes),
+      branch_id: Map.get(claim, "branch_id", socket.assigns.branch_id),
       items: items
     )
   end
@@ -136,7 +140,14 @@ defmodule ZippikerWeb.ExpenseLive.Form do
         |> Map.put("position", index)
       end)
 
-    params = %{title: socket.assigns.title, notes: socket.assigns.notes, items: items}
+    params =
+      %{title: socket.assigns.title, notes: socket.assigns.notes, items: items}
+      |> then(
+        &if(socket.assigns.branch_id in [nil, ""],
+          do: &1,
+          else: Map.put(&1, :branch_id, socket.assigns.branch_id)
+        )
+      )
 
     case socket.assigns.claim do
       nil -> Expenses.create_expense_claim(params, ash_opts(socket))

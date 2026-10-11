@@ -8,7 +8,11 @@ defmodule ZippikerWeb.ProductionLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :page_title, "Production orders")}
+    {:ok,
+     assign(socket,
+       page_title: "Production orders",
+       branch_options: branch_options(socket.assigns)
+     )}
   end
 
   @impl true

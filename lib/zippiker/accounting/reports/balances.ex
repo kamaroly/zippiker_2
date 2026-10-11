@@ -7,11 +7,19 @@ defmodule Zippiker.Accounting.Reports.Balances do
 
   alias Zippiker.Accounting.{Account, JournalLine}
 
-  @doc "Every account with `:debits` and `:credits` for lines dated in `from..to` (nil = open)."
-  def accounts(tenant, from, to) do
+  @doc """
+  Every account with `:debits` and `:credits` for lines dated in `from..to`
+  (nil = open), optionally for one branch's journal entries.
+  """
+  def accounts(tenant, from, to, branch_id \\ nil) do
     from = from || ~D[1900-01-01]
     to = to || ~D[9999-12-31]
     lines = JournalLine |> Ash.Query.filter(date >= ^from and date <= ^to)
+
+    lines =
+      if branch_id,
+        do: Ash.Query.filter(lines, journal_entry.branch_id == ^branch_id),
+        else: lines
 
     Account
     |> Ash.Query.aggregate(:debits, :sum, :lines,

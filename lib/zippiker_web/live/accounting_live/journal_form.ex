@@ -7,6 +7,7 @@ defmodule ZippikerWeb.AccountingLive.JournalForm do
   @impl true
   def mount(_params, _session, socket) do
     accounts = Accounting.list_accounts!(%{active_only?: true}, ash_opts(socket))
+    socket = assign(socket, :branch_options, branch_options(socket.assigns))
 
     form =
       Accounting.JournalEntry

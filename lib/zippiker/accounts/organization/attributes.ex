@@ -29,6 +29,13 @@ defmodule Zippiker.Accounts.Organization.Attributes do
       constraints max_length: 63
     end
 
+    attribute :multi_branch?, :boolean do
+      description "The business has several branches: branch pickers and branch reports show."
+      allow_nil? false
+      public? true
+      default false
+    end
+
     attribute :maker_checker?, :boolean do
       description "Maker-checker: changes in `maker_checker_scopes` need a second person's approval."
       allow_nil? false

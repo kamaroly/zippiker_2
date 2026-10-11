@@ -23,6 +23,7 @@ defmodule Zippiker.Manufacturing.ProductionOrder do
     repo Zippiker.Repo
 
     references do
+      reference :branch, on_delete: :restrict
       reference :legal_entity, on_delete: :restrict
       reference :product, on_delete: :restrict
       reference :bom, on_delete: :restrict

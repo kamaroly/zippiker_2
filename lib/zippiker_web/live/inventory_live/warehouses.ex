@@ -7,7 +7,11 @@ defmodule ZippikerWeb.InventoryLive.Warehouses do
   @impl true
   def mount(_params, _session, socket) do
     Inventory.default_warehouse!(ash_opts(socket))
-    {:ok, socket |> assign(:page_title, "Warehouses") |> load()}
+
+    {:ok,
+     socket
+     |> assign(page_title: "Warehouses", branch_options: branch_options(socket.assigns))
+     |> load()}
   end
 
   @impl true

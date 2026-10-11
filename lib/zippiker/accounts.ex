@@ -19,6 +19,7 @@ defmodule Zippiker.Accounts do
       define :create_organization, action: :create
       define :update_organization, action: :update
       define :set_maker_checker, action: :set_maker_checker
+      define :set_multi_branch, action: :set_multi_branch
       define :get_organization, action: :read, get_by: [:id]
       define :platform_organizations, action: :platform_search
       define :set_plan_limits, action: :set_plan_limits
@@ -37,6 +38,15 @@ defmodule Zippiker.Accounts do
       define :default_legal_entity, action: :default
       define :create_legal_entity, action: :create
       define :update_legal_entity, action: :update
+    end
+
+    resource Zippiker.Accounts.Branch do
+      define :list_branches, action: :list
+      define :get_branch, action: :read, get_by: [:id]
+      define :default_branch, action: :default
+      define :create_branch, action: :create
+      define :update_branch, action: :update
+      define :delete_branch, action: :destroy
     end
 
     resource Zippiker.Accounts.NumberSequence do

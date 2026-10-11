@@ -5,6 +5,7 @@ defmodule Zippiker.Sales.Quote.Actions do
   alias Zippiker.Sales.Validations.InStatus
 
   @fields [
+    :branch_id,
     :customer_id,
     :contact_id,
     :deal_id,
@@ -42,6 +43,7 @@ defmodule Zippiker.Sales.Quote.Actions do
     end
 
     create :create do
+      change Zippiker.Accounts.Changes.SetBranch
       primary? true
       accept [:legal_entity_id | @fields]
       argument :lines, {:array, :map}, default: []

@@ -11,14 +11,15 @@ defmodule Zippiker.Inventory.Warehouse.Actions do
     end
 
     create :create do
+      change Zippiker.Accounts.Changes.SetBranch
       primary? true
-      accept [:name, :code, :address, :default?]
+      accept [:name, :code, :address, :default?, :branch_id]
       change Zippiker.Inventory.Warehouse.Changes.SingleDefault
     end
 
     update :update do
       primary? true
-      accept [:name, :code, :address, :default?, :active?]
+      accept [:name, :code, :address, :default?, :active?, :branch_id]
       require_atomic? false
       change Zippiker.Inventory.Warehouse.Changes.SingleDefault
     end

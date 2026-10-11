@@ -2,6 +2,11 @@ defmodule Zippiker.HR.Employee.Relationships do
   use Spark.Dsl.Fragment, of: Ash.Resource
 
   relationships do
+    belongs_to :branch, Zippiker.Accounts.Branch do
+      public? true
+      domain Zippiker.Accounts
+    end
+
     belongs_to :legal_entity, Zippiker.Accounts.LegalEntity do
       description "The employer."
       allow_nil? false

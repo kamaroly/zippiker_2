@@ -6,7 +6,7 @@ defmodule Zippiker.Purchasing.Bill.Actions do
   alias Zippiker.Sales.Changes
   alias Zippiker.Sales.Validations.InStatus
 
-  @fields [:supplier_id, :supplier_reference, :owner_id, :issued_on, :due_on, :notes]
+  @fields [:branch_id, :supplier_id, :supplier_reference, :owner_id, :issued_on, :due_on, :notes]
 
   actions do
     defaults [:read]
@@ -26,6 +26,9 @@ defmodule Zippiker.Purchasing.Bill.Actions do
     end
 
     create :create do
+      change {Zippiker.Accounts.Changes.SetBranch,
+              from: [purchase_order_id: Zippiker.Purchasing.PurchaseOrder]}
+
       primary? true
       accept [:legal_entity_id, :purchase_order_id | @fields]
       argument :lines, {:array, :map}, default: []
@@ -39,6 +42,9 @@ defmodule Zippiker.Purchasing.Bill.Actions do
     end
 
     create :from_purchase_order do
+      change {Zippiker.Accounts.Changes.SetBranch,
+              from: [purchase_order_id: Zippiker.Purchasing.PurchaseOrder]}
+
       description "A draft bill copying a purchase order's supplier and lines."
       argument :purchase_order_id, :uuid, allow_nil?: false
       argument :lines, {:array, :map}, default: []

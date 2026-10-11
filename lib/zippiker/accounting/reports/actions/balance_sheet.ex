@@ -10,7 +10,7 @@ defmodule Zippiker.Accounting.Reports.Actions.BalanceSheet do
   @impl true
   def run(input, _opts, _context) do
     as_of = input.arguments[:as_of] || Date.utc_today()
-    rows = Balances.accounts(input.tenant, nil, as_of)
+    rows = Balances.accounts(input.tenant, nil, as_of, input.arguments[:branch_id])
 
     assets = Balances.section(rows, :asset)
     liabilities = Balances.section(rows, :liability)

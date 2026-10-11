@@ -99,6 +99,16 @@ defmodule ZippikerWeb.LiveHelpers do
     |> Enum.map(&{ZippikerWeb.Format.user_name(&1.user), &1.user_id})
   end
 
+  @doc "`{name, id}` options of the active branches when the team has several; [] otherwise."
+  def branch_options(%{current_organization: %{multi_branch?: true}} = assigns) do
+    assigns
+    |> ash_opts()
+    |> then(&Zippiker.Accounts.list_branches!(%{active_only?: true}, &1))
+    |> Enum.map(&{"#{&1.name} (#{&1.code})", &1.id})
+  end
+
+  def branch_options(_assigns), do: []
+
   @doc "Comma separated tags -> list."
   def split_tags(params) do
     case params do

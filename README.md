@@ -157,6 +157,16 @@ Expense claims (`EXP-…`) go draft → submitted → approved → reimbursed (o
 resubmit, or cancelled). Approval posts DR category expense accounts / CR "Employee reimbursements"
 (system key `:reimbursements`); reimbursing posts DR reimbursements / CR cash, bank or mobile money.
 
+### Branches
+
+`Accounts.Branch` (tenant) with one default (`Accounts.default_branch`, created as "Head office"/HQ
+when missing; a tenant migration backfilled existing records). Quotes, sales orders, invoices,
+RFQs, purchase orders, bills, expense claims, production orders, employees, warehouses and journal
+entries have `branch_id`, defaulted by `Accounts.Changes.SetBranch` (from the source document when
+there is one). Postings copy the document's branch (stock operations: the warehouse's). The
+financial reports take an optional `branch_id`. `Organization.multi_branch?` (Settings → Branches)
+only controls whether pickers and filters show (`branch_options/1`).
+
 ### Maker-checker (change requests)
 
 `Organization.maker_checker?` + `maker_checker_scopes` (Settings → Workspace). Covered actions carry

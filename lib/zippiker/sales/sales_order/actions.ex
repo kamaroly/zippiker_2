@@ -6,6 +6,7 @@ defmodule Zippiker.Sales.SalesOrder.Actions do
   alias Zippiker.Sales.Validations.InStatus
 
   @fields [
+    :branch_id,
     :customer_id,
     :contact_id,
     :deal_id,
@@ -33,6 +34,7 @@ defmodule Zippiker.Sales.SalesOrder.Actions do
     end
 
     create :create do
+      change {Zippiker.Accounts.Changes.SetBranch, from: [quote_id: Zippiker.Sales.Quote]}
       primary? true
       accept [:legal_entity_id | @fields]
       argument :lines, {:array, :map}, default: []
@@ -45,6 +47,7 @@ defmodule Zippiker.Sales.SalesOrder.Actions do
     end
 
     create :from_quote do
+      change {Zippiker.Accounts.Changes.SetBranch, from: [quote_id: Zippiker.Sales.Quote]}
       description "A draft order copying a quote (accepting it if it was still open)."
       argument :quote_id, :uuid, allow_nil?: false
       argument :lines, {:array, :map}, default: []

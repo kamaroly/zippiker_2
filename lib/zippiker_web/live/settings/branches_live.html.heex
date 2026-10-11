@@ -1,0 +1,118 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:branches}
+>
+  <.header>
+    Branches
+    <:subtitle>Locations of your business: head office, shops, depots…</:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns) and @current_organization.multi_branch?}
+        patch={~p"/settings/branches/new"}
+        variant="primary"
+        id="new-branch"
+      >
+        <.icon name="hero-plus-micro" /> Branch
+      </.button>
+    </:actions>
+  </.header>
+
+  <.card class="mb-4" id="multi-branch-card">
+    <form id="multi-branch-form" phx-change="toggle_multi_branch" class="flex items-start gap-3">
+      <input type="hidden" name="multi_branch" value="false" />
+      <input
+        type="checkbox"
+        name="multi_branch"
+        value="true"
+        id="multi-branch"
+        checked={@current_organization.multi_branch?}
+        disabled={!admin?(assigns)}
+        class="mt-1 size-4 rounded border-line"
+      />
+      <label for="multi-branch">
+        <span class="block text-sm font-medium text-ink">We have several branches</span>
+        <span class="block text-sm text-muted">
+          Documents, employees, warehouses and expense claims get a branch; journal entries follow
+          their document's branch, and the financial reports can be run per branch. When off,
+          everything belongs to the default branch.
+        </span>
+      </label>
+    </form>
+  </.card>
+
+  <.table id="branches" rows={@streams.branches}>
+    <:col :let={{_id, branch}} label="Branch">
+      <span class="font-medium text-ink">{branch.name}</span>
+      <.badge class="ml-2">{branch.code}</.badge>
+      <.badge :if={branch.default?} color={:orange} class="ml-1">Default</.badge>
+      <.badge :if={!branch.active?} class="ml-1">Inactive</.badge>
+    </:col>
+    <:col :let={{_id, branch}} label="Location" class="hidden md:table-cell">
+      {[branch.line1, branch.city, branch.country]
+      |> Enum.reject(&(&1 in [nil, ""]))
+      |> Enum.join(", ")}
+    </:col>
+    <:col :let={{_id, branch}} label="Manager" class="hidden md:table-cell">
+      {if branch.manager, do: Format.user_name(branch.manager), else: "—"}
+    </:col>
+    <:action :let={{_id, branch}}>
+      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+        <.link patch={~p"/settings/branches/#{branch}/edit"} class="text-ink-soft hover:text-ink">
+          Edit
+        </.link>
+        <.link
+          :if={!branch.default?}
+          phx-click="delete"
+          phx-value-id={branch.id}
+          data-confirm={"Delete #{branch.name}?"}
+          class="text-danger hover:opacity-80"
+        >
+          Delete
+        </.link>
+      </span>
+    </:action>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="branch-modal"
+    show
+    title={if(@branch, do: "Edit #{@branch.name}", else: "New branch")}
+    on_cancel={JS.patch(~p"/settings/branches")}
+  >
+    <.form for={@form} id="branch-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-[1fr_8rem]">
+        <.input
+          field={@form[:name]}
+          label="Name"
+          placeholder="Nairobi CBD"
+          phx-mounted={JS.focus()}
+        />
+        <.input field={@form[:code]} label="Code" placeholder="NBO" />
+      </div>
+      <.input field={@form[:line1]} label="Address" />
+      <div class="grid gap-4 sm:grid-cols-[1fr_6rem]">
+        <.input field={@form[:city]} label="City" />
+        <.input field={@form[:country]} label="Country" placeholder="KE" />
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:phone]} label="Phone" />
+        <.input field={@form[:email]} label="Email" />
+      </div>
+      <.input
+        field={@form[:manager_id]}
+        type="select"
+        label="Branch manager"
+        prompt="—"
+        options={@members}
+      />
+      <.input field={@form[:default?]} type="checkbox" label="Default branch" />
+      <.input :if={@branch} field={@form[:active?]} type="checkbox" label="Active" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

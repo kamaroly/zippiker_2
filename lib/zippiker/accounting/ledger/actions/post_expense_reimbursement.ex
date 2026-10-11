@@ -26,6 +26,7 @@ defmodule Zippiker.Accounting.Ledger.Actions.PostExpenseReimbursement do
           date: claim.reimbursed_on || Date.utc_today(),
           memo: memo,
           legal_entity_id: claim.legal_entity_id,
+          branch_id: claim.branch_id,
           source: :expense_reimbursement,
           source_id: claim.id,
           source_label: claim.reimbursement_reference || claim.number,

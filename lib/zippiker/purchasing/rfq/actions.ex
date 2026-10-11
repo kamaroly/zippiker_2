@@ -5,7 +5,15 @@ defmodule Zippiker.Purchasing.Rfq.Actions do
   alias Zippiker.Sales.Changes
   alias Zippiker.Sales.Validations.InStatus
 
-  @fields [:supplier_id, :owner_id, :issued_on, :valid_until, :supplier_reference, :notes]
+  @fields [
+    :branch_id,
+    :supplier_id,
+    :owner_id,
+    :issued_on,
+    :valid_until,
+    :supplier_reference,
+    :notes
+  ]
 
   actions do
     defaults [:read]
@@ -23,6 +31,7 @@ defmodule Zippiker.Purchasing.Rfq.Actions do
     end
 
     create :create do
+      change Zippiker.Accounts.Changes.SetBranch
       primary? true
       accept [:legal_entity_id | @fields]
       argument :lines, {:array, :map}, default: []

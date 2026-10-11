@@ -18,12 +18,22 @@
     <.segmented
       current={@report}
       options={[
-        {"Profit & loss", "profit_and_loss", report_path("profit_and_loss", @from, @to)},
-        {"Balance sheet", "balance_sheet", report_path("balance_sheet", @from, @to)},
-        {"Trial balance", "trial_balance", report_path("trial_balance", @from, @to)}
+        {"Profit & loss", "profit_and_loss", report_path("profit_and_loss", @from, @to, @branch)},
+        {"Balance sheet", "balance_sheet", report_path("balance_sheet", @from, @to, @branch)},
+        {"Trial balance", "trial_balance", report_path("trial_balance", @from, @to, @branch)}
       ]}
     />
     <form id="report-dates" phx-change="dates" class="flex items-end gap-2">
+      <.input
+        :if={@branch_options != []}
+        type="select"
+        name="branch"
+        id="report-branch"
+        value={@branch}
+        label="Branch"
+        prompt="All branches"
+        options={@branch_options}
+      />
       <.input
         :if={@report == "profit_and_loss"}
         type="date"
@@ -47,7 +57,9 @@
     class="mx-auto max-w-3xl rounded-2xl border border-line bg-surface shadow-card print:border-0 print:shadow-none"
   >
     <div class="border-b border-line px-5 py-4">
-      <p class="text-xs text-muted">{@current_organization.name}</p>
+      <p class="text-xs text-muted">
+        {@current_organization.name}<span :if={@branch}> · {@branch_names[@branch]}</span>
+      </p>
       <h2 class="text-lg font-semibold text-ink">{title(@report)}</h2>
       <p class="text-xs text-muted">
         <%= if @report == "profit_and_loss" do %>

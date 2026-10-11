@@ -21,8 +21,9 @@ defmodule Zippiker.Expenses.ExpenseClaim.Actions do
     end
 
     create :create do
+      change Zippiker.Accounts.Changes.SetBranch
       primary? true
-      accept [:title, :notes, :legal_entity_id]
+      accept [:title, :notes, :legal_entity_id, :branch_id]
       argument :items, {:array, :map}, default: []
 
       change relate_actor(:claimant)
@@ -35,7 +36,7 @@ defmodule Zippiker.Expenses.ExpenseClaim.Actions do
 
     update :update do
       primary? true
-      accept [:title, :notes]
+      accept [:title, :notes, :branch_id]
       require_atomic? false
       argument :items, {:array, :map}
 

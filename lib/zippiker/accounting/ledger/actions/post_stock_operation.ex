@@ -20,7 +20,7 @@ defmodule Zippiker.Accounting.Ledger.Actions.PostStockOperation do
       Zippiker.Inventory.get_stock_operation!(input.arguments.operation_id,
         tenant: input.tenant,
         authorize?: false,
-        load: [:movements]
+        load: [:movements, :warehouse]
       )
 
     net =
@@ -44,6 +44,7 @@ defmodule Zippiker.Accounting.Ledger.Actions.PostStockOperation do
               date: operation.date,
               memo: memo,
               legal_entity_id: operation.legal_entity_id,
+              branch_id: operation.warehouse && operation.warehouse.branch_id,
               source: :stock,
               source_id: operation.id,
               source_label: operation.number,

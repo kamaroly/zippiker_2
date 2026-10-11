@@ -20,9 +20,12 @@ defmodule Zippiker.Accounting.JournalEntry.Actions do
     end
 
     create :create do
+      change {Zippiker.Accounts.Changes.SetBranch,
+              from: [reversal_of_id: Zippiker.Accounting.JournalEntry]}
+
       description "A manual journal entry."
       primary? true
-      accept [:date, :memo, :legal_entity_id]
+      accept [:date, :memo, :legal_entity_id, :branch_id]
       argument :lines, {:array, :map}, default: []
 
       change Changes.SetLegalEntity
@@ -33,8 +36,11 @@ defmodule Zippiker.Accounting.JournalEntry.Actions do
     end
 
     create :post do
+      change {Zippiker.Accounts.Changes.SetBranch,
+              from: [reversal_of_id: Zippiker.Accounting.JournalEntry]}
+
       description "An automatic entry for a document from another module (idempotent per source)."
-      accept [:date, :memo, :legal_entity_id, :source, :source_id, :source_label]
+      accept [:date, :memo, :legal_entity_id, :branch_id, :source, :source_id, :source_label]
       argument :lines, {:array, :map}, default: []
 
       change Changes.SetLegalEntity
@@ -45,6 +51,9 @@ defmodule Zippiker.Accounting.JournalEntry.Actions do
     end
 
     create :reverse do
+      change {Zippiker.Accounts.Changes.SetBranch,
+              from: [reversal_of_id: Zippiker.Accounting.JournalEntry]}
+
       description "Posts the mirror image of an entry (debits become credits)."
       argument :entry_id, :uuid, allow_nil?: false
       argument :date, :date
@@ -59,6 +68,9 @@ defmodule Zippiker.Accounting.JournalEntry.Actions do
     end
 
     create :expense do
+      change {Zippiker.Accounts.Changes.SetBranch,
+              from: [reversal_of_id: Zippiker.Accounting.JournalEntry]}
+
       description "Shortcut for a paid expense: debit the expense, credit cash or bank."
       accept [:date, :memo]
       argument :expense_account_id, :uuid, allow_nil?: false

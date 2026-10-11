@@ -71,6 +71,13 @@
       </div>
       <.input field={@form[:address]} type="textarea" label="Address" />
       <.input
+        :if={@branch_options != []}
+        field={@form[:branch_id]}
+        type="select"
+        label="Branch"
+        options={@branch_options}
+      />
+      <.input
         field={@form[:default?]}
         type="checkbox"
         label="Default for receipts and deliveries"

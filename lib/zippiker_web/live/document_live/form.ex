@@ -96,6 +96,7 @@ defmodule ZippikerWeb.DocumentLive.Form do
         if(config.entity, do: Extensibility.list_custom_fields!(config.entity, opts), else: [])
       )
       |> assign(:members, member_options(socket.assigns))
+      |> assign(:branch_options, branch_options(socket.assigns))
       |> assign_document(params)
 
     {:ok, socket}

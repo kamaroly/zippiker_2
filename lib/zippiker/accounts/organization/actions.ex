@@ -21,6 +21,11 @@ defmodule Zippiker.Accounts.Organization.Actions do
       accept [:name, :currency]
     end
 
+    update :set_multi_branch do
+      description "Global setting: whether the business works with several branches."
+      accept [:multi_branch?]
+    end
+
     update :set_maker_checker do
       description "Global setting: which changes need a checker's approval."
       accept [:maker_checker?, :maker_checker_scopes]

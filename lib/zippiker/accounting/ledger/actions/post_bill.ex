@@ -50,6 +50,7 @@ defmodule Zippiker.Accounting.Ledger.Actions.PostBill do
           date: bill.issued_on,
           memo: memo,
           legal_entity_id: bill.legal_entity_id,
+          branch_id: bill.branch_id,
           source: :bill,
           source_id: bill.id,
           source_label: bill.number,

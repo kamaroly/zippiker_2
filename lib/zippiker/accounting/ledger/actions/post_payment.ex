@@ -26,6 +26,7 @@ defmodule Zippiker.Accounting.Ledger.Actions.PostPayment do
           date: payment.paid_on,
           memo: memo,
           legal_entity_id: invoice.legal_entity_id,
+          branch_id: invoice.branch_id,
           source: :payment,
           source_id: payment.id,
           source_label: invoice.number,

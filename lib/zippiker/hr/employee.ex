@@ -30,6 +30,7 @@ defmodule Zippiker.HR.Employee do
                            unique_number: "employee_number IS NOT NULL"
 
     references do
+      reference :branch, on_delete: :restrict
       reference :legal_entity, on_delete: :restrict
       reference :party, on_delete: :restrict
       reference :user, on_delete: :nilify

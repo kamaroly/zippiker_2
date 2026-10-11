@@ -9,11 +9,11 @@ defmodule Zippiker.Accounting.Reports.Actions.ProfitAndLoss do
     today = Date.utc_today()
     from = input.arguments[:from] || Date.beginning_of_month(today)
     to = input.arguments[:to] || today
-    {:ok, report(input.tenant, from, to)}
+    {:ok, report(input.tenant, from, to, input.arguments[:branch_id])}
   end
 
-  def report(tenant, from, to) do
-    rows = Balances.accounts(tenant, from, to)
+  def report(tenant, from, to, branch_id \\ nil) do
+    rows = Balances.accounts(tenant, from, to, branch_id)
     income = Balances.section(rows, :income)
     expenses = Balances.section(rows, :expense)
     income_total = Balances.total(income)

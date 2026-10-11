@@ -4,6 +4,7 @@ defmodule Zippiker.HR.Employee.Actions do
   alias Zippiker.HR.Employee.{Changes, Validations}
 
   @fields [
+    :branch_id,
     :user_id,
     :department_id,
     :manager_id,
@@ -45,6 +46,7 @@ defmodule Zippiker.HR.Employee.Actions do
     end
 
     create :create do
+      change Zippiker.Accounts.Changes.SetBranch
       change {Zippiker.Workflow.Changes.MakerChecker, scope: :employees}
       primary? true
       accept [:legal_entity_id, :party_id | @fields]

@@ -21,6 +21,7 @@ defmodule Zippiker.Purchasing.Rfq do
     repo Zippiker.Repo
 
     references do
+      reference :branch, on_delete: :restrict
       reference :legal_entity, on_delete: :restrict
       reference :supplier, on_delete: :restrict
       reference :owner, on_delete: :nilify

@@ -26,6 +26,7 @@ defmodule Zippiker.Sales.Quote do
     repo Zippiker.Repo
 
     references do
+      reference :branch, on_delete: :restrict
       reference :legal_entity, on_delete: :restrict
       reference :customer, on_delete: :restrict
       reference :contact, on_delete: :nilify

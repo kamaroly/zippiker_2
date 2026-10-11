@@ -57,6 +57,13 @@
         />
         <.input field={@form[:hire_date]} type="date" label="Start date" />
         <.input
+          :if={@branch_options != []}
+          field={@form[:branch_id]}
+          type="select"
+          label="Branch"
+          options={@branch_options}
+        />
+        <.input
           field={@form[:user_id]}
           type="select"
           label="Workspace login"

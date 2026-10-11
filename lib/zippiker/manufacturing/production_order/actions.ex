@@ -5,7 +5,7 @@ defmodule Zippiker.Manufacturing.ProductionOrder.Actions do
   alias Zippiker.Sales.Changes, as: SalesChanges
   alias Zippiker.Sales.Validations.InStatus
 
-  @fields [:quantity, :warehouse_id, :planned_start, :due_on, :notes, :owner_id]
+  @fields [:branch_id, :quantity, :warehouse_id, :planned_start, :due_on, :notes, :owner_id]
 
   actions do
     defaults [:read]
@@ -28,6 +28,7 @@ defmodule Zippiker.Manufacturing.ProductionOrder.Actions do
     end
 
     create :create do
+      change Zippiker.Accounts.Changes.SetBranch
       primary? true
       accept [:product_id, :bom_id, :legal_entity_id | @fields]
 

@@ -10,7 +10,7 @@ defmodule Zippiker.Accounting.Reports.Actions.TrialBalance do
     zero = Decimal.new(0)
 
     rows =
-      for row <- Balances.accounts(input.tenant, nil, as_of),
+      for row <- Balances.accounts(input.tenant, nil, as_of, input.arguments[:branch_id]),
           net = Decimal.sub(row.debits, row.credits),
           not Decimal.eq?(net, 0) do
         %{

@@ -33,6 +33,7 @@ defmodule Zippiker.Accounting.Ledger.Actions.PostExpenseClaim do
           date: DateTime.to_date(claim.approved_at || DateTime.utc_now()),
           memo: memo,
           legal_entity_id: claim.legal_entity_id,
+          branch_id: claim.branch_id,
           source: :expense_claim,
           source_id: claim.id,
           source_label: claim.number,

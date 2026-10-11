@@ -86,6 +86,7 @@ defmodule ZippikerWeb.Layouts do
      [
        {:company, "Company details", "/settings/company", nil},
        {:workspace, "Workspace", "/settings/workspace", nil},
+       {:branches, "Branches", "/settings/branches", nil},
        {:billing, "Plan & billing", "/settings/billing", nil},
        {:custom_fields, "Custom fields", "/settings/custom-fields", nil},
        {:pipeline, "Pipeline", "/settings/pipeline", :crm},

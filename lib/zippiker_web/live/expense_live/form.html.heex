@@ -24,6 +24,16 @@
           required
         />
         <.input
+          :if={@branch_options != []}
+          type="select"
+          name="claim[branch_id]"
+          id="claim-branch"
+          value={@branch_id}
+          label="Branch"
+          prompt="Default branch"
+          options={@branch_options}
+        />
+        <.input
           name="claim[notes]"
           id="claim-notes"
           value={@notes}

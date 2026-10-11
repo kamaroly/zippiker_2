@@ -15,6 +15,11 @@ defmodule Zippiker.Inventory.Warehouse do
   postgres do
     table "warehouses"
     repo Zippiker.Repo
+
+    references do
+      reference :branch, on_delete: :restrict
+    end
+
     identity_wheres_to_sql one_default: "\"default?\" = true"
   end
 

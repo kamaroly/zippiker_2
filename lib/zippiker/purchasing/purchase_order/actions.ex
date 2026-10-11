@@ -5,7 +5,7 @@ defmodule Zippiker.Purchasing.PurchaseOrder.Actions do
   alias Zippiker.Sales.Changes
   alias Zippiker.Sales.Validations.InStatus
 
-  @fields [:supplier_id, :warehouse_id, :owner_id, :issued_on, :expected_on, :notes]
+  @fields [:branch_id, :supplier_id, :warehouse_id, :owner_id, :issued_on, :expected_on, :notes]
 
   actions do
     defaults [:read]
@@ -25,6 +25,7 @@ defmodule Zippiker.Purchasing.PurchaseOrder.Actions do
     end
 
     create :create do
+      change {Zippiker.Accounts.Changes.SetBranch, from: [rfq_id: Zippiker.Purchasing.Rfq]}
       primary? true
       accept [:legal_entity_id | @fields]
       argument :lines, {:array, :map}, default: []
@@ -38,6 +39,7 @@ defmodule Zippiker.Purchasing.PurchaseOrder.Actions do
     end
 
     create :from_rfq do
+      change {Zippiker.Accounts.Changes.SetBranch, from: [rfq_id: Zippiker.Purchasing.Rfq]}
       description "A draft purchase order from a supplier's quotation; accepts the request."
       argument :rfq_id, :uuid, allow_nil?: false
       argument :lines, {:array, :map}, default: []
