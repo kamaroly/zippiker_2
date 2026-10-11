@@ -1,0 +1,285 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:compliance_members}
+>
+  <.header>
+    Members &amp; shares
+    <:subtitle>The register of members, share classes, allotments and transfers.</:subtitle>
+    <:actions>
+      <.button :if={@profile} navigate={~p"/compliance/print/members"} id="print-members">
+        <.icon name="hero-printer-micro" /> Print register
+      </.button>
+      <%= if @profile && admin?(assigns) do %>
+        <.button patch={~p"/compliance/members?modal=transfer"} id="transfer-shares">Transfer</.button>
+        <.button patch={~p"/compliance/members?modal=allot"} variant="primary" id="allot-shares">
+          <.icon name="hero-plus-micro" /> Allot shares
+        </.button>
+      <% end %>
+    </:actions>
+  </.header>
+
+  <%= if @profile do %>
+    <div class="mb-4 flex flex-wrap items-center gap-2" id="share-classes">
+      <span class="text-sm text-muted">Share classes:</span>
+      <.badge :for={class <- @classes}>
+        {class.name} · {Decimal.normalize(class.nominal_value)} each
+      </.badge>
+      <.link
+        :if={admin?(assigns)}
+        patch={~p"/compliance/members?modal=class"}
+        class="text-xs text-ink-soft hover:text-ink"
+      >
+        + Class
+      </.link>
+    </div>
+
+    <.card padded={false}>
+      <:action>
+        <.link
+          :if={admin?(assigns)}
+          patch={~p"/compliance/members?modal=member"}
+          class="text-muted hover:text-ink"
+          id="add-member"
+        >
+          + Member
+        </.link>
+      </:action>
+      <table id="members" class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-line text-left text-xs text-muted">
+            <th class="px-5 py-2 font-medium">Member</th>
+            <th class="hidden px-3 py-2 font-medium md:table-cell">ID / reg. no.</th>
+            <th class="px-3 py-2 font-medium">Shares</th>
+            <th class="px-3 py-2 font-medium">Entered</th>
+            <th class="px-5 py-2 font-medium">Ceased</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+          <tr :for={member <- @members} id={"member-#{member.id}"}>
+            <td class="px-5 py-2.5">
+              <span class="font-medium text-ink">{member.name}</span>
+              <span :if={member.address} class="block text-xs text-muted">{member.address}</span>
+            </td>
+            <td class="hidden px-3 py-2.5 md:table-cell">{member.id_number || "—"}</td>
+            <td class="px-3 py-2.5">
+              <span :for={{class, quantity} <- holdings(member, @classes)} class="tabular block">
+                {quantity} {class}
+              </span>
+              <span :if={holdings(member, @classes) == []} class="text-muted">—</span>
+            </td>
+            <td class="px-3 py-2.5">{Format.date(member.entered_on)}</td>
+            <td class="px-5 py-2.5">{Format.date(member.ceased_on)}</td>
+          </tr>
+          <tr :if={@members == []}>
+            <td colspan="5" class="px-5 py-8 text-center text-muted">No members recorded yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </.card>
+  <% else %>
+    <.setup_needed />
+  <% end %>
+
+  <.modal
+    :if={@modal == "class"}
+    id="class-modal"
+    show
+    title="New share class"
+    on_cancel={JS.patch(~p"/compliance/members")}
+  >
+    <form id="class-form" phx-submit="add_class" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input name="class[name]" id="class-name" value="Ordinary" label="Name" />
+        <.input
+          type="number"
+          step="any"
+          name="class[nominal_value]"
+          id="class-value"
+          value="100"
+          label="Nominal value per share"
+        />
+      </div>
+      <.input
+        type="textarea"
+        name="class[rights]"
+        id="class-rights"
+        value=""
+        label="Rights"
+        rows="2"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-class">Add</.button>
+      </div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@modal == "member"}
+    id="member-modal"
+    show
+    title="New member"
+    on_cancel={JS.patch(~p"/compliance/members")}
+  >
+    <form id="member-form" phx-submit="add_member" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input name="member[name]" id="member-name" value="" label="Name" required />
+        <.input
+          type="select"
+          name="member[kind]"
+          id="member-kind"
+          value="person"
+          label="Kind"
+          options={[{"Person", "person"}, {"Company", "company"}]}
+        />
+        <.input name="member[id_number]" id="member-id" value="" label="ID / passport / reg. no." />
+        <.input name="member[nationality]" id="member-nationality" value="" label="Nationality" />
+        <.input
+          type="date"
+          name="member[entered_on]"
+          id="member-entered"
+          value={Date.utc_today()}
+          label="Entered on the register"
+        />
+        <.input name="member[email]" id="member-email" value="" label="Email" />
+      </div>
+      <.input name="member[address]" id="member-address" value="" label="Address" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-member">Add</.button>
+      </div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@modal == "allot"}
+    id="allot-modal"
+    show
+    title="Allot shares"
+    on_cancel={JS.patch(~p"/compliance/members")}
+  >
+    <p :if={@classes == [] or @members == []} class="text-sm text-muted">
+      Add a share class and the member first.
+    </p>
+    <form
+      :if={@classes != [] and @members != []}
+      id="allot-form"
+      phx-submit="allot"
+      class="space-y-4"
+    >
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          type="select"
+          name="allot[shareholder_id]"
+          id="allot-member"
+          value=""
+          label="To"
+          options={shareholder_options(@members)}
+        />
+        <.input
+          type="select"
+          name="allot[share_class_id]"
+          id="allot-class"
+          value=""
+          label="Class"
+          options={class_options(@classes)}
+        />
+        <.input
+          type="number"
+          min="1"
+          name="allot[quantity]"
+          id="allot-quantity"
+          value=""
+          label="Number of shares"
+        />
+        <.input
+          type="date"
+          name="allot[date]"
+          id="allot-date"
+          value={Date.utc_today()}
+          label="Date of allotment"
+        />
+        <.input
+          type="number"
+          step="any"
+          name="allot[consideration]"
+          id="allot-consideration"
+          value=""
+          label="Amount paid"
+        />
+        <.input
+          name="allot[certificate_number]"
+          id="allot-certificate"
+          value=""
+          label="Certificate no."
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-allot">Allot</.button>
+      </div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@modal == "transfer"}
+    id="transfer-modal"
+    show
+    title="Transfer shares"
+    on_cancel={JS.patch(~p"/compliance/members")}
+  >
+    <form id="transfer-form" phx-submit="transfer" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          type="select"
+          name="transfer[from_id]"
+          id="transfer-from"
+          value=""
+          label="From"
+          options={shareholder_options(@members)}
+        />
+        <.input
+          type="select"
+          name="transfer[to_id]"
+          id="transfer-to"
+          value=""
+          label="To"
+          options={shareholder_options(@members)}
+        />
+        <.input
+          type="select"
+          name="transfer[share_class_id]"
+          id="transfer-class"
+          value=""
+          label="Class"
+          options={class_options(@classes)}
+        />
+        <.input
+          type="number"
+          min="1"
+          name="transfer[quantity]"
+          id="transfer-quantity"
+          value=""
+          label="Number of shares"
+        />
+        <.input
+          type="date"
+          name="transfer[date]"
+          id="transfer-date"
+          value={Date.utc_today()}
+          label="Date"
+        />
+        <.input
+          type="number"
+          step="any"
+          name="transfer[consideration]"
+          id="transfer-consideration"
+          value=""
+          label="Consideration"
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-transfer">Transfer</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

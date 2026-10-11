@@ -20,7 +20,7 @@ defmodule Zippiker.Platform.Plan do
     repo Zippiker.Repo
 
     migration_defaults modules:
-                         "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr', 'expenses', 'manufacturing']::text[]\")"
+                         "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr', 'expenses', 'manufacturing', 'compliance']::text[]\")"
 
     identity_wheres_to_sql one_default: "\"default?\" = true"
   end

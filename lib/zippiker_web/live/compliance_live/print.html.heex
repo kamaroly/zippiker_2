@@ -1,0 +1,147 @@
+<div class="min-h-screen bg-canvas px-4 py-6 print:bg-white print:p-0">
+  <div class="mx-auto mb-4 flex max-w-[900px] items-center justify-between print:hidden">
+    <.link navigate={back(@register)} class="text-sm text-muted hover:text-ink">← Back</.link>
+    <.button phx-click={JS.dispatch("zippiker:print")} variant="primary" id="print-button">
+      <.icon name="hero-printer-micro" /> Print / Save as PDF
+    </.button>
+  </div>
+  <article
+    id="register-print"
+    class="mx-auto max-w-[900px] rounded-2xl border border-stone-200 bg-white p-8 text-stone-900 shadow-card sm:p-12 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none"
+  >
+    <header :if={@profile} class="mb-8">
+      <p class="text-xl font-bold">
+        {@profile.legal_entity.legal_name || @profile.legal_entity.name}
+      </p>
+      <p class="text-xs text-stone-500">
+        Registration no. {@profile.registration_number || "—"} · {@profile.registered_office}
+      </p>
+      <p class="mt-4 text-2xl font-light tracking-tight text-stone-500 uppercase">{@title}</p>
+      <p class="text-xs text-stone-400">Printed {Format.date(Date.utc_today())}</p>
+    </header>
+
+    <table :if={@register == "officers"} class="w-full text-xs">
+      <thead>
+        <tr class="border-b-2 border-stone-900 text-left text-stone-500">
+          <th class="py-2">Name</th><th>Role</th><th>Nationality</th><th>ID / KRA PIN</th><th>
+            Residential address
+          </th><th>Appointed</th><th>Ceased</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-stone-200">
+        <tr :for={o <- @rows}>
+          <td class="py-2 font-medium">{o.name}</td>
+          <td>{officer_role_label(o.role)}</td>
+          <td>{o.nationality}</td>
+          <td>{o.id_number} {o.kra_pin}</td>
+          <td>{o.residential_address}</td>
+          <td>{Format.date(o.appointed_on)}</td>
+          <td>{Format.date(o.ceased_on)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table :if={@register == "members"} class="w-full text-xs">
+      <thead>
+        <tr class="border-b-2 border-stone-900 text-left text-stone-500">
+          <th class="py-2">Member</th><th>ID / reg. no.</th><th>Address</th><th class="text-right">
+            Shares held
+          </th><th>Entered</th><th>Ceased</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-stone-200">
+        <tr :for={m <- @rows}>
+          <td class="py-2 font-medium">{m.name}</td>
+          <td>{m.id_number}</td>
+          <td>{m.address}</td>
+          <td class="text-right tabular-nums">{shares(m)}</td>
+          <td>{Format.date(m.entered_on)}</td>
+          <td>{Format.date(m.ceased_on)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table :if={@register == "owners"} class="w-full text-xs">
+      <thead>
+        <tr class="border-b-2 border-stone-900 text-left text-stone-500">
+          <th class="py-2">Name</th><th>Nationality</th><th>ID / KRA PIN</th><th>Shares %</th><th>
+            Votes %
+          </th><th>Other control</th><th>From</th><th>Ceased</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-stone-200">
+        <tr :for={b <- @rows}>
+          <td class="py-2 font-medium">{b.name}</td>
+          <td>{b.nationality}</td>
+          <td>{b.id_number} {b.kra_pin}</td>
+          <td>{b.shares_percent && Decimal.normalize(b.shares_percent)}</td>
+          <td>{b.voting_percent && Decimal.normalize(b.voting_percent)}</td>
+          <td>
+            {[
+              b.appoints_directors? && "Appoints directors",
+              b.significant_influence? && "Significant influence"
+            ]
+            |> Enum.filter(& &1)
+            |> Enum.join(", ")}
+          </td>
+          <td>{Format.date(b.became_owner_on)}</td>
+          <td>{Format.date(b.ceased_on)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table :if={@register == "charges"} class="w-full text-xs">
+      <thead>
+        <tr class="border-b-2 border-stone-900 text-left text-stone-500">
+          <th class="py-2">Chargee</th><th>Property charged</th><th class="text-right">Amount</th><th>
+            Created
+          </th><th>Registered</th><th>Satisfied</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-stone-200">
+        <tr :for={c <- @rows}>
+          <td class="py-2 font-medium">{c.chargee}</td>
+          <td>{c.description}</td>
+          <td class="text-right tabular-nums">
+            {c.currency} {c.amount_secured && Decimal.to_string(c.amount_secured, :normal)}
+          </td>
+          <td>{Format.date(c.created_on)}</td>
+          <td>{Format.date(c.registered_on)} {c.registration_number}</td>
+          <td>{Format.date(c.satisfied_on)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div :for={meeting <- @rows} :if={@register == "minutes"} class="space-y-4 text-sm">
+      <h2 class="text-lg font-semibold">{meeting.title}</h2>
+      <p class="text-stone-500">{Format.date(meeting.held_on)} · {meeting.location}</p>
+      <div :if={meeting.attendees}>
+        <p class="text-xs font-semibold uppercase text-stone-400">Present</p><p class="whitespace-pre-line">
+          {meeting.attendees}
+        </p>
+      </div>
+      <div :if={meeting.agenda}>
+        <p class="text-xs font-semibold uppercase text-stone-400">Agenda</p><p class="whitespace-pre-line">
+          {meeting.agenda}
+        </p>
+      </div>
+      <div :if={meeting.minutes}>
+        <p class="text-xs font-semibold uppercase text-stone-400">Minutes</p><p class="whitespace-pre-line">
+          {meeting.minutes}
+        </p>
+      </div>
+      <div :if={meeting.resolutions != []}>
+        <p class="text-xs font-semibold uppercase text-stone-400">Resolutions</p>
+        <ol class="list-inside list-decimal">
+          <li :for={r <- meeting.resolutions}>
+            {r.text} ({Format.humanize(r.kind)}, {if r.passed?, do: "passed", else: "not passed"})
+          </li>
+        </ol>
+      </div>
+      <div class="mt-16 grid grid-cols-2 gap-12 text-xs text-stone-500">
+        <div class="border-t border-stone-400 pt-2">Chairperson</div>
+        <div class="border-t border-stone-400 pt-2">Date</div>
+      </div>
+    </div>
+  </article>
+</div>

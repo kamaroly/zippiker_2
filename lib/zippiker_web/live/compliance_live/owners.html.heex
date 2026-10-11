@@ -1,0 +1,150 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:compliance_owners}
+>
+  <.header>
+    Beneficial owners
+    <:subtitle>
+      Natural persons holding 10% or more of shares or votes, able to appoint or remove a director, or with significant influence or control.
+    </:subtitle>
+    <:actions>
+      <.button :if={@profile} navigate={~p"/compliance/print/owners"} id="print-owners">
+        <.icon name="hero-printer-micro" /> Print register
+      </.button>
+      <.button
+        :if={@profile && admin?(assigns)}
+        patch={~p"/compliance/beneficial-owners?modal=add"}
+        variant="primary"
+        id="add-owner"
+      >
+        <.icon name="hero-plus-micro" /> Beneficial owner
+      </.button>
+    </:actions>
+  </.header>
+
+  <%= if @profile do %>
+    <.card padded={false}>
+      <ul id="owners" class="divide-y divide-line">
+        <li
+          :for={owner <- @owners}
+          id={"owner-#{owner.id}"}
+          class={["flex flex-wrap items-center gap-3 px-5 py-3", owner.ceased_on && "text-muted"]}
+        >
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-ink">{owner.name}</p>
+            <p class="text-xs text-muted">
+              {control(owner)} · since {Format.date(owner.became_owner_on)}
+              <span :if={owner.ceased_on}> · ceased {Format.date(owner.ceased_on)}</span>
+            </p>
+          </div>
+          <span class="text-xs text-muted">{owner.nationality} {owner.id_number}</span>
+          <.link
+            :if={admin?(assigns) and is_nil(owner.ceased_on)}
+            patch={~p"/compliance/beneficial-owners?modal=cease&id=#{owner.id}"}
+            class="text-xs text-danger hover:opacity-80"
+          >
+            Cease
+          </.link>
+        </li>
+        <li :if={@owners == []} class="px-5 py-8 text-center text-sm text-muted">
+          No beneficial owners recorded.
+        </li>
+      </ul>
+    </.card>
+  <% else %>
+    <.setup_needed />
+  <% end %>
+
+  <.modal
+    :if={@modal == "add"}
+    id="owner-modal"
+    show
+    size="lg"
+    title="Add a beneficial owner"
+    on_cancel={JS.patch(~p"/compliance/beneficial-owners")}
+  >
+    <form id="owner-form" phx-submit="add" class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input name="owner[name]" id="owner-name" value="" label="Full name" required />
+        <.input name="owner[nationality]" id="owner-nationality" value="" label="Nationality" />
+        <.input name="owner[id_number]" id="owner-id" value="" label="ID / passport no." />
+        <.input name="owner[kra_pin]" id="owner-pin" value="" label="KRA PIN" />
+        <.input
+          type="date"
+          name="owner[date_of_birth]"
+          id="owner-dob"
+          value=""
+          label="Date of birth"
+        />
+        <.input
+          type="date"
+          name="owner[became_owner_on]"
+          id="owner-since"
+          value={Date.utc_today()}
+          label="Became owner on"
+        />
+        <.input
+          type="number"
+          step="any"
+          name="owner[shares_percent]"
+          id="owner-shares"
+          value=""
+          label="% of shares"
+        />
+        <.input
+          type="number"
+          step="any"
+          name="owner[voting_percent]"
+          id="owner-votes"
+          value=""
+          label="% of voting rights"
+        />
+      </div>
+      <.input name="owner[address]" id="owner-address" value="" label="Residential address" />
+      <div class="flex flex-wrap gap-6 text-sm text-ink">
+        <label class="flex items-center gap-2">
+          <input type="hidden" name="owner[appoints_directors?]" value="false" />
+          <input
+            type="checkbox"
+            name="owner[appoints_directors?]"
+            value="true"
+            class="size-4 rounded border-line"
+          /> Can appoint or remove a director
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="hidden" name="owner[significant_influence?]" value="false" />
+          <input
+            type="checkbox"
+            name="owner[significant_influence?]"
+            value="true"
+            class="size-4 rounded border-line"
+          /> Significant influence or control
+        </label>
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-owner">Add</.button>
+      </div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@modal == "cease"}
+    id="owner-cease-modal"
+    show
+    title="No longer a beneficial owner"
+    on_cancel={JS.patch(~p"/compliance/beneficial-owners")}
+  >
+    <form id="owner-cease-form" phx-submit="cease" class="space-y-4">
+      <.input
+        type="date"
+        name="cease[ceased_on]"
+        id="owner-ceased"
+        value={Date.utc_today()}
+        label="Ceased on"
+      />
+      <div class="flex justify-end"><.button type="submit" variant="danger">Record</.button></div>
+    </form>
+  </.modal>
+</Layouts.app>

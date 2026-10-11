@@ -1,0 +1,189 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:compliance}
+>
+  <.header>
+    Company secretarial
+    <:subtitle>
+      Statutory registers and filings under the Companies Act, 2015 (Kenya).
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={@profile && admin?(assigns)}
+        patch={~p"/compliance?company=#{@profile.id}&edit=1"}
+        id="edit-company"
+      >
+        <.icon name="hero-pencil-square-micro" /> Company details
+      </.button>
+    </:actions>
+  </.header>
+
+  <div :if={length(@profiles) > 1} class="mb-4">
+    <.segmented
+      current={@profile && @profile.id}
+      options={
+        Enum.map(@profiles, &{&1.legal_entity.name, &1.id, ~p"/compliance?company=#{&1.id}"})
+      }
+    />
+  </div>
+
+  <%= if @profile do %>
+    <div
+      :if={missing(assigns) != []}
+      id="compliance-gaps"
+      class="mb-4 rounded-2xl border border-warning/40 bg-warning-soft/40 px-5 py-4 text-sm"
+    >
+      <p class="flex items-center gap-2 font-semibold text-ink">
+        <.icon name="hero-exclamation-triangle" class="size-4 text-warning" /> Still to record
+      </p>
+      <ul class="mt-1 list-inside list-disc text-ink-soft">
+        <li :for={item <- missing(assigns)}>{item}</li>
+      </ul>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div class="space-y-4">
+        <.card title="Needs attention" padded={false}>
+          <:action>
+            <.link navigate={~p"/compliance/filings"} class="text-muted hover:text-ink">Filing calendar</.link>
+          </:action>
+          <ul id="attention" class="divide-y divide-line px-5 pb-2">
+            <li :for={task <- @attention} class="flex items-center gap-3 py-2.5">
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm text-ink">{task.title}</span>
+                <span class="text-xs text-muted">due {Format.date(task.due_on)}</span>
+              </span>
+              <.filing_state state={task.state} />
+            </li>
+            <li :if={@attention == []} class="py-3 text-sm text-muted">
+              Nothing overdue or due in the next two weeks.
+            </li>
+          </ul>
+        </.card>
+
+        <.card title="Coming up" padded={false}>
+          <ul class="divide-y divide-line px-5 pb-2">
+            <li :for={task <- @upcoming} class="flex items-center gap-3 py-2.5 text-sm">
+              <span class="min-w-0 flex-1 truncate text-ink-soft">{task.title}</span>
+              <span class="text-xs text-muted">{Format.date(task.due_on)}</span>
+            </li>
+            <li :if={@upcoming == []} class="py-3 text-sm text-muted">Nothing scheduled.</li>
+          </ul>
+        </.card>
+
+        <div class="grid gap-3 sm:grid-cols-4">
+          <.link
+            :for={
+              {label, count, path} <- [
+                {"Directors & secretaries", length(@directors), ~p"/compliance/officers"},
+                {"Members", length(@members), ~p"/compliance/members"},
+                {"Beneficial owners", length(@owners), ~p"/compliance/beneficial-owners"},
+                {"Outstanding charges", length(@charges), ~p"/compliance/charges"}
+              ]
+            }
+            navigate={path}
+            class="rounded-2xl border border-line bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-pop"
+          >
+            <p class="tabular text-2xl font-semibold text-ink">{count}</p>
+            <p class="text-xs text-muted">{label}</p>
+          </.link>
+        </div>
+      </div>
+
+      <aside>
+        <.card title={@profile.legal_entity.legal_name || @profile.legal_entity.name}>
+          <.list>
+            <:item title="Registration no.">{@profile.registration_number || "—"}</:item>
+            <:item title="Type">{company_type_label(@profile.company_type)}</:item>
+            <:item title="Incorporated">{Format.date(@profile.incorporation_date)}</:item>
+            <:item title="KRA PIN">{@profile.kra_pin || "—"}</:item>
+            <:item title="Registered office">{@profile.registered_office || "—"}</:item>
+            <:item title="Year end">
+              {Calendar.strftime(
+                Date.new!(2000, @profile.year_end_month, min(@profile.year_end_day, 28)),
+                "%B"
+              )} {@profile.year_end_day}
+            </:item>
+            <:item :if={@profile.auditor} title="Auditor">{@profile.auditor}</:item>
+          </.list>
+        </.card>
+      </aside>
+    </div>
+  <% end %>
+
+  <.modal
+    :if={@editing? and admin?(assigns)}
+    id="company-modal"
+    show
+    size="lg"
+    title={if(@profile, do: "Company details", else: "Set up your company")}
+    on_cancel={JS.patch(if(@profile, do: ~p"/compliance?company=#{@profile.id}", else: ~p"/"))}
+  >
+    <.form for={@form} id="company-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <.input
+        :if={@entities != []}
+        field={@form[:legal_entity_id]}
+        type="select"
+        label="Company (legal entity)"
+        options={@entities}
+      />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:registration_number]}
+          label="Registration number"
+          placeholder="PVT-ABC1234"
+        />
+        <.input
+          field={@form[:company_type]}
+          type="select"
+          label="Type"
+          options={
+            Enum.map(
+              [:private_limited, :public_limited, :guarantee, :unlimited, :foreign],
+              &{company_type_label(&1), &1}
+            )
+          }
+        />
+        <.input field={@form[:incorporation_date]} type="date" label="Date of incorporation" />
+        <.input field={@form[:kra_pin]} label="KRA PIN" />
+      </div>
+      <.input
+        field={@form[:registered_office]}
+        type="textarea"
+        label="Registered office"
+        rows="2"
+      />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:postal_address]} label="Postal address" />
+        <.input field={@form[:email]} label="Company email" />
+      </div>
+      <div class="grid gap-4 sm:grid-cols-4">
+        <.input
+          field={@form[:year_end_month]}
+          type="number"
+          min="1"
+          max="12"
+          label="Year-end month"
+        />
+        <.input field={@form[:year_end_day]} type="number" min="1" max="31" label="Day" />
+        <.input
+          field={@form[:authorised_capital]}
+          type="number"
+          step="any"
+          label="Authorised capital"
+        />
+        <.input field={@form[:auditor]} label="Auditor" />
+      </div>
+      <.input
+        field={@form[:secretary_required?]}
+        type="checkbox"
+        label="Must have a company secretary (public companies; private with paid-up capital of KES 5M or more)"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-company">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

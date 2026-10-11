@@ -28,6 +28,7 @@ defmodule ZippikerWeb.Router do
     post "/workspaces/:id/switch", WorkspaceController, :switch
     get "/hr/leave/:id/attachment", LeaveAttachmentController, :show
     get "/hr/checklist-attachments/:id", LeaveAttachmentController, :checklist
+    get "/compliance/documents/:id/file", LeaveAttachmentController, :statutory
 
     post "/workspaces/:organization_id/impersonate/:user_id",
          WorkspaceController,
@@ -53,6 +54,7 @@ defmodule ZippikerWeb.Router do
 
     ash_authentication_live_session :print,
       on_mount: {ZippikerWeb.LiveUserAuth, :live_workspace} do
+      live "/compliance/print/:register", ComplianceLive.Print, :print
       live "/quotes/:id/print", DocumentLive.Print, :quote
       live "/invoices/:id/print", DocumentLive.Print, :invoice
       live "/orders/:id/print", DocumentLive.Print, :sales_order
@@ -236,6 +238,15 @@ defmodule ZippikerWeb.Router do
       live "/manufacturing/work-centers", ProductionLive.WorkCenters, :index
       live "/manufacturing/work-centers/new", ProductionLive.WorkCenters, :new
       live "/manufacturing/work-centers/:id/edit", ProductionLive.WorkCenters, :edit
+
+      live "/compliance", ComplianceLive.Overview, :index
+      live "/compliance/filings", ComplianceLive.Filings, :index
+      live "/compliance/officers", ComplianceLive.Officers, :index
+      live "/compliance/members", ComplianceLive.Members, :index
+      live "/compliance/beneficial-owners", ComplianceLive.Owners, :index
+      live "/compliance/charges", ComplianceLive.Charges, :index
+      live "/compliance/meetings", ComplianceLive.Meetings, :index
+      live "/compliance/documents", ComplianceLive.Documents, :index
 
       live "/approvals", WorkflowLive.Inbox, :index
       live "/approvals/history", WorkflowLive.History, :index

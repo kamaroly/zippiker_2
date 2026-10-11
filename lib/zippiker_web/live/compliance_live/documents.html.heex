@@ -1,0 +1,114 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:compliance_documents}
+>
+  <.header>
+    Statutory documents
+    <:subtitle>
+      Keep the company's certificates, articles, searches and filing receipts in one place.
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={@profile && admin?(assigns)}
+        patch={~p"/compliance/documents?modal=upload"}
+        variant="primary"
+        id="upload-document"
+      >
+        <.icon name="hero-arrow-up-tray-micro" /> Upload
+      </.button>
+    </:actions>
+  </.header>
+
+  <%= if @profile do %>
+    <.card padded={false}>
+      <ul id="statutory-documents" class="divide-y divide-line">
+        <li
+          :for={document <- @documents}
+          id={"document-#{document.id}"}
+          class="flex items-center gap-3 px-5 py-3"
+        >
+          <.icon name="hero-document-text" class="size-5 text-muted" />
+          <div class="min-w-0 flex-1">
+            <.link
+              href={~p"/compliance/documents/#{document.id}/file"}
+              target="_blank"
+              class="block truncate text-sm font-medium text-ink hover:underline"
+            >
+              {document.name}
+            </.link>
+            <p class="text-xs text-muted">
+              {kind_label(document.kind)}<span :if={document.issued_on}> · issued {Format.date(
+                document.issued_on
+              )}</span>
+              · uploaded by {Format.user_name(document.uploaded_by)}
+            </p>
+          </div>
+          <button
+            :if={admin?(assigns)}
+            phx-click="delete"
+            phx-value-id={document.id}
+            data-confirm={"Remove #{document.name}?"}
+            class="text-xs text-muted hover:text-danger"
+          >
+            Remove
+          </button>
+        </li>
+        <li :if={@documents == []} class="px-5 py-8 text-center text-sm text-muted">
+          No documents yet.
+        </li>
+      </ul>
+    </.card>
+  <% else %>
+    <.setup_needed />
+  <% end %>
+
+  <.modal
+    :if={@modal == "upload"}
+    id="upload-document-modal"
+    show
+    title="Upload a document"
+    on_cancel={JS.patch(~p"/compliance/documents")}
+  >
+    <form id="document-upload-form" phx-submit="upload" phx-change="validate" class="space-y-4">
+      <.input
+        type="select"
+        name="document[kind]"
+        id="document-kind"
+        value="other"
+        label="Kind"
+        options={@kinds}
+      />
+      <.input
+        name="document[name]"
+        id="document-name"
+        value=""
+        label="Title"
+        placeholder="Defaults to the file name"
+      />
+      <.input
+        type="date"
+        name="document[issued_on]"
+        id="document-issued"
+        value=""
+        label="Issued on"
+      />
+      <label
+        for={@uploads.file.ref}
+        phx-drop-target={@uploads.file.ref}
+        class="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-line-strong px-4 py-3 text-sm text-muted hover:border-ink hover:text-ink"
+      >
+        <.icon name="hero-arrow-up-tray" class="size-5" />
+        Drop the file or click to choose (up to 20 MB)
+        <.live_file_input upload={@uploads.file} class="sr-only" />
+      </label>
+      <p :for={entry <- @uploads.file.entries} class="text-sm text-ink">
+        {entry.client_name} · {entry.progress}%
+      </p>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-document">Save</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

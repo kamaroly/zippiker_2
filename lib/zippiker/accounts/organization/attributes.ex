@@ -63,7 +63,18 @@ defmodule Zippiker.Accounts.Organization.Attributes do
       description "Business modules switched on for this workspace. Managed by the platform."
       allow_nil? false
       public? true
-      default [:crm, :sales, :purchasing, :inventory, :accounting, :hr, :expenses, :manufacturing]
+
+      default [
+        :crm,
+        :sales,
+        :purchasing,
+        :inventory,
+        :accounting,
+        :hr,
+        :expenses,
+        :manufacturing,
+        :compliance
+      ]
 
       constraints items: [
                     one_of: [
@@ -74,7 +85,8 @@ defmodule Zippiker.Accounts.Organization.Attributes do
                       :accounting,
                       :hr,
                       :expenses,
-                      :manufacturing
+                      :manufacturing,
+                      :compliance
                     ]
                   ]
     end

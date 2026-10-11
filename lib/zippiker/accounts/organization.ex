@@ -23,7 +23,7 @@ defmodule Zippiker.Accounts.Organization do
 
     migration_defaults maker_checker_scopes: "fragment(\"ARRAY[]::text[]\")",
                        enabled_modules:
-                         "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr', 'expenses', 'manufacturing']::text[]\")"
+                         "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr', 'expenses', 'manufacturing', 'compliance']::text[]\")"
   end
 
   identities do

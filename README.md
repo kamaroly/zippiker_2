@@ -196,6 +196,17 @@ components out at average cost, finished goods in at components + labour per uni
 the net (the labour/overhead) as DR inventory / CR "Manufacturing overhead applied"
 (`:production_overhead`). The job card prints at `/manufacturing/orders/:id/print`.
 
+### Company secretarial (Kenya Companies Act, 2015)
+
+`Zippiker.Compliance` (module `:compliance`): `CompanyProfile` per legal entity; registers `Officer`,
+`Shareholder` + `ShareClass` + `ShareMovement` (holdings = sum of signed movements; `transfer` writes
+both sides), `BeneficialOwner`, `Charge`; `Meeting` + `Resolution`; `StatutoryDocument`; and the
+`ComplianceTask` filing calendar. `Changes.AddFiling` adds event-driven filings (officer changes 14
+days, allotments/BO changes/charges/special resolutions 30 days, registered office 14 days);
+`Compliance.Calendar` adds annual returns (incorporation anniversary + 30 days) and public-company
+AGMs, idempotently per `period`, refreshed daily by `Compliance.Workers.RefreshCalendars`.
+Deadlines are defaults, not legal advice.
+
 ### Customer & supplier portals
 
 `Accounts.PortalAccess` (public schema, like invitations) links an outside user to one party of a

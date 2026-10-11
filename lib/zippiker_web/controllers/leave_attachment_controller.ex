@@ -33,5 +33,19 @@ defmodule ZippikerWeb.LeaveAttachmentController do
     end
   end
 
+  def statutory(conn, %{"id" => id}) do
+    with %{} = user <- conn.assigns[:current_user],
+         {organization, _role} <-
+           ZippikerWeb.LiveUserAuth.current_workspace(user, get_session(conn, :organization_id)),
+         {:ok, document} <-
+           Zippiker.Compliance.get_statutory_document(id, actor: user, tenant: organization),
+         full = ZippikerWeb.Uploads.full_path(document.path),
+         true <- File.exists?(full) do
+      send_download(conn, {:file, full}, filename: document.file_name, disposition: :inline)
+    else
+      _ -> not_found(conn)
+    end
+  end
+
   defp not_found(conn), do: conn |> put_status(:not_found) |> text("Not found")
 end

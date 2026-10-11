@@ -1,0 +1,159 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:compliance_charges}
+>
+  <.header>
+    Charges
+    <:subtitle>Mortgages, debentures and other security over the company's assets.</:subtitle>
+    <:actions>
+      <.button :if={@profile} navigate={~p"/compliance/print/charges"} id="print-charges">
+        <.icon name="hero-printer-micro" /> Print register
+      </.button>
+      <.button
+        :if={@profile && admin?(assigns)}
+        patch={~p"/compliance/charges?modal=add"}
+        variant="primary"
+        id="add-charge"
+      >
+        <.icon name="hero-plus-micro" /> Charge
+      </.button>
+    </:actions>
+  </.header>
+
+  <%= if @profile do %>
+    <.card padded={false}>
+      <ul id="charges" class="divide-y divide-line">
+        <li
+          :for={charge <- @charges}
+          id={"charge-#{charge.id}"}
+          class="flex flex-wrap items-center gap-3 px-5 py-3"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-ink">{charge.chargee} · {amount(charge)}</p>
+            <p class="text-xs text-muted">
+              {charge.description} · created {Format.date(charge.created_on)}
+              <span :if={charge.registered_on}> · registered {Format.date(charge.registered_on)} {charge.registration_number}</span>
+            </p>
+          </div>
+          <.badge color={if(charge.outstanding?, do: :amber, else: :emerald)}>
+            {if charge.outstanding?,
+              do: "Outstanding",
+              else: "Satisfied #{Format.date(charge.satisfied_on)}"}
+          </.badge>
+          <span :if={admin?(assigns) and charge.outstanding?} class="flex gap-3 text-xs">
+            <.link
+              :if={is_nil(charge.registered_on)}
+              patch={~p"/compliance/charges?modal=register&id=#{charge.id}"}
+              class="text-ink-soft hover:text-ink"
+            >
+              Registered
+            </.link>
+            <.link
+              patch={~p"/compliance/charges?modal=satisfy&id=#{charge.id}"}
+              class="text-ink-soft hover:text-ink"
+            >Satisfied</.link>
+          </span>
+        </li>
+        <li :if={@charges == []} class="px-5 py-8 text-center text-sm text-muted">
+          No charges recorded.
+        </li>
+      </ul>
+    </.card>
+  <% else %>
+    <.setup_needed />
+  <% end %>
+
+  <.modal
+    :if={@modal == "add"}
+    id="charge-modal"
+    show
+    title="Record a charge"
+    on_cancel={JS.patch(~p"/compliance/charges")}
+  >
+    <form id="charge-form" phx-submit="add" class="space-y-4">
+      <.input
+        name="charge[chargee]"
+        id="charge-chargee"
+        value=""
+        label="In favour of (lender)"
+        required
+      />
+      <.input
+        type="textarea"
+        name="charge[description]"
+        id="charge-description"
+        value=""
+        label="Property charged"
+        rows="2"
+        required
+      />
+      <div class="grid gap-4 sm:grid-cols-3">
+        <.input
+          type="number"
+          step="any"
+          name="charge[amount_secured]"
+          id="charge-amount"
+          value=""
+          label="Amount secured"
+        />
+        <.input name="charge[currency]" id="charge-currency" value="KES" label="Currency" />
+        <.input
+          type="date"
+          name="charge[created_on]"
+          id="charge-created"
+          value={Date.utc_today()}
+          label="Created on"
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-charge">Save</.button>
+      </div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@modal == "register"}
+    id="charge-register-modal"
+    show
+    title="Registered with the Registrar"
+    on_cancel={JS.patch(~p"/compliance/charges")}
+  >
+    <form id="charge-register-form" phx-submit="register" class="space-y-4">
+      <.input
+        type="date"
+        name="charge[registered_on]"
+        id="charge-registered"
+        value={Date.utc_today()}
+        label="Registered on"
+      />
+      <.input
+        name="charge[registration_number]"
+        id="charge-number"
+        value=""
+        label="Registration no."
+      />
+      <div class="flex justify-end"><.button type="submit" variant="primary">Save</.button></div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@modal == "satisfy"}
+    id="charge-satisfy-modal"
+    show
+    title="Charge satisfied"
+    on_cancel={JS.patch(~p"/compliance/charges")}
+  >
+    <form id="charge-satisfy-form" phx-submit="satisfy" class="space-y-4">
+      <.input
+        type="date"
+        name="charge[satisfied_on]"
+        id="charge-satisfied"
+        value={Date.utc_today()}
+        label="Satisfied on"
+      />
+      <div class="flex justify-end"><.button type="submit" variant="primary">Save</.button></div>
+    </form>
+  </.modal>
+</Layouts.app>

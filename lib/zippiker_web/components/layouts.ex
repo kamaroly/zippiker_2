@@ -82,6 +82,17 @@ defmodule ZippikerWeb.Layouts do
        {:accounts, "Chart of accounts", "/accounting/accounts", :accounting},
        {:reports, "Reports", "/accounting/reports", :accounting}
      ]},
+    {:compliance, "Company secretarial", "hero-building-library",
+     [
+       {:compliance, "Overview", "/compliance", :compliance},
+       {:compliance_filings, "Filing calendar", "/compliance/filings", :compliance},
+       {:compliance_officers, "Directors & secretaries", "/compliance/officers", :compliance},
+       {:compliance_members, "Members & shares", "/compliance/members", :compliance},
+       {:compliance_owners, "Beneficial owners", "/compliance/beneficial-owners", :compliance},
+       {:compliance_charges, "Charges", "/compliance/charges", :compliance},
+       {:compliance_meetings, "Meetings", "/compliance/meetings", :compliance},
+       {:compliance_documents, "Documents", "/compliance/documents", :compliance}
+     ]},
     {:approvals, "Approvals", "hero-check-badge",
      [
        {:approval_inbox, "Inbox", "/approvals", nil},

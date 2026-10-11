@@ -1,0 +1,151 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:compliance_filings}
+>
+  <.header>
+    Filing calendar
+    <:subtitle>
+      Statutory deadlines with the Registrar of Companies. Mark each one filed with its receipt.
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={@profile && admin?(assigns)}
+        patch={~p"/compliance/filings?modal=add"}
+        id="add-filing"
+      >
+        <.icon name="hero-plus-micro" /> Deadline
+      </.button>
+    </:actions>
+  </.header>
+
+  <%= if @profile do %>
+    <div class="mb-4">
+      <.segmented
+        current={@show}
+        options={[
+          {"Open", :open, ~p"/compliance/filings"},
+          {"All", :all, ~p"/compliance/filings?show=all"}
+        ]}
+      />
+    </div>
+
+    <.card padded={false}>
+      <ul id="filings" class="divide-y divide-line">
+        <li
+          :for={task <- @tasks}
+          id={"filing-#{task.id}"}
+          class="flex flex-wrap items-center gap-3 px-5 py-3"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-ink">{task.title}</p>
+            <p class="text-xs text-muted">
+              due {Format.date(task.due_on)}
+              <span :if={task.completed_on}>
+                · filed {Format.date(task.completed_on)}<span :if={task.reference}> (ref. {task.reference})</span>
+              </span>
+            </p>
+            <p :if={task.description} class="mt-0.5 text-xs text-ink-soft">{task.description}</p>
+          </div>
+          <.filing_state state={task.state} />
+          <.button
+            :if={admin?(assigns) and is_nil(task.completed_on)}
+            patch={~p"/compliance/filings?modal=complete&task=#{task.id}"}
+            size="sm"
+            variant="primary"
+            id={"file-#{task.id}"}
+          >
+            Mark filed
+          </.button>
+          <button
+            :if={admin?(assigns) and task.completed_on}
+            phx-click="reopen"
+            phx-value-id={task.id}
+            class="text-xs text-muted hover:text-ink"
+          >
+            Reopen
+          </button>
+        </li>
+        <li :if={@tasks == []} class="px-5 py-8 text-center text-sm text-muted">
+          Nothing on the calendar. Add the incorporation date in Company details to schedule annual returns.
+        </li>
+      </ul>
+    </.card>
+  <% else %>
+    <.setup_needed />
+  <% end %>
+
+  <.modal
+    :if={@modal == "complete"}
+    id="complete-filing-modal"
+    show
+    title="Mark as filed"
+    on_cancel={JS.patch(~p"/compliance/filings")}
+  >
+    <form id="complete-filing-form" phx-submit="complete" class="space-y-4">
+      <.input
+        type="date"
+        name="filing[completed_on]"
+        id="filing-date"
+        value={Date.utc_today()}
+        label="Filed on"
+      />
+      <.input
+        name="filing[reference]"
+        id="filing-reference"
+        value=""
+        label="Receipt / reference"
+        placeholder="e-Citizen receipt no."
+      />
+      <.input
+        type="textarea"
+        name="filing[notes]"
+        id="filing-notes"
+        value=""
+        label="Notes"
+        rows="2"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-filing">Save</.button>
+      </div>
+    </form>
+  </.modal>
+
+  <.modal
+    :if={@modal == "add"}
+    id="add-filing-modal"
+    show
+    title="Add a deadline"
+    on_cancel={JS.patch(~p"/compliance/filings")}
+  >
+    <form id="add-filing-form" phx-submit="add" class="space-y-4">
+      <.input
+        name="filing[title]"
+        id="new-filing-title"
+        value=""
+        label="What"
+        placeholder="File change of company name"
+        required
+      />
+      <.input
+        type="date"
+        name="filing[due_on]"
+        id="new-filing-due"
+        value={Date.add(Date.utc_today(), 14)}
+        label="Due on"
+      />
+      <.input
+        type="textarea"
+        name="filing[description]"
+        id="new-filing-description"
+        value=""
+        label="Details"
+        rows="2"
+      />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" id="save-new-filing">Add</.button>
+      </div>
+    </form>
+  </.modal>
+</Layouts.app>

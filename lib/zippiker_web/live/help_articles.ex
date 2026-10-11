@@ -105,6 +105,15 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.expenses/1
     },
     %{
+      slug: "company-secretarial",
+      title: "Company secretarial (Kenya)",
+      section: "Compliance",
+      icon: "hero-building-library",
+      summary:
+        "Statutory registers, meetings and filing deadlines under the Companies Act, 2015.",
+      render: &__MODULE__.company_secretarial/1
+    },
+    %{
       slug: "accounting",
       title: "Accounting basics",
       section: "Accounting",

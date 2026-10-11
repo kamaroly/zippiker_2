@@ -49,6 +49,12 @@ defmodule ZippikerWeb.Modules do
       description: "Bills of materials, work centers and production orders."
     },
     %{
+      key: :compliance,
+      name: "Company secretarial",
+      icon: "hero-building-library",
+      description: "Statutory registers, meetings and filings (Kenya Companies Act, 2015)."
+    },
+    %{
       key: :accounting,
       name: "Accounting",
       icon: "hero-calculator",
@@ -126,6 +132,17 @@ defmodule ZippikerWeb.Modules do
       ZippikerWeb.ProductionLive.WorkCenters,
       ZippikerWeb.BomLive.Index,
       ZippikerWeb.BomLive.Form
+    ],
+    compliance: [
+      ZippikerWeb.ComplianceLive.Overview,
+      ZippikerWeb.ComplianceLive.Filings,
+      ZippikerWeb.ComplianceLive.Officers,
+      ZippikerWeb.ComplianceLive.Members,
+      ZippikerWeb.ComplianceLive.Owners,
+      ZippikerWeb.ComplianceLive.Charges,
+      ZippikerWeb.ComplianceLive.Meetings,
+      ZippikerWeb.ComplianceLive.Documents,
+      ZippikerWeb.ComplianceLive.Print
     ],
     accounting: [
       ZippikerWeb.AccountingLive.Overview,

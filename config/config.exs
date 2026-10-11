@@ -79,6 +79,7 @@ config :zippiker,
     Zippiker.Expenses,
     Zippiker.Manufacturing,
     Zippiker.Portal,
+    Zippiker.Compliance,
     Zippiker.Platform
   ]
 
@@ -94,7 +95,8 @@ config :zippiker, Oban,
     {Oban.Plugins.Cron,
      crontab: [
        {"15 0 * * *", Zippiker.HR.Workers.RunAccruals},
-       {"5 * * * *", Zippiker.HR.Workers.ReviewOverdueLeave}
+       {"5 * * * *", Zippiker.HR.Workers.ReviewOverdueLeave},
+       {"30 0 * * *", Zippiker.Compliance.Workers.RefreshCalendars}
      ]}
   ]
 
