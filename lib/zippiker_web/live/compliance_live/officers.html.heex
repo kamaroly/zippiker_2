@@ -14,7 +14,7 @@
         <.icon name="hero-printer-micro" /> Print register
       </.button>
       <.button
-        :if={@profile && admin?(assigns)}
+        :if={@profile && can?(assigns, "compliance.manage")}
         patch={~p"/compliance/officers?modal=appoint"}
         variant="primary"
         id="appoint-officer"
@@ -54,7 +54,7 @@
             <td class="px-3 py-2.5">{Format.date(officer.appointed_on)}</td>
             <td class="px-3 py-2.5">{Format.date(officer.ceased_on)}</td>
             <td class="px-5 py-2.5 text-right">
-              <span :if={admin?(assigns)} class="flex justify-end gap-3">
+              <span :if={can?(assigns, "compliance.manage")} class="flex justify-end gap-3">
                 <.link
                   patch={~p"/compliance/officers?modal=edit&id=#{officer.id}"}
                   class="text-ink-soft hover:text-ink"

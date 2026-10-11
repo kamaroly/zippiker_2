@@ -9,7 +9,7 @@
     <:subtitle>Locations of your business: head office, shops, depots…</:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns) and @current_organization.multi_branch?}
+        :if={can?(assigns, "branches.manage") and @current_organization.multi_branch?}
         patch={~p"/settings/branches/new"}
         variant="primary"
         id="new-branch"
@@ -28,7 +28,7 @@
         value="true"
         id="multi-branch"
         checked={@current_organization.multi_branch?}
-        disabled={!admin?(assigns)}
+        disabled={!can?(assigns, "branches.manage")}
         class="mt-1 size-4 rounded border-line"
       />
       <label for="multi-branch">
@@ -58,7 +58,7 @@
       {if branch.manager, do: Format.user_name(branch.manager), else: "—"}
     </:col>
     <:action :let={{_id, branch}}>
-      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+      <span :if={can?(assigns, "branches.manage")} class="flex justify-end gap-3">
         <.link patch={~p"/settings/branches/#{branch}/edit"} class="text-ink-soft hover:text-ink">
           Edit
         </.link>

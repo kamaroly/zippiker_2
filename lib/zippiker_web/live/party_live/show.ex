@@ -205,7 +205,7 @@ defmodule ZippikerWeb.PartyLive.Show do
 
   defp load_portal_accesses(socket) do
     accesses =
-      if admin?(socket.assigns),
+      if can?(socket.assigns, "portal.manage"),
         do:
           Zippiker.Accounts.portal_accesses_for_party!(socket.assigns.party.id,
             actor: socket.assigns.current_user,

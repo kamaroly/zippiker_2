@@ -11,6 +11,15 @@ defmodule ZippikerWeb.LiveHelpers do
   def admin?(_assigns), do: false
 
   @doc """
+  Whether the current user's roles include a permission (owners and admins
+  have them all). See `Zippiker.Accounts.Permissions`.
+  """
+  def can?(%{current_permissions: permissions}, key),
+    do: ZippikerWeb.Access.can?(permissions, key)
+
+  def can?(assigns, _key), do: admin?(assigns)
+
+  @doc """
   Whether the current user may impersonate a workspace member: owners can
   impersonate admins and members, admins only members. Never yourself, a
   super admin, or while already impersonating someone.

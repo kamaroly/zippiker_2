@@ -21,14 +21,18 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={@claim.status in [:draft, :rejected] and (@owner? or admin?(assigns))}
+        :if={
+          @claim.status in [:draft, :rejected] and (@owner? or can?(assigns, "expenses.manage"))
+        }
         navigate={~p"/expenses/#{@claim}/edit"}
         id="edit-claim"
       >
         <.icon name="hero-pencil-square-micro" /> Edit
       </.button>
       <.button
-        :if={@claim.status in [:draft, :rejected] and (@owner? or admin?(assigns))}
+        :if={
+          @claim.status in [:draft, :rejected] and (@owner? or can?(assigns, "expenses.manage"))
+        }
         phx-click="submit"
         variant="primary"
         id="submit-claim"
@@ -38,7 +42,7 @@
         {if @claim.status == :rejected, do: "Resubmit", else: "Submit for approval"}
       </.button>
       <.button
-        :if={@claim.status == :approved and admin?(assigns)}
+        :if={@claim.status == :approved and can?(assigns, "expenses.reimburse")}
         patch={~p"/expenses/#{@claim}/reimburse"}
         variant="primary"
         id="reimburse-claim"
@@ -178,7 +182,10 @@
       </.card>
 
       <.button
-        :if={@claim.status in [:draft, :submitted, :rejected] and (@owner? or admin?(assigns))}
+        :if={
+          @claim.status in [:draft, :submitted, :rejected] and
+            (@owner? or can?(assigns, "expenses.manage"))
+        }
         phx-click="cancel"
         data-confirm="Cancel this claim?"
         class="w-full"
@@ -187,7 +194,7 @@
         Cancel claim
       </.button>
       <.button
-        :if={@claim.status == :draft and (@owner? or admin?(assigns))}
+        :if={@claim.status == :draft and (@owner? or can?(assigns, "expenses.manage"))}
         phx-click="delete"
         data-confirm="Delete this draft?"
         variant="danger"

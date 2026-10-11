@@ -9,7 +9,7 @@
     <:subtitle>Everyone who works with you, who they report to, and who's away.</:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "employees.manage")}
         navigate={~p"/hr/employees/new"}
         variant="primary"
         id="new-employee"

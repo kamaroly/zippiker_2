@@ -4,6 +4,13 @@ defmodule Zippiker.Purchasing.Bill.Policies do
   alias Zippiker.Accounts.Checks.{ActorIsAdmin, ActorIsMember}
 
   policies do
+    # Roles: plain members need the permission covering the action
+    # (Zippiker.Accounts.Permissions).
+    policy action_type([:create, :update, :destroy, :action]) do
+      forbid_unless Zippiker.Accounts.Checks.Permitted
+      authorize_if always()
+    end
+
     policy action([:approve, :void]) do
       authorize_if ActorIsAdmin
     end

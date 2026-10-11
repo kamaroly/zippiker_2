@@ -9,7 +9,7 @@
     <:subtitle>What people can claim for, and the expense account it's booked to.</:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "expense_categories.manage")}
         patch={~p"/expenses/categories/new"}
         variant="primary"
         id="new-category"
@@ -38,7 +38,7 @@
       {if category.receipt_required?, do: "Required", else: "Optional"}
     </:col>
     <:action :let={{_id, category}}>
-      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+      <span :if={can?(assigns, "expense_categories.manage")} class="flex justify-end gap-3">
         <.link
           patch={~p"/expenses/categories/#{category}/edit"}
           class="text-ink-soft hover:text-ink"

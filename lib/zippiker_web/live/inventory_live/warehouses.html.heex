@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "warehouses.manage")}
         patch={~p"/inventory/warehouses/new"}
         variant="primary"
         id="new-warehouse"
@@ -37,7 +37,7 @@
     </:col>
     <:action :let={{_id, warehouse}}>
       <.link
-        :if={admin?(assigns)}
+        :if={can?(assigns, "warehouses.manage")}
         patch={~p"/inventory/warehouses/#{warehouse}/edit"}
         class="text-ink-soft hover:text-ink"
       >

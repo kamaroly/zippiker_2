@@ -156,7 +156,12 @@
         <p :if={@addresses == []} class="px-5 pb-5 text-sm text-muted">No address yet.</p>
       </.card>
 
-      <.card :if={admin?(assigns)} title="Portal access" padded={false} id="portal-access">
+      <.card
+        :if={can?(assigns, "portal.manage")}
+        title="Portal access"
+        padded={false}
+        id="portal-access"
+      >
         <ul class="divide-y divide-line px-5">
           <li :for={access <- @portal_accesses} class="flex items-center gap-3 py-2.5 text-sm">
             <.icon name="hero-globe-alt" class="size-4 text-muted" />

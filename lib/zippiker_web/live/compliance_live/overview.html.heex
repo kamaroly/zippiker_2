@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={@profile && admin?(assigns)}
+        :if={@profile && can?(assigns, "compliance.manage")}
         patch={~p"/compliance?company=#{@profile.id}&edit=1"}
         id="edit-company"
       >
@@ -114,7 +114,7 @@
   <% end %>
 
   <.modal
-    :if={@editing? and admin?(assigns)}
+    :if={@editing? and can?(assigns, "compliance.manage")}
     id="company-modal"
     show
     size="lg"

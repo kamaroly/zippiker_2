@@ -147,6 +147,14 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.custom_fields/1
     },
     %{
+      slug: "roles-and-permissions",
+      title: "Roles & permissions",
+      section: "Workspace",
+      icon: "hero-key",
+      summary: "Decide what each person can see and do with roles like Sales rep or Accountant.",
+      render: &__MODULE__.roles_and_permissions/1
+    },
+    %{
       slug: "team-and-billing",
       title: "Team, roles & billing",
       section: "Workspace",

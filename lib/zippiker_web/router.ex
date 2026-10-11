@@ -121,6 +121,9 @@ defmodule ZippikerWeb.Router do
       live "/settings/branches", Settings.BranchesLive, :index
       live "/settings/branches/new", Settings.BranchesLive, :new
       live "/settings/branches/:id/edit", Settings.BranchesLive, :edit
+      live "/settings/roles", Settings.RolesLive, :index
+      live "/settings/roles/new", Settings.RolesLive, :new
+      live "/settings/roles/:id/edit", Settings.RolesLive, :edit
       live "/settings/taxes", Settings.TaxesLive, :index
       live "/settings/taxes/new", Settings.TaxesLive, :new
       live "/settings/taxes/:id/edit", Settings.TaxesLive, :edit

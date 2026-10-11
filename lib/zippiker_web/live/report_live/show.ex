@@ -3,14 +3,15 @@ defmodule ZippikerWeb.ReportLive.Show do
   use ZippikerWeb, :live_view
 
   alias Zippiker.Reporting
-  alias Zippiker.Reporting.Catalog
   alias ZippikerWeb.ReportParams
 
   @impl true
   def mount(%{"key" => key}, _session, socket) do
     organization = socket.assigns.current_organization
 
-    case Enum.find(Catalog.available(organization), &(&1.key == key)) do
+    reports = ZippikerWeb.Access.reports(organization, socket.assigns.current_permissions)
+
+    case Enum.find(reports, &(&1.key == key)) do
       nil ->
         {:ok,
          socket

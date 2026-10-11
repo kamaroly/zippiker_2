@@ -111,7 +111,7 @@
         already recorded. From then on, sales post to the books automatically.
       </p>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "books.setup")}
         phx-click="setup"
         variant="primary"
         class="mt-6"
@@ -120,7 +120,7 @@
       >
         Set up accounting
       </.button>
-      <p :if={!admin?(assigns)} class="mt-6 text-sm text-muted">
+      <p :if={!can?(assigns, "books.setup")} class="mt-6 text-sm text-muted">
         Ask a workspace admin to set up accounting.
       </p>
     </div>

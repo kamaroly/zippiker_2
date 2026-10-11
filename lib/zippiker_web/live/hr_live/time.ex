@@ -10,7 +10,7 @@ defmodule ZippikerWeb.HRLive.Time do
   @impl true
   def mount(_params, _session, socket) do
     opts = ash_opts(socket)
-    admin? = admin?(socket.assigns)
+    admin? = can?(socket.assigns, "time.log")
 
     employees =
       if admin?,

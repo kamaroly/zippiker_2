@@ -2,14 +2,15 @@ defmodule ZippikerWeb.ReportController do
   @moduledoc "CSV export of a standard report, with the same filters as the report page."
   use ZippikerWeb, :controller
 
-  alias Zippiker.Reporting.Catalog
   alias ZippikerWeb.ReportParams
 
   def export(conn, %{"key" => key} = params) do
     with %{} = user <- conn.assigns[:current_user],
          {organization, _role} <-
            ZippikerWeb.LiveUserAuth.current_workspace(user, get_session(conn, :organization_id)),
-         %{} = definition <- Enum.find(Catalog.available(organization), &(&1.key == key)) do
+         permissions = ZippikerWeb.Access.permissions(user, organization),
+         %{} = definition <-
+           Enum.find(ZippikerWeb.Access.reports(organization, permissions), &(&1.key == key)) do
       opts = [actor: user, tenant: organization]
       branch_ids = branch_ids(organization, opts)
       selection = ReportParams.parse(params, definition.period, branch_ids)

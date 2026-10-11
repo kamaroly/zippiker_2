@@ -7,7 +7,7 @@ defmodule Zippiker.Accounts.Tenant.Migrator do
   Safe to run repeatedly (`mix zippiker.tenants.migrate`, or
   `Zippiker.Accounts.Tenant.Migrator.run/0` from a release): schemas are
   created only when missing, and a table is copied only while the
-  workspace's copy is empty.
+  workspace's copy is empty. Also adds missing built-in roles.
   """
 
   require Logger
@@ -40,6 +40,13 @@ defmodule Zippiker.Accounts.Tenant.Migrator do
 
     if log? and legacy != [],
       do: Logger.info("Dropped #{length(legacy)} legacy public tables")
+
+    # Built-in roles for workspaces created before roles existed (and any
+    # roles added since); members without a role get the default ones.
+    for [id, _schema] <- teams do
+      created = Zippiker.Accounts.seed_default_roles!(id, authorize?: false)
+      if log? and created > 0, do: Logger.info("Added #{created} built-in roles to #{id}")
+    end
 
     :ok
   end

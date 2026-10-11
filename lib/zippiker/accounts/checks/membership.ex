@@ -23,6 +23,46 @@ defmodule Zippiker.Accounts.Checks.Membership do
     end
   end
 
+  @doc """
+  What the actor may do in the context's workspace: `:all` (owners, admins,
+  super admins), a `MapSet` of permission keys (members, from their roles)
+  or nil (not a member).
+  """
+  def permissions(nil, _context), do: nil
+
+  def permissions(actor, context) do
+    with organization_id when is_binary(organization_id) <- tenant(context) do
+      permissions_in(actor, organization_id)
+    else
+      _ -> nil
+    end
+  end
+
+  @doc "Like `permissions/2`, for a workspace id."
+  def permissions_in(actor, organization_id) do
+    case actor
+         |> memberships(organization_id)
+         |> Enum.find(&(&1.organization_id == organization_id)) do
+      %{role: role} when role in [:owner, :admin] ->
+        :all
+
+      %{} = membership ->
+        membership
+        |> roles()
+        |> Enum.flat_map(& &1.permissions)
+        |> MapSet.new()
+
+      nil ->
+        if platform_role(actor), do: :all
+    end
+  end
+
+  defp roles(%{roles: roles}) when is_list(roles), do: roles
+
+  defp roles(membership) do
+    Ash.load!(membership, :roles, authorize?: false).roles
+  end
+
   defp platform_role(%{super_admin?: true}), do: :admin
   defp platform_role(_actor), do: nil
 

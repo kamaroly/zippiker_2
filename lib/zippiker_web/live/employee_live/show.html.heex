@@ -37,7 +37,7 @@
         <.icon name="hero-sun-micro" /> Request leave
       </.button>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "employees.manage")}
         navigate={~p"/hr/employees/#{@employee}/edit"}
         variant="primary"
         id="edit-employee"
@@ -52,7 +52,7 @@
       <.card title="Leave balances" padded={false}>
         <:action>
           <.link
-            :if={admin?(assigns)}
+            :if={can?(assigns, "employees.manage")}
             patch={~p"/hr/employees/#{@employee}/adjust-leave"}
             class="text-muted hover:text-ink"
             id="adjust-leave"
@@ -98,7 +98,7 @@
       <.card title="Onboarding & offboarding" padded={false} id="employee-checklists">
         <:action>
           <.link
-            :if={admin?(assigns)}
+            :if={can?(assigns, "employees.manage")}
             navigate={~p"/hr/checklists/new?employee_id=#{@employee.id}"}
             class="text-muted hover:text-ink"
           >
@@ -223,7 +223,7 @@
         </ul>
       </.card>
 
-      <div :if={admin?(assigns)} class="flex flex-col gap-2">
+      <div :if={can?(assigns, "employees.manage")} class="flex flex-col gap-2">
         <.button
           :if={@employee.status == :active}
           patch={~p"/hr/employees/#{@employee}/terminate"}

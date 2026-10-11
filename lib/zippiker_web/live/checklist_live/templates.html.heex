@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "checklists.manage")}
         patch={~p"/hr/checklist-templates/new"}
         variant="primary"
         id="new-template"
@@ -38,7 +38,7 @@
           </h2>
           <p :if={template.description} class="text-xs text-muted">{template.description}</p>
         </div>
-        <span :if={admin?(assigns)} class="flex shrink-0 gap-3 text-sm">
+        <span :if={can?(assigns, "checklists.manage")} class="flex shrink-0 gap-3 text-sm">
           <.link
             patch={~p"/hr/checklist-templates/#{template}/edit"}
             class="text-ink-soft hover:text-ink"

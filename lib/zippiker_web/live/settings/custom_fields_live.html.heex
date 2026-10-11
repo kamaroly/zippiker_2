@@ -9,7 +9,7 @@
     <:subtitle>Capture the details that matter to your business on any record.</:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "custom_fields.manage")}
         patch={~p"/settings/custom-fields/new?entity=#{@entity}"}
         variant="primary"
         id="new-field"
@@ -29,7 +29,10 @@
     />
   </div>
 
-  <p :if={!admin?(assigns)} class="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+  <p
+    :if={!can?(assigns, "custom_fields.manage")}
+    class="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning"
+  >
     Only workspace admins can change custom fields.
   </p>
 
@@ -48,7 +51,7 @@
       <.icon :if={field.required?} name="hero-check" class="size-4 text-success" />
     </:col>
     <:action :let={{_id, field}}>
-      <span :if={admin?(assigns)} class="flex items-center gap-1">
+      <span :if={can?(assigns, "custom_fields.manage")} class="flex items-center gap-1">
         <button
           phx-click="move"
           phx-value-id={field.id}

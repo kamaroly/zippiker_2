@@ -4,6 +4,13 @@ defmodule Zippiker.Expenses.ExpenseClaim.Policies do
   alias Zippiker.Accounts.Checks.{ActorIsAdmin, ActorIsMember}
 
   policies do
+    # Roles: plain members need the permission covering the action
+    # (Zippiker.Accounts.Permissions).
+    policy action_type([:create, :update, :destroy, :action]) do
+      forbid_unless Zippiker.Accounts.Checks.Permitted
+      authorize_if always()
+    end
+
     # Approvers need to see the claims they decide on, so members can read.
     policy action_type(:read) do
       authorize_if ActorIsMember

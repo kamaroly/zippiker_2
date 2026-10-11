@@ -23,7 +23,7 @@
         <.icon name="hero-pencil-square-micro" /> Edit
       </.button>
       <.button
-        :if={@bill.status == :draft and admin?(assigns)}
+        :if={@bill.status == :draft and can?(assigns, "bills.approve")}
         phx-click="approve"
         variant="primary"
         id="approve-bill"
@@ -157,7 +157,7 @@
 
       <div class="flex flex-col gap-2">
         <.button
-          :if={@bill.status == :open and admin?(assigns)}
+          :if={@bill.status == :open and can?(assigns, "bills.void")}
           phx-click="void"
           data-confirm="Void this bill? The books (and any stock it brought in) are corrected."
           variant="danger"

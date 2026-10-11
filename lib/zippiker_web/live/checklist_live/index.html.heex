@@ -10,11 +10,15 @@
       Checklists start automatically when someone is hired or leaves; you can also start one by hand.
     </:subtitle>
     <:actions>
-      <.button :if={admin?(assigns)} navigate={~p"/hr/checklist-templates"} id="manage-templates">
+      <.button
+        :if={can?(assigns, "checklists.manage")}
+        navigate={~p"/hr/checklist-templates"}
+        id="manage-templates"
+      >
         <.icon name="hero-clipboard-document-list-micro" /> Templates
       </.button>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "checklists.manage")}
         patch={~p"/hr/checklists/new"}
         variant="primary"
         id="start-checklist"

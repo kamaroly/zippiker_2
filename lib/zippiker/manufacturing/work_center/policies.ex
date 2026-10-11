@@ -3,6 +3,13 @@ defmodule Zippiker.Manufacturing.WorkCenter.Policies do
 
   # Shared by work centers and bills of materials: everyone reads, admins set up.
   policies do
+    # Roles: plain members need the permission covering the action
+    # (Zippiker.Accounts.Permissions).
+    policy action_type([:create, :update, :destroy, :action]) do
+      forbid_unless Zippiker.Accounts.Checks.Permitted
+      authorize_if always()
+    end
+
     policy action_type(:read) do
       authorize_if Zippiker.Accounts.Checks.ActorIsMember
     end

@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "taxes.manage")}
         patch={~p"/settings/taxes/new"}
         variant="primary"
         id="new-tax"
@@ -30,7 +30,7 @@
       <span class="tabular">{Decimal.normalize(tax.rate)}%</span>
     </:col>
     <:action :let={{_id, tax}}>
-      <span :if={admin?(assigns)} class="flex gap-3">
+      <span :if={can?(assigns, "taxes.manage")} class="flex gap-3">
         <.link patch={~p"/settings/taxes/#{tax}/edit"} class="text-ink-soft hover:text-ink">Edit</.link>
         <button
           phx-click="archive"

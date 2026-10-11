@@ -28,7 +28,7 @@
         <.icon name="hero-user-micro" /> Employee
       </.button>
       <.button
-        :if={admin?(assigns) and @checklist.status == :in_progress}
+        :if={can?(assigns, "checklists.manage") and @checklist.status == :in_progress}
         phx-click="cancel_checklist"
         data-confirm="Cancel this checklist?"
         id="cancel-checklist"

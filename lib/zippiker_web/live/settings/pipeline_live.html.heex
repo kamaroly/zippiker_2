@@ -11,7 +11,10 @@
     </:subtitle>
   </.header>
 
-  <p :if={!admin?(assigns)} class="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning">
+  <p
+    :if={!can?(assigns, "pipeline.manage")}
+    class="mb-4 rounded-xl bg-warning-soft px-4 py-3 text-sm text-warning"
+  >
     Only workspace admins can change the pipeline.
   </p>
 
@@ -36,7 +39,7 @@
               name="stage[name]"
               value={stage.name}
               label="Name"
-              disabled={!admin?(assigns)}
+              disabled={!can?(assigns, "pipeline.manage")}
             />
           </div>
           <div class="w-28">
@@ -47,7 +50,7 @@
               min="0"
               max="100"
               label="Probability %"
-              disabled={!admin?(assigns) || stage.kind != :open}
+              disabled={!can?(assigns, "pipeline.manage") || stage.kind != :open}
             />
           </div>
           <div class="w-32">
@@ -57,7 +60,7 @@
               type="select"
               options={@colors}
               label="Color"
-              disabled={!admin?(assigns)}
+              disabled={!can?(assigns, "pipeline.manage")}
             />
           </div>
           <.badge
@@ -67,7 +70,7 @@
           >
             {Format.humanize(stage.kind)}
           </.badge>
-          <div :if={admin?(assigns)} class="flex gap-2">
+          <div :if={can?(assigns, "pipeline.manage")} class="flex gap-2">
             <.button type="submit" size="sm">Save</.button>
             <.button
               :if={stage.kind == :open}
@@ -84,7 +87,7 @@
         </.form>
       </li>
     </ul>
-    <div :if={admin?(assigns)} class="border-t border-line px-5 py-3">
+    <div :if={can?(assigns, "pipeline.manage")} class="border-t border-line px-5 py-3">
       <.form
         for={to_form(%{}, as: "new_stage")}
         id={"new-stage-#{pipeline.id}"}

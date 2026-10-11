@@ -15,7 +15,8 @@ defmodule ZippikerWeb.Settings.WorkspaceLive do
 
     {:ok,
      socket
-     |> assign(page_title: "Workspace", form: form)
+     |> assign(page_title: "Workspace", form: form, editing_roles: nil)
+     |> assign(:roles, Accounts.list_roles!(ash_opts(socket)))
      |> assign_invite_form()
      |> load_members()
      |> load_invitations()}
@@ -88,6 +89,31 @@ defmodule ZippikerWeb.Settings.WorkspaceLive do
     end
   end
 
+  def handle_event("edit_roles", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :editing_roles, Enum.find(socket.assigns.members, &(&1.id == id)))}
+  end
+
+  def handle_event("close_roles", _params, socket) do
+    {:noreply, assign(socket, :editing_roles, nil)}
+  end
+
+  def handle_event("save_roles", params, socket) do
+    membership = socket.assigns.editing_roles
+    role_ids = params |> Map.get("role_ids", []) |> Enum.reject(&(&1 == ""))
+
+    case Accounts.set_member_roles(membership, role_ids, ash_opts(socket)) do
+      {:ok, _membership} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Roles updated for #{Format.user_name(membership.user)}")
+         |> assign(:editing_roles, nil)
+         |> load_members()}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, error_message(error))}
+    end
+  end
+
   def handle_event("remove", %{"id" => id}, socket) do
     membership = Enum.find(socket.assigns.members, &(&1.id == id))
 
@@ -125,7 +151,7 @@ defmodule ZippikerWeb.Settings.WorkspaceLive do
 
   defp load_invitations(socket) do
     invitations =
-      if admin?(socket.assigns),
+      if can?(socket.assigns, "team.manage"),
         do: Accounts.list_pending_invitations!(ash_opts(socket)),
         else: []
 

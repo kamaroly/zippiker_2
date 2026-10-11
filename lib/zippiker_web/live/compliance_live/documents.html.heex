@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={@profile && admin?(assigns)}
+        :if={@profile && can?(assigns, "compliance.manage")}
         patch={~p"/compliance/documents?modal=upload"}
         variant="primary"
         id="upload-document"
@@ -46,7 +46,7 @@
             </p>
           </div>
           <button
-            :if={admin?(assigns)}
+            :if={can?(assigns, "compliance.manage")}
             phx-click="delete"
             phx-value-id={document.id}
             data-confirm={"Remove #{document.name}?"}

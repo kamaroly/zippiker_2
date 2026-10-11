@@ -12,7 +12,7 @@
         <.icon name="hero-printer-micro" /> Print register
       </.button>
       <.button
-        :if={@profile && admin?(assigns)}
+        :if={@profile && can?(assigns, "compliance.manage")}
         patch={~p"/compliance/charges?modal=add"}
         variant="primary"
         id="add-charge"
@@ -42,7 +42,10 @@
               do: "Outstanding",
               else: "Satisfied #{Format.date(charge.satisfied_on)}"}
           </.badge>
-          <span :if={admin?(assigns) and charge.outstanding?} class="flex gap-3 text-xs">
+          <span
+            :if={can?(assigns, "compliance.manage") and charge.outstanding?}
+            class="flex gap-3 text-xs"
+          >
             <.link
               :if={is_nil(charge.registered_on)}
               patch={~p"/compliance/charges?modal=register&id=#{charge.id}"}

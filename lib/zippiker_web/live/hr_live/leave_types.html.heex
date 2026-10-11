@@ -9,7 +9,7 @@
     <:subtitle>Manage leave types. You can add new ones or change the existing ones.</:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "leave.setup")}
         patch={~p"/hr/leave-types/new"}
         variant="primary"
         id="new-leave-type"
@@ -37,7 +37,7 @@
       {if type.requires_approval?, do: "Manager approves", else: "Automatic"}
     </:col>
     <:action :let={{_id, type}}>
-      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+      <span :if={can?(assigns, "leave.setup")} class="flex justify-end gap-3">
         <.link
           patch={~p"/hr/leave-types/#{type}/edit"}
           class="text-ink-soft hover:text-ink"

@@ -9,7 +9,7 @@
     <:subtitle>Any one member of a group can approve a step assigned to it.</:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "approvals.setup")}
         patch={~p"/approvals/groups/new"}
         variant="primary"
         id="new-group"
@@ -22,7 +22,7 @@
   <div id="groups" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
     <.card :for={group <- @groups} id={"group-#{group.id}"} title={group.name}>
       <:action>
-        <span :if={admin?(assigns)} class="flex gap-3">
+        <span :if={can?(assigns, "approvals.setup")} class="flex gap-3">
           <.link patch={~p"/approvals/groups/#{group}/edit"} class="text-ink-soft hover:text-ink">
             Edit
           </.link>

@@ -12,6 +12,7 @@ defmodule Zippiker.Accounts.Organization.Actions do
       change Zippiker.Accounts.Organization.Changes.AssignDomain
       change Zippiker.Accounts.Organization.Changes.CreateTenant
       change Zippiker.Accounts.Organization.Changes.AddOwnerMembership
+      change Zippiker.Accounts.Organization.Changes.SeedRoles
       change Zippiker.Accounts.Organization.Changes.CreateDefaultLegalEntity
       change Zippiker.Accounts.Organization.Changes.StartSubscription
     end

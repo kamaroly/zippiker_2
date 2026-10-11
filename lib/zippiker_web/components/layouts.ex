@@ -110,6 +110,7 @@ defmodule ZippikerWeb.Layouts do
      [
        {:company, "Company details", "/settings/company", nil},
        {:workspace, "Workspace", "/settings/workspace", nil},
+       {:roles, "Roles & permissions", "/settings/roles", nil},
        {:branches, "Branches", "/settings/branches", nil},
        {:billing, "Plan & billing", "/settings/billing", nil},
        {:custom_fields, "Custom fields", "/settings/custom-fields", nil},
@@ -135,11 +136,13 @@ defmodule ZippikerWeb.Layouts do
 
   def app(assigns) do
     organization = assigns.current_organization
-    sections = sections(organization)
+    permissions = ZippikerWeb.Access.permissions(assigns.current_user, organization)
+    sections = sections(organization, permissions)
 
     assigns =
       assign(assigns,
         sections: sections,
+        permissions: permissions,
         current:
           Enum.find(sections, fn section ->
             Enum.any?(section.pages, &(elem(&1, 0) == assigns.active))
@@ -170,7 +173,9 @@ defmodule ZippikerWeb.Layouts do
           </button>
           <div class="lg:hidden"><.brand /></div>
         </div>
-        <.command_palette commands={ZippikerWeb.Commands.list(@current_organization, @role)} />
+        <.command_palette commands={
+          ZippikerWeb.Commands.list(@current_organization, @role, @permissions)
+        } />
         <div class="ml-auto flex items-center justify-end gap-1 sm:flex-1">
           <.link
             navigate="/help"
@@ -316,11 +321,18 @@ defmodule ZippikerWeb.Layouts do
   defp role(_user, _organization), do: nil
 
   @doc "The sidebar modules and their pages that the workspace can see."
-  def sections(organization) do
+  def sections(organization, permissions \\ :all) do
     for {key, label, icon, pages} <- @modules,
-        pages = Enum.filter(pages, &visible?(&1, organization)),
+        pages = Enum.filter(pages, &(visible?(&1, organization) and allowed?(&1, permissions))),
         pages != [] do
       %{key: key, label: label, icon: icon, pages: pages, path: pages |> hd() |> elem(2)}
+    end
+  end
+
+  defp allowed?(page, permissions) do
+    case ZippikerWeb.Access.page_permission(page) do
+      nil -> true
+      key -> ZippikerWeb.Access.can?(permissions, key)
     end
   end
 

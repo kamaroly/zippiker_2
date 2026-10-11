@@ -6,7 +6,12 @@ defmodule ZippikerWeb.MeLive.Tasks do
 
   @impl true
   def mount(_params, _session, socket) do
-    tasks = HR.my_checklist_tasks!(%{include_hr?: admin?(socket.assigns)}, ash_opts(socket))
+    tasks =
+      HR.my_checklist_tasks!(
+        %{include_hr?: can?(socket.assigns, "checklist_tasks.manage")},
+        ash_opts(socket)
+      )
+
     {:ok, assign(socket, page_title: "My tasks", tasks: tasks)}
   end
 

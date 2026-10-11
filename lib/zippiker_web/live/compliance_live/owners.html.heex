@@ -14,7 +14,7 @@
         <.icon name="hero-printer-micro" /> Print register
       </.button>
       <.button
-        :if={@profile && admin?(assigns)}
+        :if={@profile && can?(assigns, "compliance.manage")}
         patch={~p"/compliance/beneficial-owners?modal=add"}
         variant="primary"
         id="add-owner"
@@ -41,7 +41,7 @@
           </div>
           <span class="text-xs text-muted">{owner.nationality} {owner.id_number}</span>
           <.link
-            :if={admin?(assigns) and is_nil(owner.ceased_on)}
+            :if={can?(assigns, "compliance.manage") and is_nil(owner.ceased_on)}
             patch={~p"/compliance/beneficial-owners?modal=cease&id=#{owner.id}"}
             class="text-xs text-danger hover:opacity-80"
           >

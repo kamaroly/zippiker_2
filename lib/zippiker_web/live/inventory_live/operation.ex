@@ -28,7 +28,8 @@ defmodule ZippikerWeb.InventoryLive.Operation do
 
   # Receipts and deliveries are undone from their documents (void the bill or invoice).
   defp reversible?(operation, assigns) do
-    admin?(assigns) and operation.kind == :adjustment and is_nil(operation.reversal) and
+    can?(assigns, "stock.reverse") and operation.kind == :adjustment and
+      is_nil(operation.reversal) and
       is_nil(operation.reversal_of_id)
   end
 

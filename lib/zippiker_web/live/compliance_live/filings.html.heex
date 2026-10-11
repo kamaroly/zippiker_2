@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={@profile && admin?(assigns)}
+        :if={@profile && can?(assigns, "compliance.manage")}
         patch={~p"/compliance/filings?modal=add"}
         id="add-filing"
       >
@@ -50,7 +50,7 @@
           </div>
           <.filing_state state={task.state} />
           <.button
-            :if={admin?(assigns) and is_nil(task.completed_on)}
+            :if={can?(assigns, "compliance.manage") and is_nil(task.completed_on)}
             patch={~p"/compliance/filings?modal=complete&task=#{task.id}"}
             size="sm"
             variant="primary"
@@ -59,7 +59,7 @@
             Mark filed
           </.button>
           <button
-            :if={admin?(assigns) and task.completed_on}
+            :if={can?(assigns, "compliance.manage") and task.completed_on}
             phx-click="reopen"
             phx-value-id={task.id}
             class="text-xs text-muted hover:text-ink"

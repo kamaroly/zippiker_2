@@ -61,8 +61,14 @@ defmodule ZippikerWeb.LiveUserAuth do
 
         {organization, role} ->
           socket
-          |> assign(current_user: user, current_organization: organization, current_role: role)
+          |> assign(
+            current_user: user,
+            current_organization: organization,
+            current_role: role,
+            current_permissions: ZippikerWeb.Access.permissions(user, organization)
+          )
           |> require_module()
+          |> require_view()
       end
     end
   end
@@ -99,7 +105,7 @@ defmodule ZippikerWeb.LiveUserAuth do
   # While impersonating, the real super admin rides along as metadata so the
   # layout can show the "Stop impersonating" banner.
   defp load_user(user, session) do
-    user = Ash.load!(user, [memberships: :organization], authorize?: false)
+    user = Ash.load!(user, [memberships: [:organization, :roles]], authorize?: false)
 
     with id when is_binary(id) <- session["impersonator_id"],
          {:ok, admin} <- Ash.get(User, id, authorize?: false) do
@@ -116,7 +122,7 @@ defmodule ZippikerWeb.LiveUserAuth do
   """
   def current_workspace(user, chosen) do
     user
-    |> Ash.load!([memberships: :organization], authorize?: false)
+    |> Ash.load!([memberships: [:organization, :roles]], authorize?: false)
     |> pick_workspace(chosen)
   end
 
@@ -165,6 +171,25 @@ defmodule ZippikerWeb.LiveUserAuth do
            )
            |> Phoenix.LiveView.redirect(to: ~p"/")}
         end
+    end
+  end
+
+  # Modules the member's roles don't let them see are refused.
+  defp require_view({:halt, socket}), do: {:halt, socket}
+
+  defp require_view({:cont, socket}) do
+    key = ZippikerWeb.Access.view_permission(socket.view, socket.assigns[:live_action])
+
+    if is_nil(key) or ZippikerWeb.Access.can?(socket.assigns.current_permissions, key) do
+      {:cont, socket}
+    else
+      {:halt,
+       socket
+       |> Phoenix.LiveView.put_flash(
+         :error,
+         "Your role doesn't include that page. Ask an admin if you need it."
+       )
+       |> Phoenix.LiveView.redirect(to: ~p"/")}
     end
   end
 end

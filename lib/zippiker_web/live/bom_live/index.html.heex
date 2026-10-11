@@ -9,7 +9,7 @@
     <:subtitle>What each product is made of, and how it's made.</:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "boms.manage")}
         navigate={~p"/manufacturing/boms/new"}
         variant="primary"
         id="new-bom"
@@ -45,14 +45,14 @@
             Produce
           </.link>
           <.link
-            :if={admin?(assigns)}
+            :if={can?(assigns, "boms.manage")}
             navigate={~p"/manufacturing/boms/#{bom}/edit"}
             class="text-ink-soft hover:text-ink"
           >
             Edit
           </.link>
           <.link
-            :if={admin?(assigns)}
+            :if={can?(assigns, "boms.manage")}
             phx-click="delete"
             phx-value-id={bom.id}
             data-confirm="Delete this bill of materials?"

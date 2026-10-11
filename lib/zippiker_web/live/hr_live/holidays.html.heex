@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "leave.setup")}
         patch={~p"/hr/holidays/new"}
         variant="primary"
         id="new-holiday"
@@ -33,7 +33,7 @@
       {if holiday.recurring?, do: "Every year", else: "Once"}
     </:col>
     <:action :let={{_id, holiday}}>
-      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+      <span :if={can?(assigns, "leave.setup")} class="flex justify-end gap-3">
         <.link patch={~p"/hr/holidays/#{holiday}/edit"} class="text-ink-soft hover:text-ink">
           Edit
         </.link>

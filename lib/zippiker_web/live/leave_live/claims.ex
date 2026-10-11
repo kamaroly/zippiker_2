@@ -36,12 +36,12 @@ defmodule ZippikerWeb.LeaveLive.Claims do
 
   defp apply_action(socket, :new, params) do
     employee_id =
-      if admin?(socket.assigns),
+      if can?(socket.assigns, "leave.request"),
         do: params["employee_id"] || (socket.assigns.me && socket.assigns.me.id),
         else: socket.assigns.me && socket.assigns.me.id
 
     employees =
-      if admin?(socket.assigns),
+      if can?(socket.assigns, "leave.request"),
         do: Enum.map(HR.list_employees!(%{status: :active}, ash_opts(socket)), &{&1.name, &1.id}),
         else: []
 
@@ -138,9 +138,16 @@ defmodule ZippikerWeb.LeaveLive.Claims do
   defp load(socket) do
     filters =
       case socket.assigns.view do
-        "mine" -> %{mine?: true}
-        "approve" -> if admin?(socket.assigns), do: %{status: :pending}, else: %{to_decide?: true}
-        "all" -> %{}
+        "mine" ->
+          %{mine?: true}
+
+        "approve" ->
+          if can?(socket.assigns, "leave.approve"),
+            do: %{status: :pending},
+            else: %{to_decide?: true}
+
+        "all" ->
+          %{}
       end
 
     claims = HR.list_leave_claims!(filters, ash_opts(socket) ++ [page: [limit: 50]]).results
@@ -149,12 +156,12 @@ defmodule ZippikerWeb.LeaveLive.Claims do
 
   defp can_decide?(claim, assigns) do
     claim.status == :pending and claim.employee.user_id != assigns.current_user.id and
-      (admin?(assigns) or
+      (can?(assigns, "leave.approve") or
          (claim.employee.manager && claim.employee.manager.user_id == assigns.current_user.id))
   end
 
   defp can_cancel?(claim, assigns) do
     claim.status == :pending and
-      (admin?(assigns) or claim.employee.user_id == assigns.current_user.id)
+      (can?(assigns, "leave.request") or claim.employee.user_id == assigns.current_user.id)
   end
 end

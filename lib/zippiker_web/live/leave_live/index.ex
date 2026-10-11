@@ -56,7 +56,7 @@ defmodule ZippikerWeb.LeaveLive.Index do
 
   defp apply_action(socket, :new, params) do
     employee_id =
-      if admin?(socket.assigns),
+      if can?(socket.assigns, "leave.request"),
         do: params["employee_id"] || (socket.assigns.me && socket.assigns.me.id),
         else: socket.assigns.me && socket.assigns.me.id
 
@@ -74,7 +74,7 @@ defmodule ZippikerWeb.LeaveLive.Index do
       |> to_form()
 
     employees =
-      if admin?(socket.assigns),
+      if can?(socket.assigns, "leave.request"),
         do:
           Enum.map(
             HR.list_employees!(%{status: :active}, ash_opts(socket)),
@@ -187,7 +187,7 @@ defmodule ZippikerWeb.LeaveLive.Index do
       |> HR.list_leave_requests!(ash_opts(socket) ++ [page: [limit: 50]])
       |> Map.fetch!(:results)
       |> then(fn requests ->
-        if socket.assigns.view == "approve" and not admin?(socket.assigns),
+        if socket.assigns.view == "approve" and not can?(socket.assigns, "leave.approve"),
           do: Enum.filter(requests, &can_decide?(&1, socket.assigns)),
           else: requests
       end)
@@ -240,13 +240,13 @@ defmodule ZippikerWeb.LeaveLive.Index do
 
   defp can_decide?(request, assigns) do
     request.status == :pending and request.employee.user_id != assigns.current_user.id and
-      (admin?(assigns) or
+      (can?(assigns, "leave.approve") or
          (request.employee.manager && request.employee.manager.user_id == assigns.current_user.id))
   end
 
   defp can_cancel?(request, assigns) do
     request.status in [:pending, :approved] and
-      (admin?(assigns) or request.employee.user_id == assigns.current_user.id)
+      (can?(assigns, "leave.request") or request.employee.user_id == assigns.current_user.id)
   end
 
   defp upload_error(:too_large), do: "That file is over 10 MB"

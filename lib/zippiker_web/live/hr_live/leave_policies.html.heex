@@ -10,11 +10,11 @@
       How each leave type is granted and requested. People without a policy of their own follow the type's default.
     </:subtitle>
     <:actions>
-      <.button :if={admin?(assigns)} phx-click="run_accruals" id="run-accruals">
+      <.button :if={can?(assigns, "leave.setup")} phx-click="run_accruals" id="run-accruals">
         <.icon name="hero-arrow-path-micro" /> Run accruals now
       </.button>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "leave.setup")}
         patch={~p"/hr/leave-policies/new"}
         variant="primary"
         id="new-leave-policy"
@@ -38,7 +38,7 @@
       <div class="mb-2 flex items-center justify-between">
         <.leave_type_badge type={type} />
         <.link
-          :if={admin?(assigns)}
+          :if={can?(assigns, "leave.setup")}
           patch={~p"/hr/leave-policies/new?leave_type_id=#{type.id}"}
           class="text-xs text-muted hover:text-ink"
         >
@@ -70,7 +70,10 @@
             <.badge :for={chip <- rule_chips(policy)}>{chip}</.badge>
           </div>
           <p :if={policy.description} class="mt-3 text-xs text-muted">{policy.description}</p>
-          <div :if={admin?(assigns)} class="mt-4 flex gap-4 border-t border-line pt-3 text-sm">
+          <div
+            :if={can?(assigns, "leave.setup")}
+            class="mt-4 flex gap-4 border-t border-line pt-3 text-sm"
+          >
             <.link
               patch={~p"/hr/leave-policies/#{policy}/edit"}
               class="text-ink-soft hover:text-ink"

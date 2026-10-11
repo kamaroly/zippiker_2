@@ -13,7 +13,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns) and not @empty?}
+        :if={can?(assigns, "accounts.manage") and not @empty?}
         patch={~p"/accounting/accounts/new"}
         variant="primary"
         id="new-account"
@@ -62,7 +62,7 @@
             </td>
             <td class="w-32 pr-5 text-right">
               <span
-                :if={admin?(assigns)}
+                :if={can?(assigns, "accounts.manage")}
                 class="flex justify-end gap-3 text-xs opacity-0 transition group-hover:opacity-100"
               >
                 <.link

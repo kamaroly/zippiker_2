@@ -133,7 +133,8 @@ defmodule ZippikerWeb.ChecklistLive.Show do
     end
   end
 
-  defp can_act?(task, assigns), do: admin?(assigns) or task.assignee_id == assigns.current_user.id
+  defp can_act?(task, assigns),
+    do: can?(assigns, "checklist_tasks.manage") or task.assignee_id == assigns.current_user.id
 
   defp assignee(%{assignee: %{} = user}), do: Format.user_name(user)
   defp assignee(%{assignee_role: :hr}), do: "HR (any admin)"

@@ -30,7 +30,20 @@ defmodule Zippiker.Accounts do
       define :list_members, action: :for_organization, args: [:organization_id]
       define :update_membership, action: :update_role
       define :remove_member, action: :destroy
+      define :set_member_roles, action: :set_roles, args: [:role_ids]
     end
+
+    resource Zippiker.Accounts.Role do
+      define :list_roles, action: :list
+      define :get_role, action: :read, get_by: [:id]
+      define :create_role, action: :create
+      define :update_role, action: :update
+      define :reset_role, action: :reset
+      define :delete_role, action: :destroy
+      define :seed_default_roles, action: :seed_defaults, args: [:organization_id]
+    end
+
+    resource Zippiker.Accounts.MembershipRole
 
     resource Zippiker.Accounts.LegalEntity do
       define :list_legal_entities, action: :list

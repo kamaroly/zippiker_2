@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "approvals.setup")}
         patch={~p"/approvals/workflows/new"}
         variant="primary"
         id="new-workflow"
@@ -48,7 +48,7 @@
             </h2>
             <p class="text-xs text-muted">{threshold(workflow, @currency)}</p>
           </div>
-          <span :if={admin?(assigns)} class="flex gap-3 text-sm">
+          <span :if={can?(assigns, "approvals.setup")} class="flex gap-3 text-sm">
             <.link
               patch={~p"/approvals/workflows/#{workflow}/edit"}
               class="text-ink-soft hover:text-ink"

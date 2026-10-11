@@ -90,10 +90,10 @@
     title="Claim leave"
     on_cancel={JS.patch(~p"/hr/leave-claims?view=#{@view}")}
   >
-    <%= if @me || admin?(assigns) do %>
+    <%= if @me || can?(assigns, "leave.request") do %>
       <.form for={@form} id="claim-form" phx-change="validate" phx-submit="save" class="space-y-4">
         <.input
-          :if={admin?(assigns)}
+          :if={can?(assigns, "leave.request")}
           field={@form[:employee_id]}
           type="select"
           label="For"
@@ -101,7 +101,7 @@
           options={@employee_options}
         />
         <input
-          :if={!admin?(assigns)}
+          :if={!can?(assigns, "leave.request")}
           type="hidden"
           name={@form[:employee_id].name}
           value={@form[:employee_id].value}

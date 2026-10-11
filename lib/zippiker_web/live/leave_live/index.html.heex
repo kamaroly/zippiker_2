@@ -9,7 +9,7 @@
     <:subtitle>Request time off, see who's away, and decide on your team's requests.</:subtitle>
     <:actions>
       <.button
-        :if={@me || admin?(assigns)}
+        :if={@me || can?(assigns, "leave.request")}
         patch={~p"/hr/leave/new"}
         variant="primary"
         id="new-leave"
@@ -145,10 +145,10 @@
     title="Request leave"
     on_cancel={JS.patch(~p"/hr/leave?view=#{@view}")}
   >
-    <%= if @me || admin?(assigns) do %>
+    <%= if @me || can?(assigns, "leave.request") do %>
       <.form for={@form} id="leave-form" phx-change="validate" phx-submit="save" class="space-y-4">
         <.input
-          :if={admin?(assigns)}
+          :if={can?(assigns, "leave.request")}
           field={@form[:employee_id]}
           type="select"
           label="For"
@@ -156,7 +156,7 @@
           options={@employee_options}
         />
         <input
-          :if={!admin?(assigns)}
+          :if={!can?(assigns, "leave.request")}
           type="hidden"
           name={@form[:employee_id].name}
           value={@form[:employee_id].value}

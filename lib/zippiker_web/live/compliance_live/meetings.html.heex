@@ -9,7 +9,7 @@
     <:subtitle>Notices, agendas, minutes and resolutions of the board and of members.</:subtitle>
     <:actions>
       <.button
-        :if={@profile && admin?(assigns)}
+        :if={@profile && can?(assigns, "compliance.manage")}
         patch={~p"/compliance/meetings?modal=new"}
         variant="primary"
         id="new-meeting"
@@ -44,7 +44,7 @@
               class="text-ink-soft hover:text-ink"
             >Print minutes</.link>
             <.link
-              :if={admin?(assigns)}
+              :if={can?(assigns, "compliance.manage")}
               patch={~p"/compliance/meetings?modal=edit&id=#{meeting.id}"}
               class="text-ink-soft hover:text-ink"
               id={"edit-meeting-#{meeting.id}"}

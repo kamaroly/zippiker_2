@@ -1,0 +1,197 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:roles}
+>
+  <%= if @form do %>
+    <.header>
+      {if(@role, do: "Edit #{@role.name}", else: "New role")}
+      <:breadcrumb>
+        <.link patch={~p"/settings/roles"} class="hover:text-ink">Roles &amp; permissions</.link>
+      </:breadcrumb>
+      <:subtitle>
+        Tick what people with this role may do. Owners and admins can always do everything.
+      </:subtitle>
+    </.header>
+
+    <.form for={@form} id="role-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <.card>
+        <div class="grid gap-4 md:grid-cols-2">
+          <.input
+            field={@form[:name]}
+            label="Name"
+            placeholder="e.g. Cashier"
+            phx-mounted={JS.focus()}
+          />
+          <.input
+            field={@form[:description]}
+            label="Description"
+            placeholder="What this role is for"
+          />
+        </div>
+        <div class="mt-4">
+          <.input
+            field={@form[:default?]}
+            type="checkbox"
+            label="Give this role to people when they join the workspace"
+          />
+        </div>
+      </.card>
+
+      <input type="hidden" name="role[permissions][]" value="" />
+
+      <div class="grid gap-4 lg:grid-cols-2">
+        <section
+          :for={section <- @sections}
+          id={"permissions-#{section.key}"}
+          class={[
+            "rounded-2xl border bg-surface shadow-card transition",
+            section_state(section, @selected) == :none && "border-line",
+            section_state(section, @selected) != :none && "border-brand/30"
+          ]}
+        >
+          <header class="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-semibold text-ink">{section.label}</h2>
+              <.badge :if={!section.enabled?} color={:slate}>Module off</.badge>
+            </div>
+            <button
+              type="button"
+              phx-click="toggle_section"
+              phx-value-section={section.key}
+              id={"toggle-#{section.key}"}
+              class="rounded-lg px-2 py-1 text-xs font-medium text-ink-soft transition hover:bg-canvas hover:text-ink"
+            >
+              {if section_state(section, @selected) == :all, do: "Clear all", else: "Select all"}
+            </button>
+          </header>
+          <div class="divide-y divide-line/70">
+            <label
+              :for={permission <- section.permissions}
+              for={dom_key(permission.key)}
+              class="flex cursor-pointer items-start gap-3 px-4 py-2.5 transition hover:bg-canvas/60"
+            >
+              <input
+                type="checkbox"
+                name="role[permissions][]"
+                value={permission.key}
+                id={dom_key(permission.key)}
+                checked={MapSet.member?(@selected, permission.key)}
+                class="mt-0.5 size-4 rounded border-line text-brand focus:ring-brand/30"
+              />
+              <span class="min-w-0 flex-1">
+                <span class={[
+                  "block text-sm",
+                  permission.level == :view && "font-medium text-ink",
+                  permission.level != :view && "text-ink"
+                ]}>
+                  {permission.label}
+                </span>
+                <span :if={permission.level == :admin} class="text-xs text-muted">
+                  Normally admins only
+                </span>
+                <span :if={permission.level == :open} class="text-xs text-muted">
+                  Everyone can do this for themselves; this allows it for anyone
+                </span>
+              </span>
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <div class="sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface/95 px-4 py-3 shadow-pop backdrop-blur">
+        <p class="text-sm text-muted">
+          <span id="selected-count" class="font-semibold text-ink">{MapSet.size(@selected)}</span>
+          permissions selected
+        </p>
+        <div class="flex gap-2">
+          <.button patch={~p"/settings/roles"} variant="ghost">Cancel</.button>
+          <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-role">
+            Save role
+          </.button>
+        </div>
+      </div>
+    </.form>
+  <% else %>
+    <.header>
+      Roles &amp; permissions
+      <:subtitle>
+        A role is a set of permissions. Give people roles under <.link
+          navigate={~p"/settings/workspace"}
+          class="underline hover:text-ink"
+        >Workspace → Members</.link>.
+        Owners and admins always have every permission.
+      </:subtitle>
+      <:actions>
+        <.button
+          :if={can?(assigns, "roles.manage")}
+          patch={~p"/settings/roles/new"}
+          variant="primary"
+          id="new-role"
+        >
+          <.icon name="hero-plus-micro" /> Role
+        </.button>
+      </:actions>
+    </.header>
+
+    <div id="roles" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <article
+        :for={role <- @roles}
+        id={"role-#{role.id}"}
+        class="group flex flex-col rounded-2xl border border-line bg-surface p-4 shadow-card transition hover:border-line-strong hover:shadow-pop"
+      >
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <h2 class="truncate font-semibold text-ink">{role.name}</h2>
+            <p class="mt-0.5 text-xs text-muted">
+              {summary(role)} · {Format.count(role.members_count, "member")}
+            </p>
+          </div>
+          <div class="flex shrink-0 gap-1">
+            <.badge :if={role.default?} color={:orange}>Default</.badge>
+            <.badge :if={role.key} color={:slate}>Built-in</.badge>
+          </div>
+        </div>
+        <p class="mt-2 line-clamp-3 flex-1 text-sm text-ink-soft">{role.description}</p>
+        <div
+          :if={can?(assigns, "roles.manage")}
+          class="mt-4 flex flex-wrap gap-3 border-t border-line pt-3 text-sm"
+        >
+          <.link
+            patch={~p"/settings/roles/#{role.id}/edit"}
+            id={"edit-role-#{role.id}"}
+            class="font-medium text-ink hover:text-brand"
+          >
+            Edit
+          </.link>
+          <.link
+            patch={~p"/settings/roles/new?copy=#{role.id}"}
+            class="text-ink-soft hover:text-ink"
+          >
+            Duplicate
+          </.link>
+          <.link
+            :if={role.key}
+            phx-click="reset"
+            phx-value-id={role.id}
+            data-confirm={"Reset #{role.name} to its default permissions?"}
+            class="text-ink-soft hover:text-ink"
+          >
+            Reset
+          </.link>
+          <.link
+            :if={is_nil(role.key)}
+            phx-click="delete"
+            phx-value-id={role.id}
+            data-confirm={"Delete #{role.name}? Members keep their other roles."}
+            id={"delete-role-#{role.id}"}
+            class="ml-auto text-danger hover:opacity-80"
+          >
+            Delete
+          </.link>
+        </div>
+      </article>
+    </div>
+  <% end %>
+</Layouts.app>

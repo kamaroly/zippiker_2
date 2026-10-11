@@ -36,7 +36,7 @@ defmodule ZippikerWeb.AccountingLive.Entry do
 
   # Automatic entries are undone from their document (void the invoice, remove the payment).
   defp reversible?(entry, assigns) do
-    admin?(assigns) and is_nil(entry.reversal) and is_nil(entry.reversal_of_id) and
+    can?(assigns, "journal.reverse") and is_nil(entry.reversal) and is_nil(entry.reversal_of_id) and
       entry.source in [:manual, :expense]
   end
 

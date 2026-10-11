@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "work_centers.manage")}
         patch={~p"/manufacturing/work-centers/new"}
         variant="primary"
         id="new-work-center"
@@ -34,7 +34,7 @@
       {qty(center.hours_per_day)} h / day
     </:col>
     <:action :let={{_id, center}}>
-      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+      <span :if={can?(assigns, "work_centers.manage")} class="flex justify-end gap-3">
         <.link
           patch={~p"/manufacturing/work-centers/#{center}/edit"}
           class="text-ink-soft hover:text-ink"

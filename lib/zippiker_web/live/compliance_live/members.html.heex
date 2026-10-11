@@ -11,7 +11,7 @@
       <.button :if={@profile} navigate={~p"/compliance/print/members"} id="print-members">
         <.icon name="hero-printer-micro" /> Print register
       </.button>
-      <%= if @profile && admin?(assigns) do %>
+      <%= if @profile && can?(assigns, "compliance.manage") do %>
         <.button patch={~p"/compliance/members?modal=transfer"} id="transfer-shares">Transfer</.button>
         <.button patch={~p"/compliance/members?modal=allot"} variant="primary" id="allot-shares">
           <.icon name="hero-plus-micro" /> Allot shares
@@ -27,7 +27,7 @@
         {class.name} · {Decimal.normalize(class.nominal_value)} each
       </.badge>
       <.link
-        :if={admin?(assigns)}
+        :if={can?(assigns, "compliance.manage")}
         patch={~p"/compliance/members?modal=class"}
         class="text-xs text-ink-soft hover:text-ink"
       >
@@ -38,7 +38,7 @@
     <.card padded={false}>
       <:action>
         <.link
-          :if={admin?(assigns)}
+          :if={can?(assigns, "compliance.manage")}
           patch={~p"/compliance/members?modal=member"}
           class="text-muted hover:text-ink"
           id="add-member"

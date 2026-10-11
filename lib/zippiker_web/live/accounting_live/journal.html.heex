@@ -11,7 +11,7 @@
     </:subtitle>
     <:actions>
       <.button
-        :if={admin?(assigns)}
+        :if={can?(assigns, "journal.post")}
         navigate={~p"/accounting/journal/new"}
         variant="primary"
         id="new-entry"

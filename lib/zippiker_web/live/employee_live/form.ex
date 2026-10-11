@@ -6,7 +6,7 @@ defmodule ZippikerWeb.EmployeeLive.Form do
 
   @impl true
   def mount(params, _session, socket) do
-    if admin?(socket.assigns) do
+    if can?(socket.assigns, "employees.manage") do
       opts = ash_opts(socket)
 
       {:ok,

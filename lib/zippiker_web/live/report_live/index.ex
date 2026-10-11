@@ -2,14 +2,17 @@ defmodule ZippikerWeb.ReportLive.Index do
   @moduledoc "The report center: every standard report by group, with a search."
   use ZippikerWeb, :live_view
 
-  alias Zippiker.Reporting
   alias Zippiker.Reporting.Catalog
 
   @popular ~w(profit-and-loss balance-sheet ar-ageing-summary sales-by-customer-summary)
 
   @impl true
   def mount(_params, _session, socket) do
-    reports = Reporting.report_catalog!(ash_opts(socket))
+    reports =
+      ZippikerWeb.Access.reports(
+        socket.assigns.current_organization,
+        socket.assigns.current_permissions
+      )
 
     {:ok,
      socket
