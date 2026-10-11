@@ -10,7 +10,7 @@ defmodule Zippiker.Assistant.Engine do
   tells Claude they were declined) and carries on.
   """
 
-  alias Zippiker.Assistant.{Claude, Tools}
+  alias Zippiker.Assistant.{LLM, Tools}
 
   @max_rounds 8
 
@@ -42,7 +42,7 @@ defmodule Zippiker.Assistant.Engine do
   end
 
   defp run(history, ctx, round) do
-    case Claude.create(system_prompt(ctx), Tools.definitions(), history) do
+    case LLM.create(ctx.llm, system_prompt(ctx), Tools.definitions(), history) do
       {:ok, response} ->
         content = response["content"] || []
         history = history ++ [%{"role" => "assistant", "content" => content}]

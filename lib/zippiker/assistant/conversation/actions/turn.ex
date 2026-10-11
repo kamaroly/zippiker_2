@@ -14,7 +14,8 @@ defmodule Zippiker.Assistant.Conversation.Actions.Turn do
       actor: actor,
       organization: organization,
       permissions: Membership.permissions_in(actor, organization.id),
-      role: role(actor, organization)
+      role: role(actor, organization),
+      llm: Zippiker.Assistant.LLM.resolve(organization)
     }
 
     args = input.arguments

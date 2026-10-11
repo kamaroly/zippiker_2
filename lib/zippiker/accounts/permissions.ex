@@ -217,6 +217,8 @@ defmodule Zippiker.Accounts.Permissions do
     # Reports
     {"view.reports", :reports, "See reports", []},
     {"assistant.use", :reports, "Use the AI assistant", []},
+    {"assistant.configure", :settings, "Choose the AI provider and API key",
+     [{Zippiker.Assistant.AiSettings, [:configure, :create, :update, :remove_key]}]},
 
     # Company secretarial
     {"view.compliance", :compliance, "See company secretarial records", []},
@@ -467,7 +469,7 @@ defmodule Zippiker.Accounts.Permissions do
           "Manages users, invitations, roles, branches and custom fields, without being an admin.",
         permissions:
           ~w(view.contacts team.manage roles.manage branches.manage custom_fields.manage
-             company.manage documents.design)
+             company.manage documents.design assistant.configure)
       },
       %{
         key: "viewer",

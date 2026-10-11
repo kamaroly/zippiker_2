@@ -113,6 +113,7 @@ defmodule ZippikerWeb.Layouts do
      [
        {:company, "Company details", "/settings/company", nil},
        {:documents, "Documents & branding", "/settings/documents", nil},
+       {:ai_settings, "AI assistant", "/settings/ai", nil},
        {:workspace, "Workspace", "/settings/workspace", nil},
        {:users, "Users", "/settings/users", nil},
        {:roles, "Roles & permissions", "/settings/roles", nil},

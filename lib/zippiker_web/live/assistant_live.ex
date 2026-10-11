@@ -26,6 +26,7 @@ defmodule ZippikerWeb.AssistantLive do
         page_title: "Assistant",
         configured?: status.configured?,
         model: status.model,
+        provider: status.provider,
         history: [],
         pending: nil,
         busy?: false,

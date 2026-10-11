@@ -1,11 +1,34 @@
 # AI assistant: setup and operations
 
 The assistant (sidebar **Assistant**, the **Ask AI** button, or ⌘K → type a question → Enter)
-talks to Anthropic's Claude API. It needs one secret: an **Anthropic API key**. Without it
-the app works normally and the assistant page shows "isn't switched on yet".
+needs an AI provider. There are two ways to give it one, and a workspace's own choice wins:
+
+1. **Bring your own AI (per workspace, no server access needed).** An admin opens
+   **Settings → AI assistant**, picks a provider and model, pastes the company's API key and
+   clicks **Save** (then **Test connection**). Supported:
+
+   | Provider | API used | Where to get a key | Example model |
+   |---|---|---|---|
+   | Anthropic Claude | Messages API | platform.claude.com → Settings → API keys | `claude-opus-5-5` |
+   | OpenAI (ChatGPT) | Chat Completions | platform.openai.com/api-keys | `gpt-5` |
+   | xAI Grok | OpenAI-compatible | console.x.ai | `grok-4` |
+   | Google Gemini | OpenAI-compatible endpoint | aistudio.google.com/apikey | `gemini-2.5-pro` |
+   | Other | Any OpenAI-compatible base URL (OpenRouter, a local Ollama…) | your provider | your choice |
+
+   The example models are only suggestions; type any model your account can use (check the
+   provider's model list). Pick a strong model with good tool use. Keys are encrypted at rest
+   (AES-GCM, see `Zippiker.Assistant.Vault`); only the last four characters are ever shown.
+   Changing the provider later keeps the saved key unless you paste a new one.
+
+2. **A server-wide default (Anthropic).** Set `ANTHROPIC_API_KEY` on the server (below).
+   Every workspace without its own provider uses it, billed to whoever owns that key.
+
+Without either, the app works normally and the assistant page shows "isn't switched on yet".
 
 End-user instructions are in the app under **Help → AI assistant**
 (`lib/zippiker_web/live/help_articles/ai_assistant.html.heex`).
+
+The rest of this page covers the server-wide default.
 
 ## 1. Get an API key
 
@@ -24,7 +47,8 @@ The key is read from environment variables at boot (`config/runtime.exs`):
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | yes | none | The API key. |
 | `ANTHROPIC_MODEL` | no | `claude-opus-5-5` | The Claude model to use. |
-| `ANTHROPIC_EFFORT` | no | `medium` | How hard the model thinks: `low`, `medium`, `high`, `xhigh` or `max`. Higher is slower and costs more. |
+| `ANTHROPIC_EFFORT` | no | `medium` | How hard Claude thinks: `low`, `medium`, `high`, `xhigh` or `max`. Higher is slower and costs more. |
+| `AI_KEYS_SECRET` | no | `TOKEN_SIGNING_SECRET` | Secret used to encrypt workspace API keys. If it changes, workspaces must re-enter their keys. |
 
 ### Development (your machine)
 
@@ -70,7 +94,11 @@ If you see an error instead:
 | "returned an error (400): …" | Usually a model name your account can't use; unset `ANTHROPIC_MODEL`. |
 | "Couldn't reach the AI service" | The server can't reach `api.anthropic.com:443`; check firewalls/proxies. |
 
-## 3. Who can use it
+## 3. Who can use and configure it
+
+Choosing the provider and key needs an admin, or a role with **Choose the AI provider and
+API key** (included in the IT support role).
+
 
 Owners and admins always can. Members need a role with the permission
 **Use the AI assistant** (Settings → Roles & permissions → Reports section). New
@@ -104,7 +132,11 @@ Each question makes several API calls (one per tool step). Watch spend in the Cl
 
 | File | Role |
 |---|---|
-| `lib/zippiker/assistant/claude.ex` | HTTP calls to `POST /v1/messages` (Req), config, error messages |
+| `lib/zippiker/assistant/llm.ex` | Picks the workspace's provider or the server default; dispatches |
+| `lib/zippiker/assistant/claude.ex` | Anthropic adapter (`POST /v1/messages`) |
+| `lib/zippiker/assistant/openai_compatible.ex` | OpenAI / Grok / Gemini adapter: translates to and from Chat Completions |
+| `lib/zippiker/assistant/providers.ex` | Provider list (labels, base URLs, suggested models) |
+| `lib/zippiker/assistant/ai_settings*` | Per-workspace provider, model and encrypted key |
 | `lib/zippiker/assistant/engine.ex` | The turn loop, approval pause, system prompt |
 | `lib/zippiker/assistant/tools.ex` | Tool definitions and implementations |
 | `lib/zippiker/assistant/conversation*` | Ash generic actions (`reply`, `resolve`, `status`) and the policy |
@@ -113,6 +145,10 @@ Each question makes several API calls (one per tool step). Watch spend in the Cl
 To add a tool: add its definition to `Tools.definitions/0`, a `do_run/3` clause, and, if it
 changes data, its name to `@writes` and a `describe/3` clause for the approval card.
 
-Requests use adaptive thinking, automatic prompt caching and server-side refusal fallbacks
-(`fallbacks: "default"`): if Claude declines a turn on safety grounds, the API retries it on a
-fallback model within the same call.
+The conversation is kept in the Anthropic Messages format; the OpenAI-compatible adapter
+translates it on every request. Anthropic requests use adaptive thinking, automatic prompt
+caching and, on models that support it, server-side refusal fallbacks (`fallbacks: "default"`):
+if Claude declines a turn on safety grounds, the API retries it on a fallback model within the
+same call. To add a provider with an OpenAI-compatible API, add it to `Providers`; for a
+different API, write an adapter with `create(cfg, system, tools, messages)` returning
+`{:ok, %{"content" => blocks, "stop_reason" => ...}}` and dispatch to it in `LLM.create/4`.

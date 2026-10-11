@@ -1,82 +1,47 @@
 defmodule Zippiker.Assistant.Claude do
   @moduledoc """
-  Calls the Claude Messages API (`POST /v1/messages`) over HTTP with Req
-  (Elixir has no official Anthropic SDK).
+  Anthropic adapter: calls the Claude Messages API (`POST /v1/messages`)
+  over HTTP with Req (Elixir has no official Anthropic SDK). The
+  conversation format used across the assistant is this API's format.
 
-  Configuration (`config/runtime.exs`, from the environment):
-
-      config :zippiker, Zippiker.Assistant,
-        api_key: System.get_env("ANTHROPIC_API_KEY"),
-        model: System.get_env("ANTHROPIC_MODEL", "claude-opus-5-5")
-
-  Requests use adaptive thinking (the model's default), `medium` effort,
-  automatic prompt caching, and server-side refusal fallbacks
-  (`fallbacks: "default"`): if Claude's safety classifiers decline a turn,
-  the API re-runs it on a fallback model inside the same call.
+  Requests use adaptive thinking (the model's default), the configured
+  effort, automatic prompt caching and, on the models that support it,
+  server-side refusal fallbacks (`fallbacks: "default"`): if Claude's
+  safety classifiers decline a turn, the API re-runs it on a fallback model
+  inside the same call.
   """
 
-  @url "https://api.anthropic.com/v1/messages"
+  alias Zippiker.Assistant.HTTP
+
   @fallback_beta "server-side-fallback-2026-07-01"
+  @fallback_models ~w(claude-opus-5-5 claude-opus-5 claude-fable-5-1 claude-sonnet-5-5)
 
-  def configured?, do: api_key() not in [nil, ""]
+  def create(cfg, system, tools, messages) do
+    model = cfg.model
 
-  def model, do: config()[:model] || "claude-opus-5-5"
-
-  @doc """
-  Sends one request. Returns `{:ok, response_map}` (string keys, as the API
-  returns them) or `{:error, message}`.
-  """
-  def create(system, tools, messages) do
-    if configured?() do
-      body = %{
-        model: model(),
+    body =
+      %{
+        model: model,
         max_tokens: 16_000,
         system: system,
         tools: tools,
         messages: messages,
-        output_config: %{effort: config()[:effort] || "medium"},
-        cache_control: %{type: "ephemeral"},
-        fallbacks: "default"
+        cache_control: %{type: "ephemeral"}
       }
+      |> maybe(effort?(model), :output_config, %{effort: cfg[:effort] || "medium"})
+      |> maybe(model in @fallback_models, :fallbacks, "default")
 
-      [
-        url: @url,
-        json: body,
-        headers: [
-          {"x-api-key", api_key()},
-          {"anthropic-version", "2023-06-01"},
-          {"anthropic-beta", @fallback_beta}
-        ],
-        receive_timeout: 300_000,
-        retry: :transient,
-        max_retries: 2
-      ]
-      |> Keyword.merge(config()[:req_options] || [])
-      |> Req.post()
-      |> case do
-        {:ok, %Req.Response{status: 200, body: response}} ->
-          {:ok, response}
+    headers =
+      [{"x-api-key", cfg.api_key}, {"anthropic-version", "2023-06-01"}] ++
+        if model in @fallback_models, do: [{"anthropic-beta", @fallback_beta}], else: []
 
-        {:ok, %Req.Response{status: 401}} ->
-          {:error, "The Anthropic API key was rejected. Check ANTHROPIC_API_KEY."}
-
-        {:ok, %Req.Response{status: 429}} ->
-          {:error, "The AI service is busy (rate limited). Try again in a moment."}
-
-        {:ok, %Req.Response{status: status, body: %{"error" => %{"message" => message}}}} ->
-          {:error, "The AI service returned an error (#{status}): #{message}"}
-
-        {:ok, %Req.Response{status: status}} ->
-          {:error, "The AI service returned an error (#{status})."}
-
-        {:error, exception} ->
-          {:error, "Couldn't reach the AI service: #{Exception.message(exception)}"}
-      end
-    else
-      {:error, :not_configured}
-    end
+    HTTP.post(String.trim_trailing(cfg.base_url, "/") <> "/messages", body, headers, "Anthropic")
   end
 
-  defp api_key, do: config()[:api_key]
-  defp config, do: Application.get_env(:zippiker, Zippiker.Assistant, [])
+  # Effort isn't accepted by older models (Haiku 4.5, Sonnet 4.5 and earlier).
+  defp effort?(model),
+    do: not String.starts_with?(model, ["claude-haiku-4", "claude-sonnet-4-5", "claude-3"])
+
+  defp maybe(map, true, key, value), do: Map.put(map, key, value)
+  defp maybe(map, _false, _key, _value), do: map
 end

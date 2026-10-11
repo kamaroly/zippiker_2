@@ -1,0 +1,169 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:ai_settings}
+>
+  <.header>
+    AI assistant
+    <:subtitle>
+      Bring your own AI: use your company's Claude, ChatGPT, Grok or Gemini account. Usage is
+      billed by that provider to you.
+    </:subtitle>
+  </.header>
+
+  <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <.form for={@form} id="ai-form" phx-change="change" phx-submit="save" class="space-y-4">
+      <fieldset disabled={!can?(assigns, "assistant.configure")} class="space-y-4">
+        <.card title="Provider">
+          <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <label
+              :for={provider <- Zippiker.Assistant.Providers.all()}
+              for={"provider-#{provider.key}"}
+              class={[
+                "cursor-pointer rounded-xl border p-3 transition",
+                @form[:provider].value == to_string(provider.key) &&
+                  "border-brand bg-brand/5 ring-2 ring-brand/20",
+                @form[:provider].value != to_string(provider.key) &&
+                  "border-line hover:border-line-strong"
+              ]}
+            >
+              <input
+                type="radio"
+                name="ai[provider]"
+                id={"provider-#{provider.key}"}
+                value={provider.key}
+                checked={@form[:provider].value == to_string(provider.key)}
+                class="sr-only"
+              />
+              <span class="block text-sm font-semibold text-ink">{provider.label}</span>
+              <span class="mt-0.5 block text-xs text-muted">{provider.hint}</span>
+            </label>
+          </div>
+        </.card>
+
+        <.card title="Model and key">
+          <div class="space-y-4">
+            <.input
+              field={@form[:model]}
+              label="Model"
+              placeholder={current_provider(@form).model || "model name"}
+              hint="Any model your account can use; check your provider's model list."
+            />
+            <.input
+              :if={@form[:provider].value == "custom"}
+              field={@form[:base_url]}
+              label="API base URL"
+              placeholder="https://openrouter.ai/api/v1"
+            />
+            <div>
+              <.input
+                field={@form[:api_key]}
+                type="password"
+                autocomplete="off"
+                label="API key"
+                placeholder={
+                  if @settings && @settings.key_hint,
+                    do: "Saved key ending in …#{@settings.key_hint}; leave blank to keep it",
+                    else: "Paste the key"
+                }
+              />
+              <p :if={current_provider(@form).keys_url} class="mt-1 text-xs text-muted">
+                Get a key at <a
+                  href={current_provider(@form).keys_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="underline hover:text-ink"
+                >
+                  {URI.parse(current_provider(@form).keys_url).host}
+                </a>.
+              </p>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-ink">
+              <input type="hidden" name="ai[enabled?]" value="false" />
+              <input
+                type="checkbox"
+                name="ai[enabled?]"
+                value="true"
+                id="ai-enabled"
+                checked={@form[:enabled?].value != "false"}
+                class="size-4 rounded border-line"
+              /> Use this provider for the assistant
+            </label>
+          </div>
+        </.card>
+
+        <p
+          :for={error <- @errors}
+          class="rounded-xl bg-danger-soft px-4 py-2.5 text-sm text-danger"
+        >
+          {error}
+        </p>
+
+        <div :if={can?(assigns, "assistant.configure")} class="flex flex-wrap items-center gap-2">
+          <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-ai">
+            Save
+          </.button>
+          <.button type="button" phx-click="test" id="test-ai" phx-disable-with="Testing…">
+            <.icon name="hero-signal-micro" /> Test connection
+          </.button>
+          <.button
+            :if={@settings && @settings.key_hint}
+            type="button"
+            variant="ghost"
+            phx-click="remove_key"
+            data-confirm="Remove the saved API key?"
+            id="remove-ai-key"
+          >
+            Remove key
+          </.button>
+        </div>
+      </fieldset>
+
+      <div :if={@test} id="ai-test-result">
+        <%= case @test do %>
+          <% {:ok, message} -> %>
+            <p class="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800">
+              <.icon name="hero-check-circle-micro" class="size-4" /> {message}
+            </p>
+          <% {:error, message} -> %>
+            <p class="rounded-xl bg-danger-soft px-4 py-2.5 text-sm text-danger">{message}</p>
+        <% end %>
+      </div>
+    </.form>
+
+    <aside class="space-y-4">
+      <.card title="Status" id="ai-status">
+        <%= cond do %>
+          <% @settings && @settings.enabled? && @settings.key_hint -> %>
+            <p class="text-sm text-ink">
+              Using <strong>{Zippiker.Assistant.Providers.label(@settings.provider)}</strong>
+              ({@settings.model}) with your key …{@settings.key_hint}.
+            </p>
+          <% @server_default? -> %>
+            <p class="text-sm text-ink">
+              Using the server's default (Anthropic Claude). Add your own key to use your account
+              or another provider.
+            </p>
+          <% true -> %>
+            <p class="text-sm text-ink">
+              Not set up: the assistant is off until you add a key.
+            </p>
+        <% end %>
+      </.card>
+      <.card title="Good to know">
+        <ul class="space-y-2 text-xs leading-relaxed text-muted">
+          <li>Keys are encrypted and never shown again; only the last four characters are.</li>
+          <li>
+            Questions and the records the assistant looks up are sent to the provider you pick.
+          </li>
+          <li>Pick a strong model with tool use; small models make more mistakes.</li>
+          <li>
+            Who may use the assistant is set with the <em>Use the AI assistant</em>
+            permission in <.link navigate={~p"/settings/roles"} class="underline">roles</.link>.
+          </li>
+        </ul>
+      </.card>
+    </aside>
+  </div>
+</Layouts.app>
