@@ -21,7 +21,8 @@ defmodule Zippiker.Accounts.Organization do
     table "organizations"
     repo Zippiker.Repo
 
-    migration_defaults enabled_modules:
+    migration_defaults maker_checker_scopes: "fragment(\"ARRAY[]::text[]\")",
+                       enabled_modules:
                          "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr', 'expenses', 'manufacturing']::text[]\")"
   end
 

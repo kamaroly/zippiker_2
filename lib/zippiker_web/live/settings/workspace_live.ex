@@ -39,6 +39,25 @@ defmodule ZippikerWeb.Settings.WorkspaceLive do
     end
   end
 
+  def handle_event("save_maker_checker", %{"maker_checker" => params}, socket) do
+    scopes = params |> Map.get("scopes", []) |> Enum.reject(&(&1 == ""))
+
+    case Accounts.set_maker_checker(
+           socket.assigns.current_organization,
+           %{maker_checker?: params["enabled"] == "true", maker_checker_scopes: scopes},
+           actor: socket.assigns.current_user
+         ) do
+      {:ok, organization} ->
+        {:noreply,
+         socket
+         |> assign(:current_organization, organization)
+         |> put_flash(:info, "Maker-checker settings saved")}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, error_message(error))}
+    end
+  end
+
   def handle_event("invite", %{"invitation" => params}, socket) do
     case AshPhoenix.Form.submit(socket.assigns.invite_form, params: params) do
       {:ok, invitation} ->
@@ -98,7 +117,10 @@ defmodule ZippikerWeb.Settings.WorkspaceLive do
         actor: socket.assigns.current_user
       )
 
-    socket |> assign(:members, members) |> stream(:members, members, reset: true)
+    socket
+    |> assign(:members, members)
+    |> assign(:admin_count, Enum.count(members, &(&1.role in [:owner, :admin])))
+    |> stream(:members, members, reset: true)
   end
 
   defp load_invitations(socket) do

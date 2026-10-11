@@ -34,6 +34,31 @@ defmodule ZippikerWeb.LiveHelpers do
   def amount(%Decimal{} = value, currency),
     do: Money.to_string!(Money.new!(currency, value), fractional_digits: 2)
 
+  @doc """
+  The change request number when maker-checker held the change instead of
+  applying it (from a failed form or an Ash error), else nil.
+  """
+  def change_requested(%Phoenix.HTML.Form{source: source}), do: change_requested(source)
+
+  def change_requested(%AshPhoenix.Form{} = form) do
+    form
+    |> AshPhoenix.Form.raw_errors(for_path: :all)
+    |> Map.values()
+    |> List.flatten()
+    |> Enum.find_value(&change_requested/1)
+  end
+
+  def change_requested(%Zippiker.Workflow.Errors.ChangeRequested{number: number}), do: number
+
+  def change_requested(%{errors: errors}) when is_list(errors),
+    do: Enum.find_value(errors, &change_requested/1)
+
+  def change_requested(_error), do: nil
+
+  @doc "Flash for a change held for a checker's approval."
+  def change_requested_message(number),
+    do: "Sent for approval as change request #{number}. It applies once a checker approves it."
+
   @doc "A short, human message from an Ash error (its first inner error)."
   def error_message(%{errors: [first | _]}), do: error_message(first)
   def error_message(%{message: message}) when is_binary(message), do: upcase_first(message)

@@ -84,7 +84,16 @@ defmodule ZippikerWeb.EmployeeLive.Form do
          |> push_navigate(to: ~p"/hr/employees/#{employee}")}
 
       {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        case change_requested(form) do
+          nil ->
+            {:noreply, assign(socket, :form, form)}
+
+          number ->
+            {:noreply,
+             socket
+             |> put_flash(:info, change_requested_message(number))
+             |> push_navigate(to: ~p"/hr/employees")}
+        end
     end
   end
 end

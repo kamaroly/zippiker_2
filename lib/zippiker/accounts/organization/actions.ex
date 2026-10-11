@@ -21,6 +21,11 @@ defmodule Zippiker.Accounts.Organization.Actions do
       accept [:name, :currency]
     end
 
+    update :set_maker_checker do
+      description "Global setting: which changes need a checker's approval."
+      accept [:maker_checker?, :maker_checker_scopes]
+    end
+
     update :set_plan_limits do
       description "Modules and seat limit, set by the platform (super admins and billing)."
       accept [:enabled_modules, :seat_limit]

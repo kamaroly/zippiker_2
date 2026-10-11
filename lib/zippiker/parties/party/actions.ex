@@ -23,7 +23,14 @@ defmodule Zippiker.Parties.Party.Actions do
   ]
 
   actions do
-    defaults [:read, :destroy]
+    defaults [:read]
+
+    destroy :destroy do
+      # Atomic unless maker-checker holds the change (see MakerChecker).
+      require_atomic? false
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :contacts}
+      primary? true
+    end
 
     read :search do
       argument :kind, :atom, allow_nil?: false, constraints: [one_of: [:person, :organization]]
@@ -48,6 +55,7 @@ defmodule Zippiker.Parties.Party.Actions do
     end
 
     update :update do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :contacts}
       primary? true
       accept @fields -- [:kind]
       require_atomic? false

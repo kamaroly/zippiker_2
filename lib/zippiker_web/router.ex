@@ -216,6 +216,8 @@ defmodule ZippikerWeb.Router do
 
       live "/approvals", WorkflowLive.Inbox, :index
       live "/approvals/history", WorkflowLive.History, :index
+      live "/approvals/changes", WorkflowLive.ChangeRequests, :index
+      live "/approvals/changes/:id", WorkflowLive.ChangeRequests, :show
       live "/approvals/workflows", WorkflowLive.Workflows, :index
       live "/approvals/workflows/new", WorkflowLive.Workflows, :new
       live "/approvals/workflows/:id/edit", WorkflowLive.Workflows, :edit

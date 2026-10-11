@@ -77,6 +77,7 @@ defmodule ZippikerWeb.Layouts do
     {:approvals, "Approvals", "hero-check-badge",
      [
        {:approval_inbox, "Inbox", "/approvals", nil},
+       {:change_requests, "Change requests", "/approvals/changes", nil},
        {:approval_history, "History", "/approvals/history", nil},
        {:approval_workflows, "Workflows", "/approvals/workflows", nil},
        {:approval_groups, "Approval groups", "/approvals/groups", nil}

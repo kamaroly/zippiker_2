@@ -157,6 +157,17 @@ Expense claims (`EXP-…`) go draft → submitted → approved → reimbursed (o
 resubmit, or cancelled). Approval posts DR category expense accounts / CR "Employee reimbursements"
 (system key `:reimbursements`); reimbursing posts DR reimbursements / CR cash, bank or mobile money.
 
+### Maker-checker (change requests)
+
+`Organization.maker_checker?` + `maker_checker_scopes` (Settings → Workspace). Covered actions carry
+`change {Zippiker.Workflow.Changes.MakerChecker, scope: ...}` (employees, parties, products,
+accounts, tax rates). When the scope is on, the change records a `Workflow.ChangeRequest` (the
+action's inputs plus a before/after diff) in a `before_transaction` hook and stops the action with
+`Workflow.Errors.ChangeRequested`; LiveViews show it with `change_requested/1`. The request goes
+through the workflow engine (`:change_request`); on approval `ApplyApproval` replays the action as
+the maker with `context: %{maker_checker_apply: true}`. The hook is atomic whenever it doesn't hold
+the change (`atomic/3` returns `:not_atomic` only when holding), so actions stay atomic otherwise.
+
 ### Manufacturing
 
 A `BillOfMaterials` makes `quantity` units of a stock-tracked product from components (stock-tracked

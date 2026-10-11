@@ -97,18 +97,39 @@ defmodule ZippikerWeb.ProductLive.Index do
          |> push_patch(to: products_path(%{q: socket.assigns.query, cf: socket.assigns.cf}))}
 
       {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        case change_requested(form) do
+          nil ->
+            {:noreply, assign(socket, :form, form)}
+
+          number ->
+            {:noreply,
+             socket
+             |> put_flash(:info, change_requested_message(number))
+             |> push_patch(to: products_path(%{q: socket.assigns.query, cf: socket.assigns.cf}))}
+        end
     end
   end
 
   def handle_event("archive", %{"id" => id}, socket) do
     opts = ash_opts(socket)
-    id |> Catalog.get_product!(opts) |> Catalog.archive_product!(opts)
+
+    message =
+      case id |> Catalog.get_product!(opts) |> Catalog.archive_product(opts) do
+        :ok -> {:info, "Product archived"}
+        {:error, error} -> held_message(error)
+      end
 
     {:noreply,
      socket
-     |> put_flash(:info, "Product archived")
+     |> put_flash(elem(message, 0), elem(message, 1))
      |> push_patch(to: products_path(%{q: socket.assigns.query, cf: socket.assigns.cf}))}
+  end
+
+  defp held_message(error) do
+    case change_requested(error) do
+      nil -> {:error, error_message(error)}
+      number -> {:info, change_requested_message(number)}
+    end
   end
 
   defp products_path(params), do: query_path(~p"/products", params)

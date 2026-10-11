@@ -13,6 +13,10 @@ defmodule ZippikerWeb.WorkflowComponents do
   @doc "Where an approval request's document lives in the app."
   def document_path(%{document_type: :expense_claim, document_id: id}), do: ~p"/expenses/#{id}"
   def document_path(%{document_type: :leave_request}), do: ~p"/hr/leave?view=approve"
+
+  def document_path(%{document_type: :change_request, document_id: id}),
+    do: ~p"/approvals/changes/#{id}"
+
   def document_path(_request), do: nil
 
   attr :type, :atom, required: true
@@ -20,6 +24,26 @@ defmodule ZippikerWeb.WorkflowComponents do
   def document_type_badge(assigns) do
     ~H"""
     <.badge color={:blue}>{Zippiker.Workflow.DocumentTypes.label(@type)}</.badge>
+    """
+  end
+
+  attr :status, :atom, required: true
+
+  def change_request_status(assigns) do
+    ~H"""
+    <.badge color={
+      %{pending: :amber, applied: :emerald, rejected: :rose, cancelled: :slate, failed: :rose}[
+        @status
+      ]
+    }>
+      {%{
+        pending: "Waiting for checker",
+        applied: "Applied",
+        rejected: "Rejected",
+        cancelled: "Withdrawn",
+        failed: "Failed"
+      }[@status]}
+    </.badge>
     """
   end
 

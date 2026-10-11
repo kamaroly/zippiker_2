@@ -59,14 +59,33 @@ defmodule ZippikerWeb.Settings.TaxesLive do
          |> push_patch(to: ~p"/settings/taxes")}
 
       {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        case change_requested(form) do
+          nil ->
+            {:noreply, assign(socket, :form, form)}
+
+          number ->
+            {:noreply,
+             socket
+             |> put_flash(:info, change_requested_message(number))
+             |> push_patch(to: ~p"/settings/taxes")}
+        end
     end
   end
 
   def handle_event("archive", %{"id" => id}, socket) do
     opts = ash_opts(socket)
-    id |> Catalog.get_tax_rate!(opts) |> Catalog.archive_tax_rate!(opts)
-    {:noreply, socket |> put_flash(:info, "Tax rate archived") |> load()}
+
+    case id |> Catalog.get_tax_rate!(opts) |> Catalog.archive_tax_rate(opts) do
+      :ok ->
+        {:noreply, socket |> put_flash(:info, "Tax rate archived") |> load()}
+
+      {:error, error} ->
+        {:noreply,
+         case change_requested(error) do
+           nil -> put_flash(socket, :error, error_message(error))
+           number -> put_flash(socket, :info, change_requested_message(number))
+         end}
+    end
   end
 
   defp load(socket),

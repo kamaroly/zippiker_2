@@ -1,0 +1,170 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:change_requests}
+>
+  <%= if @request do %>
+    <.header>
+      <:breadcrumb>
+        <.link navigate={~p"/approvals/changes"} class="hover:text-ink">Change requests</.link>
+      </:breadcrumb>
+      <span class="flex items-center gap-3">
+        {@request.number} <.change_request_status status={@request.status} />
+      </span>
+      <:subtitle>
+        {scope_label(@request.scope)} · {action_label(@request)} · {@request.record_label} ·
+        by {Format.user_name(@request.requested_by)}
+      </:subtitle>
+      <:actions>
+        <.button
+          :if={@request.status == :pending and @request.requested_by_id == @current_user.id}
+          phx-click="withdraw"
+          data-confirm="Withdraw this change?"
+          id="withdraw-change"
+        >
+          Withdraw
+        </.button>
+      </:actions>
+    </.header>
+
+    <div class="grid gap-4 lg:grid-cols-[1fr_340px]">
+      <div class="space-y-4">
+        <.card
+          :if={@can_decide?}
+          id="change-decision"
+          class="border-warning/40 bg-warning-soft/30"
+        >
+          <form id="change-decision-form" phx-submit="decide" class="space-y-3">
+            <p class="flex items-center gap-2 text-sm font-semibold text-ink">
+              <.icon name="hero-hand-raised" class="size-4 text-warning" /> Check this change
+            </p>
+            <.input
+              type="textarea"
+              name="comment"
+              id="change-comment"
+              value=""
+              placeholder="Comment (required when rejecting)"
+              rows="2"
+            />
+            <div class="flex justify-end gap-2">
+              <.button
+                type="submit"
+                name="decision"
+                value="reject"
+                variant="danger"
+                id="reject-change"
+              >
+                <.icon name="hero-x-mark-micro" /> Reject
+              </.button>
+              <.button
+                type="submit"
+                name="decision"
+                value="approve"
+                variant="primary"
+                id="approve-change"
+              >
+                <.icon name="hero-check-micro" /> Approve &amp; apply
+              </.button>
+            </div>
+          </form>
+        </.card>
+
+        <.card title="What changes" padded={false}>
+          <table id="change-diff" class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-line text-left text-xs text-muted">
+                <th class="px-5 py-2 font-medium">Field</th>
+                <th class="px-3 py-2 font-medium">Now</th>
+                <th class="px-5 py-2 font-medium">Proposed</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+              <tr :for={change <- @request.changes}>
+                <td class="px-5 py-2.5 text-ink-soft">{field_label(change["field"])}</td>
+                <td class="px-3 py-2.5 text-muted line-through decoration-danger/50">
+                  {change["from"] || "—"}
+                </td>
+                <td class="px-5 py-2.5 font-medium text-ink">{change["to"] || "—"}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p :if={@request.changes == []} class="px-5 pb-5 text-sm text-muted">
+            No field changes recorded.
+          </p>
+        </.card>
+
+        <div
+          :if={@request.status == :failed}
+          class="rounded-2xl border border-danger/30 bg-danger-soft px-5 py-4 text-sm text-danger"
+        >
+          Approved, but it couldn't be applied: {@request.error}
+        </div>
+      </div>
+
+      <aside class="space-y-4">
+        <.card title="Approval">
+          <.approval_timeline :if={@approval} request={@approval} />
+        </.card>
+        <.card title="Details">
+          <.list>
+            <:item title="Area">{scope_label(@request.scope)}</:item>
+            <:item title="Requested">{Format.date(@request.inserted_at)}</:item>
+            <:item :if={@request.applied_at} title="Applied">
+              {Format.date(@request.applied_at)}
+            </:item>
+          </.list>
+        </.card>
+      </aside>
+    </div>
+  <% else %>
+    <.header>
+      Change requests
+      <:subtitle>
+        Changes held for a second person's approval (maker-checker, set in Settings → Workspace).
+      </:subtitle>
+    </.header>
+
+    <div class="mb-4">
+      <.segmented
+        current={@status}
+        options={[
+          {"All", nil, changes_path(%{})},
+          {"Waiting", :pending, changes_path(%{status: :pending})},
+          {"Applied", :applied, changes_path(%{status: :applied})},
+          {"Rejected", :rejected, changes_path(%{status: :rejected})},
+          {"Failed", :failed, changes_path(%{status: :failed})}
+        ]}
+      />
+    </div>
+
+    <.table
+      id="change-requests"
+      rows={@streams.requests}
+      row_click={fn {_id, request} -> JS.patch(~p"/approvals/changes/#{request}") end}
+    >
+      <:col :let={{_id, request}} label="Change">
+        <span class="font-medium text-ink">{request.record_label}</span>
+        <span class="block text-xs text-muted">
+          {request.number} · {scope_label(request.scope)} · {action_label(request)}
+        </span>
+      </:col>
+      <:col :let={{_id, request}} label="Maker" class="hidden md:table-cell">
+        {Format.user_name(request.requested_by)}
+      </:col>
+      <:col :let={{_id, request}} label="Status">
+        <.change_request_status status={request.status} />
+      </:col>
+      <:col :let={{_id, request}} label="Requested" class="hidden md:table-cell">
+        {Format.date(request.inserted_at)}
+      </:col>
+      <:empty>
+        <.empty_state icon="hero-shield-check" title="No change requests">
+          Turn on maker-checker in Settings → Workspace to hold sensitive changes for approval.
+        </.empty_state>
+      </:empty>
+    </.table>
+
+    <.pager page={@page} path={&changes_path(%{status: @status, page: &1})} />
+  <% end %>
+</Layouts.app>

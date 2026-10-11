@@ -45,6 +45,7 @@ defmodule Zippiker.HR.Employee.Actions do
     end
 
     create :create do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :employees}
       primary? true
       accept [:legal_entity_id, :party_id | @fields]
       argument :first_name, :string, constraints: [max_length: 100]
@@ -65,6 +66,7 @@ defmodule Zippiker.HR.Employee.Actions do
     end
 
     update :update do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :employees}
       primary? true
       require_atomic? false
       accept [:legal_entity_id | @fields]
@@ -78,6 +80,7 @@ defmodule Zippiker.HR.Employee.Actions do
     end
 
     update :terminate do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :employees}
       require_atomic? false
       accept [:termination_date, :termination_reason]
       validate attribute_equals(:status, :active), message: "already left"
@@ -86,6 +89,7 @@ defmodule Zippiker.HR.Employee.Actions do
     end
 
     update :rehire do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :employees}
       require_atomic? false
       validate attribute_equals(:status, :terminated), message: "still employed"
       change set_attribute(:status, :active)

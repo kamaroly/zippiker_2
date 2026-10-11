@@ -35,6 +35,68 @@
         </.form>
       </.card>
 
+      <.card :if={admin?(assigns)} title="Maker-checker" id="maker-checker">
+        <form id="maker-checker-form" phx-submit="save_maker_checker" class="space-y-4">
+          <p class="text-sm text-muted">
+            Four eyes on sensitive changes: in the areas you tick, a change isn't applied until
+            someone else approves it under <.link
+              navigate={~p"/approvals/changes"}
+              class="underline hover:text-ink"
+            >
+              Approvals → Change requests
+            </.link>.
+          </p>
+          <label class="flex items-center gap-2 text-sm font-medium text-ink">
+            <input type="hidden" name="maker_checker[enabled]" value="false" />
+            <input
+              type="checkbox"
+              name="maker_checker[enabled]"
+              value="true"
+              id="maker-checker-enabled"
+              checked={@current_organization.maker_checker?}
+              class="size-4 rounded border-line"
+            /> Require a checker's approval for changes
+          </label>
+          <div class="space-y-1.5 rounded-xl border border-line p-3">
+            <input type="hidden" name="maker_checker[scopes][]" value="" />
+            <label
+              :for={scope <- Zippiker.Workflow.MakerChecker.scopes()}
+              class="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 hover:bg-canvas"
+            >
+              <input
+                type="checkbox"
+                name="maker_checker[scopes][]"
+                value={scope.key}
+                id={"maker-checker-scope-#{scope.key}"}
+                checked={scope.key in @current_organization.maker_checker_scopes}
+                class="mt-0.5 size-4 rounded border-line"
+              />
+              <span>
+                <span class="block text-sm text-ink">{scope.label}</span>
+                <span class="block text-xs text-muted">{scope.description}</span>
+              </span>
+            </label>
+          </div>
+          <p
+            :if={@admin_count < 2}
+            class="rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning"
+          >
+            With only one admin there's nobody else to check changes, so they'd be approved
+            straight away. Add another admin, or a checker workflow under Approvals → Workflows.
+          </p>
+          <div class="flex justify-end">
+            <.button
+              type="submit"
+              variant="primary"
+              phx-disable-with="Saving…"
+              id="save-maker-checker"
+            >
+              Save
+            </.button>
+          </div>
+        </form>
+      </.card>
+
       <.card :if={admin?(assigns)} title="Invite people">
         <.form
           for={@invite_form}

@@ -15,6 +15,13 @@ defmodule Zippiker.Workflow.DocumentTypes do
       default_steps: [%{position: 1, label: "Workspace admin", approver_type: :admins}]
     },
     %{
+      key: :change_request,
+      label: "Change requests",
+      module: nil,
+      unit: :none,
+      default_steps: [%{position: 1, label: "Checker", approver_type: :admins}]
+    },
+    %{
       key: :leave_request,
       label: "Leave requests",
       module: :hr,

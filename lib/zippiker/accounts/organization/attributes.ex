@@ -29,6 +29,21 @@ defmodule Zippiker.Accounts.Organization.Attributes do
       constraints max_length: 63
     end
 
+    attribute :maker_checker?, :boolean do
+      description "Maker-checker: changes in `maker_checker_scopes` need a second person's approval."
+      allow_nil? false
+      public? true
+      default false
+    end
+
+    attribute :maker_checker_scopes, {:array, :atom} do
+      description "Areas whose changes go through change requests when maker-checker is on."
+      allow_nil? false
+      public? true
+      default []
+      constraints items: [one_of: [:employees, :contacts, :products, :accounts, :tax_rates]]
+    end
+
     attribute :currency, :string do
       description "ISO 4217 base currency used for reporting."
       allow_nil? false

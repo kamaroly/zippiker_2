@@ -71,17 +71,33 @@ defmodule ZippikerWeb.EmployeeLive.Show do
          |> push_patch(to: ~p"/hr/employees/#{employee}")}
 
       {:error, error} ->
-        {:noreply, put_flash(socket, :error, error_message(error))}
+        {:noreply, held_or_error(socket, error)}
     end
   end
 
   def handle_event("rehire", _params, socket) do
-    employee = HR.rehire_employee!(socket.assigns.employee, ash_opts(socket))
+    case HR.rehire_employee(socket.assigns.employee, ash_opts(socket)) do
+      {:ok, employee} ->
+        {:noreply,
+         socket
+         |> load(Ash.load!(employee, @loads, ash_opts(socket)))
+         |> put_flash(:info, "Welcome back!")}
 
-    {:noreply,
-     socket
-     |> load(Ash.load!(employee, @loads, ash_opts(socket)))
-     |> put_flash(:info, "Welcome back!")}
+      {:error, error} ->
+        {:noreply, held_or_error(socket, error)}
+    end
+  end
+
+  defp held_or_error(socket, error) do
+    case change_requested(error) do
+      nil ->
+        put_flash(socket, :error, error_message(error))
+
+      number ->
+        socket
+        |> put_flash(:info, change_requested_message(number))
+        |> push_patch(to: ~p"/hr/employees/#{socket.assigns.employee}")
+    end
   end
 
   defp load(socket, employee) do

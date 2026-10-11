@@ -30,7 +30,14 @@ defmodule ZippikerWeb.PartyLive.FormComponent do
         {:noreply, socket}
 
       {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        case change_requested(form) do
+          nil ->
+            {:noreply, assign(socket, :form, form)}
+
+          number ->
+            send(self(), {__MODULE__, {:change_requested, number}})
+            {:noreply, socket}
+        end
     end
   end
 

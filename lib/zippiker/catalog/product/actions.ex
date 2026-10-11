@@ -17,7 +17,14 @@ defmodule Zippiker.Catalog.Product.Actions do
   ]
 
   actions do
-    defaults [:read, :destroy]
+    defaults [:read]
+
+    destroy :destroy do
+      # Atomic unless maker-checker holds the change (see MakerChecker).
+      require_atomic? false
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :products}
+      primary? true
+    end
 
     read :search do
       argument :query, :string
@@ -33,12 +40,14 @@ defmodule Zippiker.Catalog.Product.Actions do
     end
 
     create :create do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :products}
       primary? true
       accept @fields
       validate Zippiker.Catalog.Product.Validations.TrackOnlyGoods
     end
 
     update :update do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :products}
       primary? true
       accept @fields
       require_atomic? false

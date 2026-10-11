@@ -12,6 +12,25 @@
   itself; rejecting needs a comment.
 </p>
 
+<h2>Change requests (maker-checker)</h2>
+<p>
+  For sensitive data, admins can require a second pair of eyes: in <.link navigate="/settings/workspace">Settings → Workspace</.link>, turn on
+  <strong>Maker-checker</strong>
+  and tick the areas it covers (employees, contacts &amp; companies, products &amp; prices, chart of
+  accounts, tax rates). From then on, saving a change in those areas doesn't apply it: it becomes a
+  <strong>change request</strong>
+  (<code>CR-…</code>) showing each field's current and proposed value.
+</p>
+<p>
+  Another admin (or whoever your <em>Change requests</em>
+  workflow names) approves it from the inbox or <.link navigate="/approvals/changes">Approvals → Change requests</.link>, and the change is applied
+  as if the maker had saved it. A rejected change is never applied, and the maker can withdraw a
+  change while it's waiting.
+</p>
+<.callout kind={:warning}>
+  You need at least two admins (or a checker workflow): nobody checks their own change.
+</.callout>
+
 <h2>History</h2>
 <p>
   <.link navigate="/approvals/history">History</.link>

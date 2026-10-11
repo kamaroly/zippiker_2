@@ -19,6 +19,7 @@ defmodule Zippiker.Accounting.Account.Actions do
     end
 
     create :create do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :accounts}
       primary? true
       accept [:code, :name, :type, :description]
     end
@@ -34,11 +35,15 @@ defmodule Zippiker.Accounting.Account.Actions do
     end
 
     update :update do
+      # Atomic unless maker-checker holds the change (see MakerChecker).
+      require_atomic? false
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :accounts}
       primary? true
       accept [:code, :name, :description, :active?]
     end
 
     destroy :destroy do
+      change {Zippiker.Workflow.Changes.MakerChecker, scope: :accounts}
       primary? true
       require_atomic? false
       validate Zippiker.Accounting.Account.Validations.Deletable

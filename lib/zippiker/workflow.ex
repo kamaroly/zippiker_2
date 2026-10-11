@@ -44,5 +44,16 @@ defmodule Zippiker.Workflow do
     end
 
     resource Zippiker.Workflow.ApprovalRequestStep
+
+    resource Zippiker.Workflow.ChangeRequest do
+      define :list_change_requests, action: :search
+      define :get_change_request, action: :read, get_by: [:id]
+      define :request_change, action: :request
+      define :cancel_change_request, action: :cancel
+
+      define :apply_change_request,
+        action: :apply_approval,
+        args: [:change_request_id, :outcome]
+    end
   end
 end

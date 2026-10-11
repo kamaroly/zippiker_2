@@ -62,7 +62,16 @@ defmodule ZippikerWeb.AccountingLive.Accounts do
          |> push_patch(to: ~p"/accounting/accounts")}
 
       {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        case change_requested(form) do
+          nil ->
+            {:noreply, assign(socket, :form, form)}
+
+          number ->
+            {:noreply,
+             socket
+             |> put_flash(:info, change_requested_message(number))
+             |> push_patch(to: ~p"/accounting/accounts")}
+        end
     end
   end
 
@@ -74,7 +83,11 @@ defmodule ZippikerWeb.AccountingLive.Accounts do
         {:noreply, socket |> put_flash(:info, "Account deleted") |> load()}
 
       {:error, error} ->
-        {:noreply, put_flash(socket, :error, error_message(error))}
+        {:noreply,
+         case change_requested(error) do
+           nil -> put_flash(socket, :error, error_message(error))
+           number -> put_flash(socket, :info, change_requested_message(number))
+         end}
     end
   end
 

@@ -67,12 +67,20 @@ defmodule ZippikerWeb.PartyLive.Show do
 
   @impl true
   def handle_event("archive", _params, socket) do
-    Parties.archive_party!(socket.assigns.party, ash_opts(socket))
+    case Parties.archive_party(socket.assigns.party, ash_opts(socket)) do
+      :ok ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "#{socket.assigns.party.name} archived")
+         |> push_navigate(to: back_path(socket.assigns.party))}
 
-    {:noreply,
-     socket
-     |> put_flash(:info, "#{socket.assigns.party.name} archived")
-     |> push_navigate(to: back_path(socket.assigns.party))}
+      {:error, error} ->
+        {:noreply,
+         case change_requested(error) do
+           nil -> put_flash(socket, :error, error_message(error))
+           number -> put_flash(socket, :info, change_requested_message(number))
+         end}
+    end
   end
 
   def handle_event("new_address", _params, socket) do
@@ -139,6 +147,13 @@ defmodule ZippikerWeb.PartyLive.Show do
     do: {:noreply, assign(socket, :address_form, nil)}
 
   @impl true
+  def handle_info({ZippikerWeb.PartyLive.FormComponent, {:change_requested, number}}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, change_requested_message(number))
+     |> push_patch(to: Index.show_path(socket.assigns.party))}
+  end
+
   def handle_info({ZippikerWeb.PartyLive.FormComponent, {:saved, party}}, socket) do
     party = Ash.load!(party, [:employer, :owner], ash_opts(socket))
 
