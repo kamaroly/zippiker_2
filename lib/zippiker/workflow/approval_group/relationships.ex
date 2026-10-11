@@ -2,11 +2,6 @@ defmodule Zippiker.Workflow.ApprovalGroup.Relationships do
   use Spark.Dsl.Fragment, of: Ash.Resource
 
   relationships do
-    belongs_to :organization, Zippiker.Accounts.Organization do
-      allow_nil? false
-      domain Zippiker.Accounts
-    end
-
     has_many :memberships, Zippiker.Workflow.ApprovalGroupMember, destination_attribute: :group_id
 
     many_to_many :members, Zippiker.Accounts.User do

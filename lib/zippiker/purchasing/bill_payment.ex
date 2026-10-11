@@ -17,14 +17,12 @@ defmodule Zippiker.Purchasing.BillPayment do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :bill, on_delete: :restrict
       reference :recorded_by, on_delete: :nilify
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

@@ -42,6 +42,12 @@
       <.input field={@form[:name]} label="Your name" placeholder="Ada Lovelace" required />
       <.input field={@form[:workspace]} label="Company name" placeholder="Acme Inc" required />
       <.input
+        field={@form[:domain]}
+        label="Domain (optional)"
+        placeholder="acme.com"
+        hint="Names your team's private data space. Leave blank and we'll number it (team_1, team_2…)."
+      />
+      <.input
         field={@form[:currency]}
         type="select"
         label="Reporting currency"

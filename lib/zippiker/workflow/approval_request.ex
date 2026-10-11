@@ -23,19 +23,17 @@ defmodule Zippiker.Workflow.ApprovalRequest do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :workflow, on_delete: :nilify
       reference :requested_by, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :status]
-      index [:organization_id, :document_type, :document_id]
+      index [:status]
+      index [:document_type, :document_id]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

@@ -23,7 +23,6 @@ defmodule Zippiker.Manufacturing.ProductionOrder do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :product, on_delete: :restrict
       reference :bom, on_delete: :restrict
@@ -32,12 +31,11 @@ defmodule Zippiker.Manufacturing.ProductionOrder do
     end
 
     custom_indexes do
-      index [:organization_id, :status]
+      index [:status]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

@@ -18,13 +18,12 @@ defmodule Zippiker.Sales.Payment do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :invoice, on_delete: :restrict
       reference :recorded_by, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :paid_on]
+      index [:paid_on]
     end
   end
 
@@ -33,12 +32,10 @@ defmodule Zippiker.Sales.Payment do
     # Drafts and payments can be hard-deleted; keep their history.
     reference_source? false
     store_action_name? true
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

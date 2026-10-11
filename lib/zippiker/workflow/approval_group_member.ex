@@ -17,15 +17,13 @@ defmodule Zippiker.Workflow.ApprovalGroupMember do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :group, on_delete: :delete
       reference :user, on_delete: :delete
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

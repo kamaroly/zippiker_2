@@ -24,7 +24,6 @@ defmodule Zippiker.Expenses.ExpenseClaim do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :claimant, on_delete: :restrict
       reference :employee, on_delete: :nilify
@@ -32,8 +31,8 @@ defmodule Zippiker.Expenses.ExpenseClaim do
     end
 
     custom_indexes do
-      index [:organization_id, :status]
-      index [:organization_id, :claimant_id]
+      index [:status]
+      index [:claimant_id]
     end
   end
 
@@ -43,12 +42,10 @@ defmodule Zippiker.Expenses.ExpenseClaim do
     store_action_name? true
     reference_source? false
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

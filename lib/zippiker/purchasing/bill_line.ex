@@ -22,7 +22,6 @@ defmodule Zippiker.Purchasing.BillLine do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :bill, on_delete: :delete
       reference :product, on_delete: :nilify
       reference :tax_rate, on_delete: :nilify
@@ -31,7 +30,6 @@ defmodule Zippiker.Purchasing.BillLine do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

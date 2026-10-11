@@ -10,6 +10,25 @@ defmodule Zippiker.Accounts.Organization.Attributes do
       constraints min_length: 2, max_length: 120
     end
 
+    attribute :domain, :string do
+      description """
+      The team's domain (e.g. `acme` or `acme.com`), chosen when the team is
+      created; `team_<n>` when left blank. Names the team's database schema.
+      """
+
+      allow_nil? false
+      public? true
+      constraints max_length: 63
+    end
+
+    attribute :schema_name, :string do
+      description "The Postgres schema holding this team's data (from the domain)."
+      allow_nil? false
+      public? true
+      writable? false
+      constraints max_length: 63
+    end
+
     attribute :currency, :string do
       description "ISO 4217 base currency used for reporting."
       allow_nil? false

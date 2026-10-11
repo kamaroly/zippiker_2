@@ -19,7 +19,6 @@ defmodule Zippiker.Sales.SalesOrderLine do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :sales_order, on_delete: :delete
       reference :product, on_delete: :nilify
       reference :tax_rate, on_delete: :nilify
@@ -27,8 +26,7 @@ defmodule Zippiker.Sales.SalesOrderLine do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   @doc "Quantity still to deliver."

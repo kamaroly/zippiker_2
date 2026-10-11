@@ -17,14 +17,12 @@ defmodule Zippiker.Manufacturing.BomComponent do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :bom, on_delete: :delete
       reference :product, on_delete: :restrict
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

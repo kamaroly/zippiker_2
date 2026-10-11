@@ -45,7 +45,7 @@ defmodule Zippiker.Workflow.Approvers do
   end
 
   defp admins(tenant) do
-    organization_id = Ash.ToTenant.to_tenant(tenant, nil)
+    organization_id = Zippiker.Accounts.Tenant.organization_id(tenant)
 
     Zippiker.Accounts.Membership
     |> Ash.Query.filter(organization_id == ^organization_id and role in [:owner, :admin])

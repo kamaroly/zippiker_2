@@ -141,6 +141,7 @@
   "create_table_options": null,
   "custom_indexes": [],
   "custom_statements": [],
+  "drop_table_opted_out": true,
   "has_create_action": true,
   "hash": "746D2A9417827C746AB04CDB6DEBAE664227391A6EA6F3869839915B0EF30547",
   "identities": [],

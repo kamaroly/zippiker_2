@@ -27,13 +27,13 @@ defmodule Zippiker.Accounts.Checks.Membership do
   defp platform_role(_actor), do: nil
 
   defp tenant(%{subject: %{tenant: tenant}}) when not is_nil(tenant),
-    do: Ash.ToTenant.to_tenant(tenant, nil)
+    do: Zippiker.Accounts.Tenant.organization_id(tenant)
 
   defp tenant(%{changeset: %{tenant: tenant}}) when not is_nil(tenant),
-    do: Ash.ToTenant.to_tenant(tenant, nil)
+    do: Zippiker.Accounts.Tenant.organization_id(tenant)
 
   defp tenant(%{query: %{tenant: tenant}}) when not is_nil(tenant),
-    do: Ash.ToTenant.to_tenant(tenant, nil)
+    do: Zippiker.Accounts.Tenant.organization_id(tenant)
 
   defp tenant(_context), do: nil
 

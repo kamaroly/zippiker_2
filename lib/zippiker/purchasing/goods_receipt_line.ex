@@ -17,7 +17,6 @@ defmodule Zippiker.Purchasing.GoodsReceiptLine do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :goods_receipt, on_delete: :delete
       reference :product, on_delete: :nilify
       reference :purchase_order_line, on_delete: :nilify
@@ -25,7 +24,6 @@ defmodule Zippiker.Purchasing.GoodsReceiptLine do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

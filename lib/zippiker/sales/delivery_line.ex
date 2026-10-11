@@ -17,7 +17,6 @@ defmodule Zippiker.Sales.DeliveryLine do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :delivery, on_delete: :delete
       reference :product, on_delete: :nilify
       reference :sales_order_line, on_delete: :nilify
@@ -25,7 +24,6 @@ defmodule Zippiker.Sales.DeliveryLine do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

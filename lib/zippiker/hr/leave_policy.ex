@@ -30,14 +30,12 @@ defmodule Zippiker.HR.LeavePolicy do
     identity_wheres_to_sql one_default_per_type: "\"default?\" = true"
 
     references do
-      reference :organization, on_delete: :delete
       reference :leave_type, on_delete: :delete
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

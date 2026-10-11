@@ -21,19 +21,17 @@ defmodule Zippiker.Purchasing.Rfq do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :supplier, on_delete: :restrict
       reference :owner, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :supplier_id]
+      index [:supplier_id]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

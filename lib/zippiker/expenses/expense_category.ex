@@ -17,14 +17,12 @@ defmodule Zippiker.Expenses.ExpenseCategory do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :account, on_delete: :nilify
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

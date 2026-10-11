@@ -17,7 +17,6 @@ defmodule Zippiker.Expenses.ExpenseItem do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :claim, on_delete: :delete
       reference :category, on_delete: :restrict
     end
@@ -28,7 +27,6 @@ defmodule Zippiker.Expenses.ExpenseItem do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

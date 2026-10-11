@@ -64,9 +64,21 @@ Admins manage fields under **Settings → Custom fields**.
 
 ### Multi-tenancy and authorization
 
-Every tenant resource uses attribute multitenancy on `organization_id` and the
-`ActorIsMember` / `ActorIsAdmin` policy checks. LiveViews pass `ash_opts(socket)`
-(`actor` + `tenant`) to every call.
+Each team has its own Postgres schema (Ash `:context` multitenancy), named after the team's
+domain: `acme.com` → `acme_com`, or `team_1`, `team_2`… when no domain is given at sign-up
+(`Organization.domain` / `schema_name`, see `Zippiker.Accounts.Tenant`). Users, organizations,
+memberships, invitations, auth tokens, Oban jobs and the platform's plans and billing stay in
+`public`. Business resources have no `organization_id`; the organization struct is the tenant
+(`Ash.ToTenant` gives the schema) and policies use the `ActorIsMember` / `ActorIsAdmin` checks.
+LiveViews pass `ash_opts(socket)` (`actor` + `tenant`) to every call.
+
+- Tenant tables come from `priv/repo/tenant_migrations` (`mix ash.codegen` writes them). A new
+  team's schema is built when the team is created (`Organization.Changes.CreateTenant`).
+- `mix ecto.migrate` also runs `mix zippiker.tenants.migrate`: every team schema gets pending
+  tenant migrations, and data from the old single-schema layout is moved in once, then the old
+  public tables are dropped (`Zippiker.Accounts.Tenant.Migrator`; call `run/0` from a release).
+- Tests check out pre-built schemas from `Zippiker.TenantPool` (built once into the test
+  database) instead of building one per team.
 
 ### Sales flow
 

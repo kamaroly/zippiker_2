@@ -22,7 +22,6 @@ defmodule Zippiker.HR.LeaveBalanceEntry do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :employee, on_delete: :delete
       reference :leave_type, on_delete: :delete
       reference :leave_policy, on_delete: :nilify
@@ -31,13 +30,12 @@ defmodule Zippiker.HR.LeaveBalanceEntry do
     end
 
     custom_indexes do
-      index [:organization_id, :employee_id, :leave_type_id]
+      index [:employee_id, :leave_type_id]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

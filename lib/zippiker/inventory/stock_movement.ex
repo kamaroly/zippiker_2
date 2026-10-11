@@ -20,19 +20,17 @@ defmodule Zippiker.Inventory.StockMovement do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :operation, on_delete: :delete
       reference :product, on_delete: :restrict
       reference :warehouse, on_delete: :restrict
     end
 
     custom_indexes do
-      index [:organization_id, :product_id, :warehouse_id]
+      index [:product_id, :warehouse_id]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

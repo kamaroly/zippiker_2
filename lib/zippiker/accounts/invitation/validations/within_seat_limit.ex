@@ -11,7 +11,7 @@ defmodule Zippiker.Accounts.Invitation.Validations.WithinSeatLimit do
 
   @impl true
   def validate(changeset, _opts, _context) do
-    organization_id = Ash.ToTenant.to_tenant(changeset.tenant, Invitation)
+    organization_id = Zippiker.Accounts.Tenant.organization_id(changeset.tenant)
 
     case Ash.get(Organization, organization_id, authorize?: false) do
       {:ok, %{seat_limit: limit}} when is_integer(limit) ->

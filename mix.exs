@@ -100,10 +100,18 @@ defmodule Zippiker.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ash.setup", "assets.setup", "assets.build", "run priv/repo/seeds.exs"],
+      setup: [
+        "deps.get",
+        "ash.setup",
+        "zippiker.tenants.migrate",
+        "assets.setup",
+        "assets.build",
+        "run priv/repo/seeds.exs"
+      ],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.migrate": ["ecto.migrate", "zippiker.tenants.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ash.setup --quiet", "test"],
+      test: ["ash.setup --quiet", "zippiker.tenants.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["compile", "tailwind zippiker", "esbuild zippiker"],
       "assets.deploy": [

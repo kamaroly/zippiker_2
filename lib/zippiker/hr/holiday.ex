@@ -20,17 +20,12 @@ defmodule Zippiker.HR.Holiday do
     table "holidays"
     repo Zippiker.Repo
 
-    references do
-      reference :organization, on_delete: :delete
-    end
-
     custom_indexes do
-      index [:organization_id, :date]
+      index [:date]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

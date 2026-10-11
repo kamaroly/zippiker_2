@@ -20,7 +20,6 @@ defmodule Zippiker.Workflow.ApprovalStep do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :workflow, on_delete: :delete
       reference :user, on_delete: :nilify
       reference :group, on_delete: :nilify
@@ -28,7 +27,6 @@ defmodule Zippiker.Workflow.ApprovalStep do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

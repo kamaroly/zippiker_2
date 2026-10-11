@@ -21,17 +21,15 @@ defmodule Zippiker.Manufacturing.BillOfMaterials do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :product, on_delete: :delete
     end
 
     custom_indexes do
-      index [:organization_id, :product_id]
+      index [:product_id]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

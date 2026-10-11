@@ -22,7 +22,6 @@ defmodule Zippiker.HR.LeaveClaim do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :employee, on_delete: :delete
       reference :leave_type, on_delete: :restrict
       reference :leave_policy, on_delete: :nilify
@@ -30,12 +29,11 @@ defmodule Zippiker.HR.LeaveClaim do
     end
 
     custom_indexes do
-      index [:organization_id, :status]
+      index [:status]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

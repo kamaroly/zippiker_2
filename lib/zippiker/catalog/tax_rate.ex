@@ -16,14 +16,9 @@ defmodule Zippiker.Catalog.TaxRate do
   postgres do
     table "tax_rates"
     repo Zippiker.Repo
-
-    references do
-      reference :organization, on_delete: :delete
-    end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

@@ -23,7 +23,6 @@ defmodule Zippiker.Crm.Deal do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :pipeline, on_delete: :delete
       reference :stage, on_delete: :restrict
       reference :party, on_delete: :nilify
@@ -32,10 +31,10 @@ defmodule Zippiker.Crm.Deal do
     end
 
     custom_indexes do
-      index [:organization_id, :stage_id, :position]
-      index [:organization_id, :status, :closed_at]
-      index [:organization_id, :party_id]
-      index [:organization_id, :company_id]
+      index [:stage_id, :position]
+      index [:status, :closed_at]
+      index [:party_id]
+      index [:company_id]
     end
   end
 
@@ -48,7 +47,6 @@ defmodule Zippiker.Crm.Deal do
     change_tracking_mode :changes_only
     store_action_name? true
     ignore_attributes [:inserted_at, :updated_at, :position]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
@@ -57,7 +55,6 @@ defmodule Zippiker.Crm.Deal do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

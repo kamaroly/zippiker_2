@@ -21,15 +21,10 @@ defmodule Zippiker.Extensibility.CustomFieldDefinition do
     repo Zippiker.Repo
 
     identity_wheres_to_sql unique_key: "archived_at IS NULL"
-
-    references do
-      reference :organization, on_delete: :delete
-    end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

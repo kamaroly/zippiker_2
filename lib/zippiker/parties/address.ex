@@ -17,13 +17,11 @@ defmodule Zippiker.Parties.Address do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :party, on_delete: :delete
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

@@ -22,7 +22,6 @@ defmodule Zippiker.Sales.SalesOrder do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :customer, on_delete: :restrict
       reference :contact, on_delete: :nilify
@@ -33,8 +32,8 @@ defmodule Zippiker.Sales.SalesOrder do
     end
 
     custom_indexes do
-      index [:organization_id, :status, :issued_on]
-      index [:organization_id, :customer_id]
+      index [:status, :issued_on]
+      index [:customer_id]
     end
   end
 
@@ -44,12 +43,10 @@ defmodule Zippiker.Sales.SalesOrder do
     store_action_name? true
     reference_source? false
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

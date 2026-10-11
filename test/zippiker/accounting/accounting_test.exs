@@ -202,8 +202,9 @@ defmodule Zippiker.AccountingTest do
     )
 
     # Simulate history from before accounting: drop the entries.
-    Zippiker.Repo.query!("DELETE FROM journal_lines")
-    Zippiker.Repo.query!("DELETE FROM journal_entries")
+    schema = Zippiker.Accounts.Tenant.schema(opts[:tenant])
+    Zippiker.Repo.query!(~s|DELETE FROM "#{schema}".journal_lines|)
+    Zippiker.Repo.query!(~s|DELETE FROM "#{schema}".journal_entries|)
 
     assert %{posted: 2} = Accounting.sync_sales!(opts)
     assert %{posted: 0} = Accounting.sync_sales!(opts)

@@ -47,3 +47,6 @@ config :phoenix,
 config :zippiker, Oban, testing: :manual
 
 config :zippiker, :uploads_dir, "tmp/test_uploads"
+
+# Tests reuse pre-built team schemas instead of building one per team.
+config :zippiker, :tenant_pool, Zippiker.TenantPool

@@ -30,7 +30,6 @@ defmodule Zippiker.HR.Employee do
                            unique_number: "employee_number IS NOT NULL"
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :party, on_delete: :restrict
       reference :user, on_delete: :nilify
@@ -39,8 +38,8 @@ defmodule Zippiker.HR.Employee do
     end
 
     custom_indexes do
-      index [:organization_id, :status]
-      index [:organization_id, :manager_id]
+      index [:status]
+      index [:manager_id]
     end
   end
 
@@ -50,7 +49,6 @@ defmodule Zippiker.HR.Employee do
     store_action_name? true
     reference_source? false
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
@@ -59,8 +57,7 @@ defmodule Zippiker.HR.Employee do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

@@ -29,7 +29,9 @@ defmodule Zippiker.Accounts.LegalEntity.Actions.Default do
 
   defp create_default(tenant, opts) do
     organization =
-      Zippiker.Accounts.get_organization!(Ash.ToTenant.to_tenant(tenant, nil), authorize?: false)
+      Zippiker.Accounts.get_organization!(Zippiker.Accounts.Tenant.organization_id(tenant),
+        authorize?: false
+      )
 
     LegalEntity
     |> Ash.Changeset.for_create(

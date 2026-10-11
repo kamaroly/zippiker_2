@@ -17,7 +17,6 @@ defmodule Zippiker.HR.LeavePolicyAssignment do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :employee, on_delete: :delete
       reference :leave_policy, on_delete: :delete
       reference :leave_type, on_delete: :delete
@@ -25,8 +24,7 @@ defmodule Zippiker.HR.LeavePolicyAssignment do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

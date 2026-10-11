@@ -15,15 +15,10 @@ defmodule Zippiker.Manufacturing.WorkCenter do
   postgres do
     table "work_centers"
     repo Zippiker.Repo
-
-    references do
-      reference :organization, on_delete: :delete
-    end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

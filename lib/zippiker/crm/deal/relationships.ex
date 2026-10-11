@@ -2,11 +2,6 @@ defmodule Zippiker.Crm.Deal.Relationships do
   use Spark.Dsl.Fragment, of: Ash.Resource
 
   relationships do
-    belongs_to :organization, Zippiker.Accounts.Organization do
-      allow_nil? false
-      domain Zippiker.Accounts
-    end
-
     belongs_to :pipeline, Zippiker.Crm.Pipeline, allow_nil?: false, public?: true
     belongs_to :stage, Zippiker.Crm.Stage, allow_nil?: false, public?: true
 

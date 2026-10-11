@@ -22,7 +22,6 @@ defmodule Zippiker.Purchasing.GoodsReceipt do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :supplier, on_delete: :restrict
       reference :purchase_order, on_delete: :nilify
@@ -33,13 +32,12 @@ defmodule Zippiker.Purchasing.GoodsReceipt do
     end
 
     custom_indexes do
-      index [:organization_id, :received_on]
-      index [:organization_id, :purchase_order_id]
+      index [:received_on]
+      index [:purchase_order_id]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

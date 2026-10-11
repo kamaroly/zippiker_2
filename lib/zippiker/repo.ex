@@ -15,6 +15,15 @@ defmodule Zippiker.Repo do
     false
   end
 
+  @doc "Every workspace schema, for `mix ash_postgres.migrate --tenants`."
+  @impl true
+  def all_tenants do
+    "SELECT schema_name FROM organizations ORDER BY inserted_at"
+    |> query!()
+    |> Map.fetch!(:rows)
+    |> Enum.map(&hd/1)
+  end
+
   @impl true
   def min_pg_version do
     %Version{major: 16, minor: 0, patch: 0}

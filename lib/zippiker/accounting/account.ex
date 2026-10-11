@@ -23,15 +23,10 @@ defmodule Zippiker.Accounting.Account do
     repo Zippiker.Repo
 
     identity_wheres_to_sql unique_system_key: "system_key IS NOT NULL"
-
-    references do
-      reference :organization, on_delete: :delete
-    end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

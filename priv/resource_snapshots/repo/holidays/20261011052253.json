@@ -140,6 +140,7 @@
     }
   ],
   "custom_statements": [],
+  "drop_table_opted_out": true,
   "has_create_action": true,
   "hash": "1321B4C4FAC895C59B2C3C876F15AA86947E6330348EC19D9B16CD31F08F48F5",
   "identities": [],

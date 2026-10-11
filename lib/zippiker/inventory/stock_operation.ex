@@ -24,7 +24,6 @@ defmodule Zippiker.Inventory.StockOperation do
                            unique_reversal: "reversal_of_id IS NOT NULL"
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :warehouse, on_delete: :restrict
       reference :party, on_delete: :nilify
@@ -33,13 +32,12 @@ defmodule Zippiker.Inventory.StockOperation do
     end
 
     custom_indexes do
-      index [:organization_id, :source, :source_id]
+      index [:source, :source_id]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

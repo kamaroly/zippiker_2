@@ -17,19 +17,17 @@ defmodule Zippiker.Accounting.JournalLine do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :journal_entry, on_delete: :delete
       reference :account, on_delete: :restrict
       reference :party, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :account_id, :date]
+      index [:account_id, :date]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

@@ -26,7 +26,6 @@ defmodule Zippiker.Sales.Quote do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :customer, on_delete: :restrict
       reference :contact, on_delete: :nilify
@@ -35,9 +34,9 @@ defmodule Zippiker.Sales.Quote do
     end
 
     custom_indexes do
-      index [:organization_id, :status, :issued_on]
-      index [:organization_id, :customer_id]
-      index [:organization_id, :deal_id]
+      index [:status, :issued_on]
+      index [:customer_id]
+      index [:deal_id]
     end
   end
 
@@ -50,7 +49,6 @@ defmodule Zippiker.Sales.Quote do
     change_tracking_mode :changes_only
     store_action_name? true
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
@@ -59,7 +57,6 @@ defmodule Zippiker.Sales.Quote do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

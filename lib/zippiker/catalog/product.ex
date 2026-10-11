@@ -22,12 +22,11 @@ defmodule Zippiker.Catalog.Product do
     identity_wheres_to_sql unique_sku: "archived_at IS NULL AND sku IS NOT NULL"
 
     references do
-      reference :organization, on_delete: :delete
       reference :tax_rate, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :name]
+      index [:name]
     end
   end
 
@@ -36,8 +35,7 @@ defmodule Zippiker.Catalog.Product do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

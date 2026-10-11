@@ -27,7 +27,6 @@ defmodule Zippiker.Sales.Invoice do
     identity_wheres_to_sql unique_number: "number IS NOT NULL"
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :customer, on_delete: :restrict
       reference :contact, on_delete: :nilify
@@ -38,9 +37,9 @@ defmodule Zippiker.Sales.Invoice do
     end
 
     custom_indexes do
-      index [:organization_id, :status, :due_on]
-      index [:organization_id, :issued_on]
-      index [:organization_id, :customer_id]
+      index [:status, :due_on]
+      index [:issued_on]
+      index [:customer_id]
     end
   end
 
@@ -51,7 +50,6 @@ defmodule Zippiker.Sales.Invoice do
     change_tracking_mode :changes_only
     store_action_name? true
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
@@ -60,8 +58,7 @@ defmodule Zippiker.Sales.Invoice do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

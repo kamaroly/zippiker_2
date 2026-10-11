@@ -6,7 +6,11 @@ defmodule Zippiker.Accounts.Organization.Actions do
 
     create :create do
       primary? true
-      accept [:name, :currency]
+      accept [:name, :currency, :domain]
+      # Filled in by AssignDomain (and the test tenant pool) just before insert.
+      allow_nil_input [:domain]
+      change Zippiker.Accounts.Organization.Changes.AssignDomain
+      change Zippiker.Accounts.Organization.Changes.CreateTenant
       change Zippiker.Accounts.Organization.Changes.AddOwnerMembership
       change Zippiker.Accounts.Organization.Changes.CreateDefaultLegalEntity
       change Zippiker.Accounts.Organization.Changes.StartSubscription

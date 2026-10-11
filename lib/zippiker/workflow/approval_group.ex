@@ -15,15 +15,10 @@ defmodule Zippiker.Workflow.ApprovalGroup do
   postgres do
     table "approval_groups"
     repo Zippiker.Repo
-
-    references do
-      reference :organization, on_delete: :delete
-    end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

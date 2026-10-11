@@ -42,11 +42,6 @@ defmodule Zippiker.Sales.DocumentLine.Attributes do
   end
 
   relationships do
-    belongs_to :organization, Zippiker.Accounts.Organization do
-      allow_nil? false
-      domain Zippiker.Accounts
-    end
-
     belongs_to :product, Zippiker.Catalog.Product do
       public? true
       domain Zippiker.Catalog

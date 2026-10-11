@@ -22,7 +22,6 @@ defmodule Zippiker.Sales.Delivery do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :customer, on_delete: :restrict
       reference :sales_order, on_delete: :nilify
@@ -33,14 +32,13 @@ defmodule Zippiker.Sales.Delivery do
     end
 
     custom_indexes do
-      index [:organization_id, :shipped_on]
-      index [:organization_id, :sales_order_id]
-      index [:organization_id, :status]
+      index [:shipped_on]
+      index [:sales_order_id]
+      index [:status]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

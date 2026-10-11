@@ -8,7 +8,8 @@
       <.subscription_status status={@subscription.status} />
     </span>
     <:subtitle>
-      {Format.count(@team.members_count, "member")} · {@team.currency} · created {Format.date(
+      {@team.domain} · schema <code class="text-xs">{@team.schema_name}</code>
+      · {Format.count(@team.members_count, "member")} · {@team.currency} · created {Format.date(
         @team.inserted_at
       )}
     </:subtitle>

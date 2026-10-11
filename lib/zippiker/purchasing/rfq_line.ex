@@ -17,7 +17,6 @@ defmodule Zippiker.Purchasing.RfqLine do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :rfq, on_delete: :delete
       reference :product, on_delete: :nilify
       reference :tax_rate, on_delete: :nilify
@@ -25,7 +24,6 @@ defmodule Zippiker.Purchasing.RfqLine do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

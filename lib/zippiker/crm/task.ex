@@ -18,7 +18,6 @@ defmodule Zippiker.Crm.Task do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :party, on_delete: :delete
       reference :deal, on_delete: :delete
       reference :lead, on_delete: :delete
@@ -26,12 +25,11 @@ defmodule Zippiker.Crm.Task do
     end
 
     custom_indexes do
-      index [:organization_id, :assignee_id, :completed_at, :due_on]
+      index [:assignee_id, :completed_at, :due_on]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

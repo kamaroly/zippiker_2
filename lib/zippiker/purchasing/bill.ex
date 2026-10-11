@@ -24,7 +24,6 @@ defmodule Zippiker.Purchasing.Bill do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :supplier, on_delete: :restrict
       reference :purchase_order, on_delete: :nilify
@@ -32,8 +31,8 @@ defmodule Zippiker.Purchasing.Bill do
     end
 
     custom_indexes do
-      index [:organization_id, :status, :due_on]
-      index [:organization_id, :supplier_id]
+      index [:status, :due_on]
+      index [:supplier_id]
     end
   end
 
@@ -43,12 +42,10 @@ defmodule Zippiker.Purchasing.Bill do
     store_action_name? true
     reference_source? false
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

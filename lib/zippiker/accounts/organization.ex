@@ -1,7 +1,8 @@
 defmodule Zippiker.Accounts.Organization do
   @moduledoc """
-  A workspace. Every business record belongs to exactly one organization,
-  which is used as the Ash tenant (`Ash.ToTenant` returns its id).
+  A workspace. Its business records live in its own Postgres schema
+  (`Zippiker.Accounts.Tenant`); the organization is the Ash tenant
+  (`Ash.ToTenant` returns the schema, or the id for attribute tenants).
   """
   use Ash.Resource,
     otp_app: :zippiker,
@@ -22,5 +23,10 @@ defmodule Zippiker.Accounts.Organization do
 
     migration_defaults enabled_modules:
                          "fragment(\"ARRAY['crm', 'sales', 'purchasing', 'inventory', 'accounting', 'hr', 'expenses', 'manufacturing']::text[]\")"
+  end
+
+  identities do
+    identity :unique_domain, [:domain]
+    identity :unique_schema_name, [:schema_name]
   end
 end

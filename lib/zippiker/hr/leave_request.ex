@@ -22,20 +22,18 @@ defmodule Zippiker.HR.LeaveRequest do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :employee, on_delete: :delete
       reference :leave_type, on_delete: :restrict
       reference :decided_by, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :employee_id, :start_date]
-      index [:organization_id, :status]
+      index [:employee_id, :start_date]
+      index [:status]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

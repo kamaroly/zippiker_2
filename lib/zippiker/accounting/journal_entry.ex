@@ -25,20 +25,18 @@ defmodule Zippiker.Accounting.JournalEntry do
                            unique_reversal: "reversal_of_id IS NOT NULL"
 
     references do
-      reference :organization, on_delete: :delete
       reference :legal_entity, on_delete: :restrict
       reference :posted_by, on_delete: :nilify
       reference :reversal_of, on_delete: :restrict
     end
 
     custom_indexes do
-      index [:organization_id, :date]
+      index [:date]
     end
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 
   identities do

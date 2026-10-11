@@ -25,14 +25,13 @@ defmodule Zippiker.Crm.Lead do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :owner, on_delete: :nilify
       reference :party, on_delete: :nilify
       reference :company, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :status, :inserted_at]
+      index [:status, :inserted_at]
     end
   end
 
@@ -45,7 +44,6 @@ defmodule Zippiker.Crm.Lead do
     change_tracking_mode :changes_only
     store_action_name? true
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
@@ -54,7 +52,6 @@ defmodule Zippiker.Crm.Lead do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

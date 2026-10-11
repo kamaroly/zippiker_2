@@ -25,14 +25,13 @@ defmodule Zippiker.Parties.Party do
     repo Zippiker.Repo
 
     references do
-      reference :organization, on_delete: :delete
       reference :employer, on_delete: :nilify
       reference :owner, on_delete: :nilify
     end
 
     custom_indexes do
-      index [:organization_id, :kind, :name]
-      index [:organization_id, :employer_id]
+      index [:kind, :name]
+      index [:employer_id]
     end
   end
 
@@ -41,7 +40,6 @@ defmodule Zippiker.Parties.Party do
     change_tracking_mode :changes_only
     store_action_name? true
     ignore_attributes [:inserted_at, :updated_at]
-    attributes_as_attributes [:organization_id]
     belongs_to_actor :user, Zippiker.Accounts.User, domain: Zippiker.Accounts
   end
 
@@ -50,7 +48,6 @@ defmodule Zippiker.Parties.Party do
   end
 
   multitenancy do
-    strategy :attribute
-    attribute :organization_id
+    strategy :context
   end
 end

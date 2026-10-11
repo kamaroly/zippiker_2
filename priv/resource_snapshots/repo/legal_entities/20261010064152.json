@@ -303,6 +303,7 @@
   "create_table_options": null,
   "custom_indexes": [],
   "custom_statements": [],
+  "drop_table_opted_out": true,
   "has_create_action": true,
   "hash": "E5BEE4DBB56BED488F7F152D01BE523ECEB2DDBF7A1194DC6700219B957E3D6D",
   "identities": [

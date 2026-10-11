@@ -18,21 +18,28 @@ defmodule ZippikerWeb.OnboardingLive do
        |> assign(page_title: "Create your workspace", currencies: @currencies, switch_to: nil)
        |> assign(:first?, user.memberships == [])
        |> assign(:invitations, Accounts.list_my_invitations!(actor: user))
-       |> assign(:form, to_form(%{"name" => user.name, "workspace" => "", "currency" => "USD"}))}
+       |> assign(
+         :form,
+         to_form(%{"name" => user.name, "workspace" => "", "domain" => "", "currency" => "USD"})
+       )}
     end
   end
 
   @impl true
   def handle_event(
         "save",
-        %{"name" => name, "workspace" => workspace, "currency" => currency},
+        %{"name" => name, "workspace" => workspace, "currency" => currency} = params,
         socket
       ) do
     user = socket.assigns.current_user
+    domain = params |> Map.get("domain", "") |> String.trim()
 
     with {:ok, user} <- Accounts.update_profile(user, %{name: name}, actor: user),
          {:ok, organization} <-
-           Accounts.create_organization(%{name: workspace, currency: currency}, actor: user),
+           Accounts.create_organization(
+             %{name: workspace, currency: currency, domain: domain},
+             actor: user
+           ),
          user = Ash.load!(user, :memberships, authorize?: false),
          {:ok, _pipeline} <- Crm.seed_crm_defaults(tenant: organization, actor: user) do
       {:noreply,
@@ -41,7 +48,10 @@ defmodule ZippikerWeb.OnboardingLive do
        |> assign(:switch_to, organization.id)}
     else
       {:error, error} ->
-        {:noreply, put_flash(socket, :error, Exception.message(Ash.Error.to_error_class(error)))}
+        {:noreply,
+         socket
+         |> assign(:form, to_form(params))
+         |> put_flash(:error, error_message(error))}
     end
   end
 
