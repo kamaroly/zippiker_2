@@ -38,6 +38,23 @@ defmodule Zippiker.Accounts.LegalEntity.Actions do
       accept @fields
     end
 
+    update :update_document_style do
+      description "Changes how this entity's printed documents look."
+      accept [:document_style]
+    end
+
+    update :set_logo do
+      description "Points the entity at a logo already stored for this workspace."
+      require_atomic? false
+      argument :logo_path, :string, allow_nil?: false
+      validate Zippiker.Accounts.LegalEntity.Validations.OwnLogo
+      change set_attribute(:logo_path, arg(:logo_path))
+    end
+
+    update :remove_logo do
+      change set_attribute(:logo_path, nil)
+    end
+
     action :default, :struct do
       description "The workspace's default legal entity, created from the workspace on first use."
       constraints instance_of: Zippiker.Accounts.LegalEntity

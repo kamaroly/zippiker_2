@@ -30,6 +30,7 @@ defmodule ZippikerWeb.Router do
     get "/hr/checklist-attachments/:id", LeaveAttachmentController, :checklist
     get "/compliance/documents/:id/file", LeaveAttachmentController, :statutory
     get "/reports/:key/export", ReportController, :export
+    get "/logos/:organization_id/:id", LogoController, :show
 
     post "/workspaces/:organization_id/impersonate/:user_id",
          WorkspaceController,
@@ -128,6 +129,7 @@ defmodule ZippikerWeb.Router do
       live "/settings/branches/new", Settings.BranchesLive, :new
       live "/settings/branches/:id/edit", Settings.BranchesLive, :edit
       live "/settings/users", Settings.UsersLive, :index
+      live "/settings/documents", Settings.DocumentsLive, :index
       live "/settings/roles", Settings.RolesLive, :index
       live "/settings/roles/new", Settings.RolesLive, :new
       live "/settings/roles/:id/edit", Settings.RolesLive, :edit

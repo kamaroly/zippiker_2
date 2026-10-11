@@ -3,6 +3,7 @@ defmodule ZippikerWeb.ManufacturingComponents do
   use Phoenix.Component
 
   import ZippikerWeb.CoreComponents
+  import ZippikerWeb.DocumentComponents
 
   alias ZippikerWeb.Format
 
@@ -78,24 +79,16 @@ defmodule ZippikerWeb.ManufacturingComponents do
 
   def job_card(assigns) do
     ~H"""
-    <article
-      id="job-card"
-      class="mx-auto max-w-[820px] rounded-2xl border border-stone-200 bg-white p-8 text-stone-900 shadow-card sm:p-12 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none"
-    >
-      <header class="flex flex-wrap items-start justify-between gap-6">
-        <div>
-          <p class="text-xl font-bold tracking-tight">
-            {@order.legal_entity.legal_name || @order.legal_entity.name}
-          </p>
-          <p class="mt-1 text-xs text-stone-500">
-            {(@order.warehouse && @order.warehouse.name) || "Default warehouse"}
-          </p>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-light tracking-tight text-stone-400 uppercase">Job card</p>
-          <p class="mt-1 font-semibold">{@order.number}</p>
-        </div>
-      </header>
+    <.document_sheet id="job-card" entity={@order.legal_entity}>
+      <.letterhead
+        entity={@order.legal_entity}
+        kind={:job_card}
+        number={@order.number}
+        details={false}
+      />
+      <p class="mt-2 text-xs text-stone-500">
+        {(@order.warehouse && @order.warehouse.name) || "Default warehouse"}
+      </p>
 
       <section class="mt-8 grid gap-6 rounded-xl bg-stone-50 p-5 sm:grid-cols-[1fr_auto] print:bg-white print:ring-1 print:ring-stone-300">
         <div>
@@ -122,7 +115,7 @@ defmodule ZippikerWeb.ManufacturingComponents do
       </h3>
       <table class="mt-2 w-full text-sm">
         <thead>
-          <tr class="border-b-2 border-stone-900 text-left text-xs text-stone-500">
+          <tr class="border-b-2 border-(--doc-accent) text-left text-xs text-stone-500">
             <th class="w-8 py-2 font-medium">#</th>
             <th class="py-2 font-medium">Component</th>
             <th class="py-2 font-medium">SKU</th>
@@ -149,7 +142,7 @@ defmodule ZippikerWeb.ManufacturingComponents do
         </h3>
         <table class="mt-2 w-full text-sm">
           <thead>
-            <tr class="border-b-2 border-stone-900 text-left text-xs text-stone-500">
+            <tr class="border-b-2 border-(--doc-accent) text-left text-xs text-stone-500">
               <th class="w-8 py-2 font-medium">#</th>
               <th class="py-2 font-medium">Operation</th>
               <th class="py-2 font-medium">Work center</th>
@@ -183,7 +176,8 @@ defmodule ZippikerWeb.ManufacturingComponents do
         <div class="border-t border-stone-400 pt-2">Checked by</div>
         <div class="border-t border-stone-400 pt-2">Date</div>
       </footer>
-    </article>
+      <.document_footer entity={@order.legal_entity} kind={:job_card} />
+    </.document_sheet>
     """
   end
 end

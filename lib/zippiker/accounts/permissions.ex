@@ -246,6 +246,8 @@ defmodule Zippiker.Accounts.Permissions do
     # Settings and team
     {"company.manage", :settings, "Edit company details and legal entities",
      [{LegalEntity, [:create, :update]}]},
+    {"documents.design", :settings, "Upload the logo and design printed documents",
+     [{LegalEntity, [:update_document_style, :set_logo, :remove_logo]}]},
     {"branches.manage", :settings, "Manage branches", [{Branch, @crud}]},
     {"team.manage", :settings, "Invite people, remove them and give them roles",
      [{Invitation, [:create, :destroy]}, {Membership, [:set_roles, :destroy]}]},
@@ -464,7 +466,7 @@ defmodule Zippiker.Accounts.Permissions do
           "Manages users, invitations, roles, branches and custom fields, without being an admin.",
         permissions:
           ~w(view.contacts team.manage roles.manage branches.manage custom_fields.manage
-             company.manage)
+             company.manage documents.design)
       },
       %{
         key: "viewer",

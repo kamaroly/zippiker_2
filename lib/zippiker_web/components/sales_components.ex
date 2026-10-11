@@ -4,6 +4,7 @@ defmodule ZippikerWeb.SalesComponents do
   use ZippikerWeb, :verified_routes
 
   import ZippikerWeb.CoreComponents
+  import ZippikerWeb.DocumentComponents
 
   alias Zippiker.Sales.Pricing
   alias ZippikerWeb.Format
@@ -299,41 +300,14 @@ defmodule ZippikerWeb.SalesComponents do
         entity: assigns.document.legal_entity,
         party: party,
         contact: Map.get(assigns.document, :contact),
-        address: billing_address(party),
-        title:
-          %{
-            quote: "Quote",
-            invoice: "Invoice",
-            sales_order: "Order",
-            purchase_order: "Purchase order",
-            rfq: "Request for quotation"
-          }[assigns.kind]
+        address: billing_address(party)
       )
 
     ~H"""
-    <article
-      id="document-paper"
-      class="mx-auto max-w-[820px] rounded-2xl border border-stone-200 bg-white p-8 text-stone-900 shadow-card sm:p-12 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none"
-    >
-      <header class="flex flex-wrap items-start justify-between gap-6">
-        <div>
-          <p class="text-xl font-bold tracking-tight">{@entity.legal_name || @entity.name}</p>
-          <div class="mt-1 text-xs leading-relaxed text-stone-500">
-            <p :if={@entity.line1}>{@entity.line1}</p>
-            <p :if={@entity.line2}>{@entity.line2}</p>
-            <p>{join([@entity.city, @entity.region, @entity.postal_code, @entity.country])}</p>
-            <p :if={@entity.email}>{@entity.email}</p>
-            <p :if={@entity.phone}>{@entity.phone}</p>
-            <p :if={@entity.tax_id}>Tax ID {@entity.tax_id}</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-3xl font-light tracking-tight text-stone-400 uppercase">{@title}</p>
-          <p class="mt-1 font-semibold">{@document.number || "Draft"}</p>
-        </div>
-      </header>
+    <.document_sheet id="document-paper" entity={@entity}>
+      <.letterhead entity={@entity} kind={@kind} number={@document.number} />
 
-      <section class="mt-10 grid gap-6 sm:grid-cols-2">
+      <section class="mt-8 grid gap-6 sm:grid-cols-2">
         <div>
           <p class="text-[11px] font-semibold tracking-wider text-stone-400 uppercase">
             {case @kind do
@@ -354,7 +328,7 @@ defmodule ZippikerWeb.SalesComponents do
             <p :if={@address}>
               {join([@address.city, @address.region, @address.postal_code, @address.country])}
             </p>
-            <p :if={@party.tax_id}>Tax ID {@party.tax_id}</p>
+            <p :if={tax_ids?(@entity) and @party.tax_id}>Tax ID {@party.tax_id}</p>
           </div>
         </div>
         <dl class="grid grid-cols-2 gap-y-1 text-sm sm:justify-self-end">
@@ -389,7 +363,7 @@ defmodule ZippikerWeb.SalesComponents do
 
       <table class="mt-10 w-full text-sm">
         <thead>
-          <tr class="border-b-2 border-stone-900 text-left text-xs text-stone-500">
+          <tr class="border-b-2 border-(--doc-accent) text-left text-xs text-stone-500">
             <th class="py-2 font-medium">Description</th>
             <th class="py-2 text-right font-medium">Qty</th>
             <th class="py-2 text-right font-medium">Price</th>
@@ -429,7 +403,7 @@ defmodule ZippikerWeb.SalesComponents do
             <dt>Tax</dt>
             <dd>{Format.money(@document.tax_total)}</dd>
           </div>
-          <div class="flex justify-between border-t-2 border-stone-900 pt-2 text-base font-semibold">
+          <div class="flex justify-between border-t-2 border-(--doc-accent) pt-2 text-base font-semibold">
             <dt>Total</dt>
             <dd>{Format.money(@document.total)}</dd>
           </div>
@@ -450,13 +424,8 @@ defmodule ZippikerWeb.SalesComponents do
         {@document.notes}
       </section>
 
-      <footer
-        :if={@kind == :invoice and @entity.invoice_footer}
-        class="mt-12 border-t border-stone-200 pt-4 text-xs whitespace-pre-line text-stone-500"
-      >
-        {@entity.invoice_footer}
-      </footer>
-    </article>
+      <.document_footer entity={@entity} kind={@kind} />
+    </.document_sheet>
     """
   end
 

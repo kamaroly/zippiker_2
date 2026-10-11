@@ -147,6 +147,14 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.custom_fields/1
     },
     %{
+      slug: "documents-and-branding",
+      title: "Logo & document design",
+      section: "Workspace",
+      icon: "hero-paint-brush",
+      summary: "Put your logo on documents and choose their layout, colour, titles and terms.",
+      render: &__MODULE__.documents_and_branding/1
+    },
+    %{
       slug: "roles-and-permissions",
       title: "Roles & permissions",
       section: "Workspace",

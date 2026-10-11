@@ -3,6 +3,7 @@ defmodule ZippikerWeb.PurchasingComponents do
   use Phoenix.Component
 
   import ZippikerWeb.CoreComponents
+  import ZippikerWeb.DocumentComponents
 
   alias ZippikerWeb.Format
 
@@ -107,7 +108,8 @@ defmodule ZippikerWeb.PurchasingComponents do
   box per line and signature lines.
   """
   attr :id, :string, default: "note-paper"
-  attr :title, :string, required: true
+  attr :kind, :atom, required: true, doc: ":goods_receipt, :delivery_note or :stock_note"
+  attr :title, :string, default: nil
   attr :number, :string, required: true
   attr :entity, :map, required: true, doc: "the legal entity issuing it"
   attr :party, :map, default: nil, doc: "supplier or customer, with :addresses loaded"
@@ -125,26 +127,10 @@ defmodule ZippikerWeb.PurchasingComponents do
       )
 
     ~H"""
-    <article
-      id={@id}
-      class="mx-auto max-w-[820px] rounded-2xl border border-stone-200 bg-white p-8 text-stone-900 shadow-card sm:p-12 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none"
-    >
-      <header class="flex flex-wrap items-start justify-between gap-6">
-        <div>
-          <p class="text-xl font-bold tracking-tight">{@entity.legal_name || @entity.name}</p>
-          <div class="mt-1 text-xs leading-relaxed text-stone-500">
-            <p :if={@entity.line1}>{@entity.line1}</p>
-            <p>{join([@entity.city, @entity.country])}</p>
-            <p :if={@entity.phone}>{@entity.phone}</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-light tracking-tight text-stone-400 uppercase">{@title}</p>
-          <p class="mt-1 font-semibold">{@number}</p>
-        </div>
-      </header>
+    <.document_sheet id={@id} entity={@entity}>
+      <.letterhead entity={@entity} kind={@kind} number={@number} title={@title} />
 
-      <section class="mt-10 grid gap-6 sm:grid-cols-2">
+      <section class="mt-8 grid gap-6 sm:grid-cols-2">
         <div :if={@party}>
           <p class="text-[11px] font-semibold tracking-wider text-stone-400 uppercase">
             {@party_label}
@@ -167,7 +153,7 @@ defmodule ZippikerWeb.PurchasingComponents do
 
       <table class="mt-10 w-full text-sm">
         <thead>
-          <tr class="border-b-2 border-stone-900 text-left text-xs text-stone-500">
+          <tr class="border-b-2 border-(--doc-accent) text-left text-xs text-stone-500">
             <th class="w-8 py-2 font-medium">#</th>
             <th class="py-2 font-medium">Item</th>
             <th class="py-2 font-medium">SKU</th>
@@ -192,13 +178,18 @@ defmodule ZippikerWeb.PurchasingComponents do
 
       <section :if={@memo} class="mt-8 text-sm whitespace-pre-line text-stone-600">{@memo}</section>
 
-      <footer class="mt-16 grid gap-10 text-xs text-stone-500 sm:grid-cols-2">
+      <.document_footer entity={@entity} kind={@kind} />
+
+      <footer
+        :if={signatures?(@entity)}
+        class="mt-16 grid gap-10 text-xs text-stone-500 sm:grid-cols-2"
+      >
         <div :for={label <- @signatures}>
           <div class="h-10 border-b border-stone-400" />
           <p class="mt-1">{label}</p>
         </div>
       </footer>
-    </article>
+    </.document_sheet>
     """
   end
 
@@ -210,7 +201,7 @@ defmodule ZippikerWeb.PurchasingComponents do
     ~H"""
     <.note_paper
       id={@id}
-      title="Goods received note"
+      kind={:goods_receipt}
       number={@note.number}
       entity={@note.legal_entity}
       party={@note.supplier}
@@ -236,7 +227,7 @@ defmodule ZippikerWeb.PurchasingComponents do
     ~H"""
     <.note_paper
       id={@id}
-      title="Delivery note"
+      kind={:delivery_note}
       number={@note.number}
       entity={@note.legal_entity}
       party={@note.customer}
@@ -285,6 +276,7 @@ defmodule ZippikerWeb.PurchasingComponents do
     ~H"""
     <.note_paper
       id="stock-note"
+      kind={:stock_note}
       title={if(@operation.kind == :adjustment, do: "Stock adjustment", else: "Stock movement")}
       number={@operation.number}
       entity={@operation.legal_entity}

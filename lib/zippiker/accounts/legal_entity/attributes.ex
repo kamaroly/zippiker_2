@@ -59,6 +59,19 @@ defmodule Zippiker.Accounts.LegalEntity.Attributes do
 
     attribute :default?, :boolean, allow_nil?: false, public?: true, default: false
 
+    attribute :logo_path, :string do
+      description "Stored logo (see ZippikerWeb.Uploads), printed on documents."
+      public? true
+      writable? false
+    end
+
+    attribute :document_style, Zippiker.Accounts.DocumentStyle do
+      description "Layout, colours and wording of printed documents."
+      allow_nil? false
+      public? true
+      default %{}
+    end
+
     timestamps()
   end
 end

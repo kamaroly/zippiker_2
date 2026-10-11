@@ -1,0 +1,284 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:documents}
+  wide
+>
+  <.header>
+    Documents &amp; branding
+    <:subtitle>
+      Your logo and the look of invoices, quotes, orders, LPOs, GRNs, delivery notes and job cards.
+    </:subtitle>
+    <:actions>
+      <form :if={length(@entities) > 1} id="entity-picker" phx-change="pick_entity" class="w-56">
+        <.input
+          type="select"
+          name="entity"
+          id="entity-select"
+          value={@entity.id}
+          options={Enum.map(@entities, &{&1.name, &1.id})}
+        />
+      </form>
+    </:actions>
+  </.header>
+
+  <div class="grid gap-6 xl:grid-cols-[400px_1fr]">
+    <div class="space-y-4">
+      <.card title="Logo" id="logo-card">
+        <div class="flex items-center gap-4">
+          <div class="flex h-20 w-32 shrink-0 items-center justify-center rounded-xl border border-dashed border-line bg-canvas p-2">
+            <img
+              :if={logo_url(@entity)}
+              src={logo_url(@entity)}
+              alt="Logo"
+              id="current-logo"
+              class="max-h-full max-w-full object-contain"
+            />
+            <.icon :if={!logo_url(@entity)} name="hero-photo" class="size-8 text-muted" />
+          </div>
+          <div :if={can?(assigns, "documents.design")} class="min-w-0 flex-1 space-y-2">
+            <form
+              id="logo-form"
+              phx-change="validate_logo"
+              phx-submit="upload_logo"
+              class="space-y-2"
+            >
+              <label
+                for={@uploads.logo.ref}
+                phx-drop-target={@uploads.logo.ref}
+                class="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm text-ink-soft transition hover:border-brand/50 hover:text-ink"
+              >
+                <.icon name="hero-arrow-up-tray-micro" class="size-4" /> Choose PNG, JPG or WebP
+              </label>
+              <.live_file_input upload={@uploads.logo} class="sr-only" />
+              <div
+                :for={entry <- @uploads.logo.entries}
+                class="flex items-center gap-2 text-xs text-ink"
+              >
+                <span class="min-w-0 flex-1 truncate">{entry.client_name}</span>
+                <span class="text-muted">{entry.progress}%</span>
+                <span :for={error <- upload_errors(@uploads.logo, entry)} class="text-danger">
+                  {upload_error(error)}
+                </span>
+              </div>
+              <.button
+                :if={@uploads.logo.entries != []}
+                type="submit"
+                variant="primary"
+                size="sm"
+                id="upload-logo"
+              >
+                Upload
+              </.button>
+            </form>
+            <button
+              :if={logo_url(@entity)}
+              type="button"
+              phx-click="remove_logo"
+              id="remove-logo"
+              class="text-xs text-danger hover:underline"
+            >
+              Remove logo
+            </button>
+          </div>
+        </div>
+        <p class="mt-3 text-xs text-muted">
+          Up to 1 MB. A wide logo on a transparent background looks best.
+        </p>
+      </.card>
+
+      <form id="style-form" phx-change="change" phx-submit="save" class="space-y-4">
+        <fieldset disabled={!can?(assigns, "documents.design")} class="space-y-4">
+          <.card title="Style">
+            <div class="space-y-4">
+              <div>
+                <p class="mb-1.5 text-sm font-medium text-ink">Layout</p>
+                <div class="grid grid-cols-3 gap-2">
+                  <label
+                    :for={
+                      {value, label, hint} <- [
+                        {:classic, "Classic", "Name left, title right"},
+                        {:modern, "Modern", "Coloured band"},
+                        {:compact, "Compact", "Dense, small text"}
+                      ]
+                    }
+                    class={[
+                      "cursor-pointer rounded-xl border p-2.5 text-center transition",
+                      @draft.layout == value && "border-brand bg-brand/5 ring-2 ring-brand/20",
+                      @draft.layout != value && "border-line hover:border-line-strong"
+                    ]}
+                  >
+                    <input
+                      type="radio"
+                      name="style[layout]"
+                      value={value}
+                      checked={@draft.layout == value}
+                      class="sr-only"
+                      id={"layout-#{value}"}
+                    />
+                    <span class="block text-sm font-medium text-ink">{label}</span>
+                    <span class="block text-[11px] text-muted">{hint}</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="accent-color" class="mb-1.5 block text-sm font-medium text-ink">Accent colour</label>
+                  <div class="flex items-center gap-2">
+                    <input
+                      type="color"
+                      name="style[accent_color]"
+                      id="accent-color"
+                      value={@draft.accent_color}
+                      class="h-9 w-12 cursor-pointer rounded-lg border border-line bg-surface p-1"
+                    />
+                    <span class="font-mono text-xs text-muted">{@draft.accent_color}</span>
+                  </div>
+                  <div class="mt-2 flex gap-1.5">
+                    <button
+                      :for={swatch <- ~w(#1c1917 #ea580c #2563eb #059669 #7c3aed #be123c)}
+                      type="button"
+                      phx-click="swatch"
+                      phx-value-color={swatch}
+                      class="size-5 rounded-full ring-1 ring-black/10 transition hover:scale-110"
+                      style={"background: #{swatch}"}
+                      title={swatch}
+                    />
+                  </div>
+                </div>
+                <.input
+                  type="select"
+                  name="style[font]"
+                  id="style-font"
+                  value={@draft.font}
+                  label="Font"
+                  options={[{"Sans serif", :sans}, {"Serif", :serif}, {"Monospace", :mono}]}
+                />
+              </div>
+
+              <.input
+                type="select"
+                name="style[logo_size]"
+                id="style-logo-size"
+                value={@draft.logo_size}
+                label="Logo size"
+                options={[{"Small", :small}, {"Medium", :medium}, {"Large", :large}]}
+              />
+
+              <div class="space-y-2">
+                <label class="flex items-center gap-2 text-sm text-ink">
+                  <input type="hidden" name="style[show_tax_ids?]" value="false" />
+                  <input
+                    type="checkbox"
+                    name="style[show_tax_ids?]"
+                    value="true"
+                    checked={@draft.show_tax_ids?}
+                    id="show-tax-ids"
+                    class="size-4 rounded border-line"
+                  /> Show tax IDs (yours and the customer's or supplier's)
+                </label>
+                <label class="flex items-center gap-2 text-sm text-ink">
+                  <input type="hidden" name="style[show_signatures?]" value="false" />
+                  <input
+                    type="checkbox"
+                    name="style[show_signatures?]"
+                    value="true"
+                    checked={@draft.show_signatures?}
+                    id="show-signatures"
+                    class="size-4 rounded border-line"
+                  /> Signature lines on GRNs, delivery notes and stock notes
+                </label>
+              </div>
+            </div>
+          </.card>
+
+          <.card title="Wording per document">
+            <div class="mb-3 flex flex-wrap gap-1.5">
+              <button
+                :for={kind <- Zippiker.Accounts.DocumentTemplate.kinds()}
+                type="button"
+                phx-click="kind"
+                phx-value-kind={kind}
+                id={"kind-#{kind}"}
+                class={[
+                  "rounded-lg px-2.5 py-1 text-xs font-medium transition",
+                  @kind == kind && "bg-ink text-canvas",
+                  @kind != kind && "bg-canvas text-ink-soft hover:text-ink"
+                ]}
+              >
+                {document_kind_label(kind)}
+              </button>
+            </div>
+            <% template = current_template(@draft, @kind) %>
+            <div class="space-y-3" id={"template-#{@kind}"}>
+              <.input
+                name="template[title]"
+                id="template-title"
+                value={template.title}
+                label="Title"
+                placeholder={default_document_title(@kind)}
+              />
+              <.input
+                type="textarea"
+                name="template[terms]"
+                id="template-terms"
+                value={template.terms}
+                label="Terms"
+                placeholder="e.g. Payment within 30 days. Goods remain our property until paid."
+              />
+              <.input
+                type="textarea"
+                name="template[footer]"
+                id="template-footer"
+                value={template.footer}
+                label="Footer"
+                placeholder="e.g. Bank: KCB, A/C 1234567890 · M-Pesa Paybill 123456"
+              />
+            </div>
+          </.card>
+        </fieldset>
+
+        <div
+          :if={can?(assigns, "documents.design")}
+          class="sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface/95 px-4 py-3 shadow-pop backdrop-blur"
+        >
+          <p class="text-sm text-muted">
+            {if @dirty?, do: "Unsaved changes", else: "All changes saved"}
+          </p>
+          <div class="flex gap-2">
+            <.button :if={@dirty?} type="button" phx-click="discard" variant="ghost">Discard</.button>
+            <.button type="submit" variant="primary" disabled={!@dirty?} id="save-style">Save design</.button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="min-w-0">
+      <p class="mb-2 text-xs font-semibold tracking-wider text-muted uppercase">
+        Preview · {document_kind_label(@kind)}
+      </p>
+      <div id="document-preview" class="rounded-3xl bg-canvas p-3 sm:p-6">
+        <%= if sales_kind?(@kind) do %>
+          <.paper
+            document={sample_document(preview_entity(@entity, @draft), @kind)}
+            kind={@kind}
+          />
+        <% else %>
+          <.note_paper
+            id="preview-note"
+            kind={@kind}
+            number="GRN-2026-0042"
+            entity={preview_entity(@entity, @draft)}
+            party={sample_party()}
+            party_label={if(@kind == :goods_receipt, do: "Received from", else: "Deliver to")}
+            facts={[{"Date", Format.date(Date.utc_today())}, {"Warehouse", "Main store"}]}
+            lines={sample_lines()}
+            signatures={["Received by (name, signature)", "Checked by (name, signature, date)"]}
+          />
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

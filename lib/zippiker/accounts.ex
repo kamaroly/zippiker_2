@@ -52,6 +52,9 @@ defmodule Zippiker.Accounts do
       define :default_legal_entity, action: :default
       define :create_legal_entity, action: :create
       define :update_legal_entity, action: :update
+      define :update_document_style, action: :update_document_style
+      define :set_logo, action: :set_logo, args: [:logo_path]
+      define :remove_logo, action: :remove_logo
     end
 
     resource Zippiker.Accounts.PortalAccess do
