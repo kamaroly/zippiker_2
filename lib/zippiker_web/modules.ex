@@ -106,6 +106,9 @@ defmodule ZippikerWeb.Modules do
       ZippikerWeb.HRLive.LeavePolicies,
       ZippikerWeb.HRLive.Holidays,
       ZippikerWeb.LeaveLive.Claims,
+      ZippikerWeb.MeLive.Overview,
+      ZippikerWeb.MeLive.Tasks,
+      ZippikerWeb.MeLive.Profile,
       ZippikerWeb.ChecklistLive.Index,
       ZippikerWeb.ChecklistLive.Show,
       ZippikerWeb.ChecklistLive.Templates

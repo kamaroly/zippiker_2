@@ -1,0 +1,50 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:my_profile}
+>
+  <.header>
+    My profile
+    <:subtitle>Keep your contact details up to date. HR maintains the rest.</:subtitle>
+  </.header>
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <.card title="Contact details">
+      <.form
+        for={@form}
+        id="my-details-form"
+        phx-change="validate"
+        phx-submit="save"
+        class="space-y-4"
+      >
+        <.input field={@form[:phone]} label="Phone" />
+        <.input field={@form[:emergency_contact_name]} label="Emergency contact" />
+        <.input field={@form[:emergency_contact_phone]} label="Emergency contact phone" />
+        <div class="flex justify-end">
+          <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+        </div>
+      </.form>
+    </.card>
+
+    <.card title="Job">
+      <.list>
+        <:item title="Name">{@employee.name}</:item>
+        <:item title="Employee no.">{@employee.employee_number}</:item>
+        <:item title="Job title">{@employee.job_title || "—"}</:item>
+        <:item title="Department">
+          {(@employee.department && @employee.department.name) || "—"}
+        </:item>
+        <:item title="Reports to">{(@employee.manager && @employee.manager.name) || "—"}</:item>
+        <:item title="Started">{Format.date(@employee.hire_date)}</:item>
+        <:item title="Work email">{@employee.email || "—"}</:item>
+        <:item title="Leave policies">
+          {case @employee.leave_policies do
+            [] -> "Defaults"
+            policies -> Enum.map_join(policies, ", ", & &1.name)
+          end}
+        </:item>
+      </.list>
+    </.card>
+  </div>
+</Layouts.app>

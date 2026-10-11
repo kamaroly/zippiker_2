@@ -65,6 +65,14 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.manufacturing/1
     },
     %{
+      slug: "self-service",
+      title: "My workspace (self-service)",
+      section: "HR",
+      icon: "hero-user-circle",
+      summary: "Your balances, tasks, claims and contact details in one place.",
+      render: &__MODULE__.self_service/1
+    },
+    %{
       slug: "people-and-leave",
       title: "People & leave",
       section: "HR",

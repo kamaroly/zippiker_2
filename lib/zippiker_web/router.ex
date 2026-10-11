@@ -180,6 +180,9 @@ defmodule ZippikerWeb.Router do
 
       live "/settings/billing", Settings.BillingLive, :index
 
+      live "/me", MeLive.Overview, :index
+      live "/me/tasks", MeLive.Tasks, :index
+      live "/me/profile", MeLive.Profile, :index
       live "/hr/employees", EmployeeLive.Index, :index
       live "/hr/employees/new", EmployeeLive.Form, :new
       live "/hr/employees/:id", EmployeeLive.Show, :show

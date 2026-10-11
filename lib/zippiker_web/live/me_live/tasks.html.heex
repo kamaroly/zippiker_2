@@ -1,0 +1,44 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:my_tasks}
+>
+  <.header>
+    My tasks
+    <:subtitle>Onboarding and offboarding tasks waiting on you, soonest first.</:subtitle>
+  </.header>
+
+  <ul id="my-tasks" class="space-y-2">
+    <li
+      :for={task <- @tasks}
+      id={"my-task-#{task.id}"}
+      class="rounded-2xl border border-line bg-surface shadow-card"
+    >
+      <.link
+        navigate={~p"/hr/checklists/#{task.checklist_id}"}
+        class="flex items-center gap-4 p-4"
+      >
+        <span class="grid size-6 shrink-0 place-items-center rounded-full ring-2 ring-line" />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-ink">{task.title}</p>
+          <p class="truncate text-xs text-muted">
+            {Format.humanize(task.checklist.kind)} for {task.checklist.employee.name}
+            <span :if={task.requires_attachment?}>· proof needed</span>
+          </p>
+        </div>
+        <span class={[
+          "text-xs",
+          if(overdue?(task), do: "font-medium text-danger", else: "text-muted")
+        ]}>
+          due {Format.date(task.due_on)}
+        </span>
+      </.link>
+    </li>
+  </ul>
+  <.card :if={@tasks == []}>
+    <.empty_state icon="hero-check-circle" title="You're all done">
+      Tasks from onboarding and offboarding checklists show up here when they're yours.
+    </.empty_state>
+  </.card>
+</Layouts.app>

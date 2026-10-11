@@ -1,0 +1,130 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:me}
+>
+  <.header>
+    {Format.greeting(DateTime.utc_now())}, {Format.first_name(@current_user)}
+    <:subtitle :if={@me}>
+      {@me.job_title || "Team member"}<span :if={@me.department}> · {@me.department.name}</span><span :if={
+        @me.manager
+      }> · reports to {@me.manager.name}</span>
+    </:subtitle>
+  </.header>
+
+  <%= if @me do %>
+    <div id="quick-actions" class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <.link
+        :for={
+          {label, icon, path, show?} <- [
+            {"Request leave", "hero-sun", ~p"/hr/leave/new", true},
+            {"Claim expenses", "hero-receipt-percent", ~p"/expenses/new",
+             module?(assigns, :expenses)},
+            {"Claim leave days", "hero-plus-circle", ~p"/hr/leave-claims/new", true},
+            {"My approvals", "hero-check-badge", ~p"/approvals", @approvals > 0}
+          ]
+        }
+        :if={show?}
+        navigate={path}
+        class="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:border-line-strong hover:shadow-pop"
+      >
+        <span class="grid size-9 place-items-center rounded-xl bg-brand-soft text-brand">
+          <.icon name={icon} class="size-5" />
+        </span>
+        <span class="text-sm font-medium text-ink">
+          {label}
+          <span :if={label == "My approvals"} class="block text-xs text-muted">{@approvals} waiting</span>
+        </span>
+      </.link>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-[1fr_340px]">
+      <div class="space-y-4">
+        <.card title="My leave balances" padded={false}>
+          <div
+            id="my-balances"
+            class="grid gap-px overflow-hidden rounded-b-2xl bg-line sm:grid-cols-3"
+          >
+            <div :for={balance <- @balances} class="bg-surface px-5 py-4">
+              <.leave_type_badge type={balance.leave_type} />
+              <p class="tabular mt-2 text-2xl font-semibold tracking-tight text-ink">
+                {if balance.left, do: Decimal.normalize(balance.left), else: "∞"}
+                <span class="text-sm font-normal text-muted">days left</span>
+              </p>
+            </div>
+          </div>
+        </.card>
+
+        <.card title="My tasks" padded={false}>
+          <:action>
+            <.link navigate={~p"/me/tasks"} class="text-muted hover:text-ink">All tasks</.link>
+          </:action>
+          <ul id="my-task-preview" class="divide-y divide-line px-5 pb-2">
+            <li :for={task <- Enum.take(@tasks, 5)} class="py-2.5">
+              <.link
+                navigate={~p"/hr/checklists/#{task.checklist_id}"}
+                class="flex items-center gap-3 hover:opacity-80"
+              >
+                <.icon name="hero-clipboard-document-check" class="size-4 text-muted" />
+                <span class="min-w-0 flex-1 truncate text-sm text-ink">{task.title}</span>
+                <span class="text-xs text-muted">due {Format.date(task.due_on)}</span>
+              </.link>
+            </li>
+            <li :if={@tasks == []} class="py-3 text-sm text-muted">Nothing assigned to you. 🎉</li>
+          </ul>
+        </.card>
+
+        <.card :if={module?(assigns, :expenses)} title="My expense claims" padded={false}>
+          <:action>
+            <.link navigate={~p"/expenses"} class="text-muted hover:text-ink">All claims</.link>
+          </:action>
+          <ul class="divide-y divide-line px-5 pb-2">
+            <li :for={claim <- @claims} class="py-2.5">
+              <.link
+                navigate={~p"/expenses/#{claim}"}
+                class="flex items-center gap-3 hover:opacity-80"
+              >
+                <span class="min-w-0 flex-1 truncate text-sm text-ink">{claim.title}</span>
+                <span class="tabular text-sm text-ink">{Format.money(claim.total)}</span>
+                <.claim_status status={claim.status} />
+              </.link>
+            </li>
+            <li :if={@claims == []} class="py-3 text-sm text-muted">No claims yet.</li>
+          </ul>
+        </.card>
+      </div>
+
+      <aside class="space-y-4">
+        <.card title="Upcoming time off" padded={false}>
+          <ul id="my-upcoming-leave" class="divide-y divide-line px-5 pb-2">
+            <li :for={request <- @upcoming} class="flex items-center gap-3 py-2.5">
+              <.leave_type_badge type={request.leave_type} />
+              <span class="min-w-0 flex-1 truncate text-sm text-ink">{period(request)}</span>
+              <.leave_status status={request.status} />
+            </li>
+            <li :if={@upcoming == []} class="py-3 text-sm text-muted">No time off booked.</li>
+          </ul>
+        </.card>
+        <.card title="My details">
+          <.list>
+            <:item title="Employee no.">{@me.employee_number}</:item>
+            <:item title="Started">{Format.date(@me.hire_date)}</:item>
+          </.list>
+          <.link
+            navigate={~p"/me/profile"}
+            class="mt-3 inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink"
+          >
+            Update my details <.icon name="hero-arrow-right-micro" />
+          </.link>
+        </.card>
+      </aside>
+    </div>
+  <% else %>
+    <.card>
+      <.empty_state icon="hero-user-circle" title="No employee record yet">
+        Your login isn't linked to an employee record. Ask a workspace admin to link it under People.
+      </.empty_state>
+    </.card>
+  <% end %>
+</Layouts.app>

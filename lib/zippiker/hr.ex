@@ -29,6 +29,7 @@ defmodule Zippiker.HR do
       define :my_employee_record, action: :mine
       define :hire_employee, action: :create
       define :update_employee, action: :update
+      define :update_my_details, action: :update_self
       define :terminate_employee, action: :terminate
       define :rehire_employee, action: :rehire
     end

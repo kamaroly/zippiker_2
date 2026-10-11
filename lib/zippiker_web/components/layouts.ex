@@ -12,6 +12,12 @@ defmodule ZippikerWeb.Layouts do
   # nil means always available; a module with no visible pages is hidden.
   @modules [
     {:home, "Dashboard", "hero-squares-2x2", [{:dashboard, "Dashboard", "/", nil}]},
+    {:me, "My workspace", "hero-user-circle",
+     [
+       {:me, "Overview", "/me", :hr},
+       {:my_tasks, "My tasks", "/me/tasks", :hr},
+       {:my_profile, "My profile", "/me/profile", :hr}
+     ]},
     {:crm, "CRM", "hero-funnel",
      [
        {:leads, "Leads", "/leads", :crm},

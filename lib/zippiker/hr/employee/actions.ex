@@ -82,6 +82,14 @@ defmodule Zippiker.HR.Employee.Actions do
       change Changes.UpdateParty
     end
 
+    update :update_self do
+      description "Self-service: the employee updates their phone and emergency contact."
+      require_atomic? false
+      accept [:emergency_contact_name, :emergency_contact_phone]
+      argument :phone, :string, constraints: [max_length: 40]
+      change Changes.UpdateParty
+    end
+
     update :terminate do
       change {Zippiker.Workflow.Changes.MakerChecker, scope: :employees}
       require_atomic? false

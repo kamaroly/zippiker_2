@@ -8,7 +8,12 @@ defmodule Zippiker.HR.Employee.Policies do
       authorize_if ActorIsMember
     end
 
-    policy action_type([:create, :update]) do
+    # Self-service: people update their own contact details.
+    policy action(:update_self) do
+      authorize_if expr(not is_nil(user_id) and user_id == ^actor(:id))
+    end
+
+    policy action([:create, :update, :terminate, :rehire]) do
       authorize_if ActorIsAdmin
     end
   end
