@@ -5,9 +5,15 @@ defmodule Zippiker.Workflow.ApprovalWorkflow.Actions do
     defaults [:read, :destroy]
 
     read :list do
-      argument :document_type, :atom, constraints: [one_of: [:expense_claim]]
+      argument :document_type, :atom,
+        constraints: [one_of: Zippiker.Workflow.DocumentTypes.keys()]
+
       filter expr(is_nil(^arg(:document_type)) or document_type == ^arg(:document_type))
-      prepare build(sort: [min_amount: :asc, name: :asc], load: [steps: [:user, :group]])
+
+      prepare build(
+                sort: [document_type: :asc, min_amount: :asc, name: :asc],
+                load: [steps: [:user, :group]]
+              )
     end
 
     create :create do

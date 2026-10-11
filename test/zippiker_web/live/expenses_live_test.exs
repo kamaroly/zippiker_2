@@ -12,9 +12,24 @@ defmodule ZippikerWeb.ExpensesLiveTest do
     %{travel: Expenses.create_expense_category!(%{name: "Travel"}, opts)}
   end
 
+  test "approvals have their own menu with inbox, history, workflows and groups", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/approvals")
+    assert has_element?(view, "#nav-approvals")
+
+    for tab <- ~w(approval_inbox approval_history approval_workflows approval_groups) do
+      assert has_element?(view, "#module-tabs #tab-#{tab}")
+    end
+
+    {:ok, expenses, _html} = live(conn, ~p"/expenses")
+    refute has_element?(expenses, "#tab-approval_workflows")
+
+    {:ok, workflows, _html} = live(conn, ~p"/approvals/workflows")
+    assert has_element?(workflows, "#workflows-expense_claim")
+  end
+
   test "every expenses page renders", %{conn: conn} do
     for path <-
-          ~w(/expenses /expenses/all /expenses/new /expenses/approvals /expenses/categories /expenses/categories/new /expenses/workflows /expenses/workflows/new /expenses/groups /expenses/groups/new) do
+          ~w(/expenses /expenses/all /expenses/new /approvals /approvals/history /expenses/categories /expenses/categories/new /approvals/workflows /approvals/workflows/new /approvals/groups /approvals/groups/new) do
       assert {:ok, _view, _html} = live(conn, path)
     end
   end
@@ -78,7 +93,7 @@ defmodule ZippikerWeb.ExpensesLiveTest do
       )
       |> Expenses.submit_expense_claim!(staff_opts)
 
-    {:ok, inbox, _html} = live(conn, ~p"/expenses/approvals")
+    {:ok, inbox, _html} = live(conn, ~p"/approvals")
     assert has_element?(inbox, "#approval-inbox a[href='/expenses/#{claim.id}']")
 
     {:ok, view, _html} = live(conn, ~p"/expenses/#{claim}")
@@ -92,6 +107,11 @@ defmodule ZippikerWeb.ExpensesLiveTest do
     assert Expenses.get_expense_claim!(claim.id, staff_opts).status == :approved
     assert has_element?(view, "#approval-timeline-step-1")
     refute has_element?(view, "#decision-card")
+
+    # The Approvals menu keeps the history, across document types.
+    {:ok, history, _html} = live(conn, ~p"/approvals/history?status=approved")
+    assert has_element?(history, "#approval-history li[id^='requests-']", "Conference")
+    refute has_element?(history, "#nav-expenses.active")
 
     {:ok, view, _html} = live(conn, ~p"/expenses/#{claim}/reimburse")
 
@@ -112,7 +132,7 @@ defmodule ZippikerWeb.ExpensesLiveTest do
   } do
     finance_user = member_fixture(organization)
 
-    {:ok, view, _html} = live(conn, ~p"/expenses/groups/new")
+    {:ok, view, _html} = live(conn, ~p"/approvals/groups/new")
 
     view
     |> form("#group-form", group: %{name: "Finance", member_ids: ["", finance_user.id]})
@@ -121,7 +141,7 @@ defmodule ZippikerWeb.ExpensesLiveTest do
     [group] = Workflow.list_approval_groups!(opts)
     assert Enum.map(group.members, & &1.id) == [finance_user.id]
 
-    {:ok, view, _html} = live(conn, ~p"/expenses/workflows/new")
+    {:ok, view, _html} = live(conn, ~p"/approvals/workflows/new")
     view |> element("#add-step") |> render_click()
 
     keys =

@@ -2,14 +2,14 @@
   flash={@flash}
   current_user={@current_user}
   current_organization={@current_organization}
-  active={:expense_approvals}
+  active={:approval_inbox}
 >
   <.header>
-    Approvals
+    Approvals inbox
     <:subtitle>
       {if @count == 0,
         do: "Nothing is waiting for you.",
-        else: "#{Format.count(@count, "claim")} waiting for your decision."}
+        else: "#{Format.count(@count, "request")} waiting for your decision, oldest first."}
     </:subtitle>
   </.header>
 
@@ -17,7 +17,7 @@
     <li id="inbox-empty" class="hidden only:block">
       <.card>
         <.empty_state icon="hero-check-badge" title="You're all caught up">
-          Claims you need to approve show up here, oldest first.
+          Anything you need to approve, from any module, shows up here.
         </.empty_state>
       </.card>
     </li>
@@ -28,7 +28,10 @@
       >
         <.avatar name={Format.user_name(request.requested_by)} />
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-semibold text-ink">{request.document_label}</p>
+          <p class="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
+            <span class="truncate">{request.document_label}</span>
+            <.document_type_badge type={request.document_type} />
+          </p>
           <p class="truncate text-xs text-muted">
             {Format.user_name(request.requested_by)} · submitted {Format.ago(request.inserted_at)} · step {current_step(
               request

@@ -111,10 +111,7 @@ defmodule ZippikerWeb.Modules do
       ZippikerWeb.ExpenseLive.Index,
       ZippikerWeb.ExpenseLive.Show,
       ZippikerWeb.ExpenseLive.Form,
-      ZippikerWeb.ExpenseLive.Approvals,
-      ZippikerWeb.ExpenseLive.Categories,
-      ZippikerWeb.ExpenseLive.Workflows,
-      ZippikerWeb.ExpenseLive.Groups
+      ZippikerWeb.ExpenseLive.Categories
     ],
     manufacturing: [
       ZippikerWeb.ProductionLive.Index,

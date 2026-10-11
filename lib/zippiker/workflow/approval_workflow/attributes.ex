@@ -9,7 +9,7 @@ defmodule Zippiker.Workflow.ApprovalWorkflow.Attributes do
       allow_nil? false
       public? true
       default :expense_claim
-      constraints one_of: [:expense_claim]
+      constraints one_of: Zippiker.Workflow.DocumentTypes.keys()
     end
 
     attribute :min_amount, :decimal do

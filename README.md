@@ -144,8 +144,10 @@ workspace admin) and snapshots its steps. Steps go waiting → pending → appro
 skipped when nobody but the initiator could approve (`Workflow.Approvers`). `decide` checks the
 actor is an approver of the pending step (`ActorCanDecide`); `approval_inbox` lists what the actor
 can decide. When a request finishes, `Workflow.Callbacks.finished/2` tells the document
-(`Expenses.apply_approval`). To add a new approvable document, add its type to the
-`document_type` constraints and a `Callbacks` clause.
+(`Expenses.apply_approval`). To add a new approvable document, register it in
+`Workflow.DocumentTypes`, start the approval from its submit action, add a `Callbacks` clause
+and a `WorkflowComponents.document_path/1` clause. The Approvals menu (inbox across modules,
+history, workflows, groups) lives at `/approvals` (`ZippikerWeb.WorkflowLive.*`).
 
 Expense claims (`EXP-…`) go draft → submitted → approved → reimbursed (or rejected → edit and
 resubmit, or cancelled). Approval posts DR category expense accounts / CR "Employee reimbursements"

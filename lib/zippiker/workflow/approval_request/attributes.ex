@@ -7,7 +7,7 @@ defmodule Zippiker.Workflow.ApprovalRequest.Attributes do
     attribute :document_type, :atom do
       allow_nil? false
       public? true
-      constraints one_of: [:expense_claim]
+      constraints one_of: Zippiker.Workflow.DocumentTypes.keys()
     end
 
     attribute :document_id, :uuid, allow_nil?: false, public?: true

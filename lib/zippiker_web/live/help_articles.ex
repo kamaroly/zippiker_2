@@ -73,6 +73,14 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.people_and_leave/1
     },
     %{
+      slug: "approvals",
+      title: "Approvals & workflows",
+      section: "Approvals",
+      icon: "hero-check-badge",
+      summary: "Your approvals inbox, history, and who approves what in every module.",
+      render: &__MODULE__.approvals/1
+    },
+    %{
       slug: "expenses",
       title: "Expense claims & approvals",
       section: "Expenses",

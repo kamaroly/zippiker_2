@@ -6,6 +6,24 @@ defmodule Zippiker.Workflow.ApprovalRequest.Actions do
   actions do
     defaults [:read]
 
+    read :search do
+      description "Approval history across every document type, newest first."
+      argument :status, :atom, constraints: [one_of: [:pending, :approved, :rejected, :cancelled]]
+
+      argument :document_type, :atom,
+        constraints: [one_of: Zippiker.Workflow.DocumentTypes.keys()]
+
+      filter expr(is_nil(^arg(:status)) or status == ^arg(:status))
+      filter expr(is_nil(^arg(:document_type)) or document_type == ^arg(:document_type))
+
+      prepare build(
+                sort: [inserted_at: :desc],
+                load: [:requested_by, :workflow, steps: [:user, :group, :decided_by]]
+              )
+
+      pagination offset?: true, countable: true, default_limit: 25, required?: false
+    end
+
     create :start do
       description "Starts approval for a document with the matching workflow."
       accept [:document_type, :document_id, :document_label, :amount]

@@ -93,6 +93,7 @@ defmodule ZippikerWeb do
       import ZippikerWeb.PurchasingComponents
       import ZippikerWeb.HRComponents
       import ZippikerWeb.ExpensesComponents
+      import ZippikerWeb.WorkflowComponents
       import ZippikerWeb.ManufacturingComponents
       import ZippikerWeb.LiveHelpers
 

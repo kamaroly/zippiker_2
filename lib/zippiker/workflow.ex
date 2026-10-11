@@ -1,6 +1,7 @@
 defmodule Zippiker.Workflow do
   @moduledoc """
-  Configurable approvals, reusable by any document (expense claims today).
+  Configurable approvals, reusable by any document (see
+  `Zippiker.Workflow.DocumentTypes`; expense claims today).
   A workspace defines workflows per document type: an ordered list of steps
   (approver 1 … n, the last one being the final approver). Each step is
   decided by the initiator's manager, a specific user, anyone in an approval
@@ -34,6 +35,7 @@ defmodule Zippiker.Workflow do
     resource Zippiker.Workflow.ApprovalStep
 
     resource Zippiker.Workflow.ApprovalRequest do
+      define :list_approval_requests, action: :search
       define :get_approval_request, action: :read, get_by: [:id]
       define :start_approval, action: :start
       define :decide_approval, action: :decide, args: [:decision]

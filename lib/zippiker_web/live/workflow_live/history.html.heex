@@ -1,0 +1,84 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:approval_history}
+>
+  <.header>
+    Approval history
+    <:subtitle>Every approval in the workspace. Click a row to see who decided what.</:subtitle>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <.segmented
+      current={@status}
+      options={[
+        {"All", nil, history_path(%{type: @type})},
+        {"In approval", :pending, history_path(%{type: @type, status: :pending})},
+        {"Approved", :approved, history_path(%{type: @type, status: :approved})},
+        {"Rejected", :rejected, history_path(%{type: @type, status: :rejected})},
+        {"Withdrawn", :cancelled, history_path(%{type: @type, status: :cancelled})}
+      ]}
+    />
+    <.segmented
+      :if={length(@types) > 1}
+      current={@type}
+      options={
+        [{"All documents", nil, history_path(%{status: @status})}] ++
+          Enum.map(@types, &{&1.label, &1.key, history_path(%{status: @status, type: &1.key})})
+      }
+    />
+  </div>
+
+  <ul id="approval-history" phx-update="stream" class="space-y-2">
+    <li id="history-empty" class="hidden only:block">
+      <.card>
+        <.empty_state icon="hero-clock" title="No approvals yet">
+          Documents submitted for approval appear here with their outcome.
+        </.empty_state>
+      </.card>
+    </li>
+    <li
+      :for={{id, request} <- @streams.requests}
+      id={id}
+      class="rounded-2xl border border-line bg-surface shadow-card"
+    >
+      <button
+        type="button"
+        phx-click="toggle"
+        phx-value-id={request.id}
+        class="flex w-full items-center gap-4 px-4 py-3 text-left"
+      >
+        <.avatar name={Format.user_name(request.requested_by)} size="sm" />
+        <div class="min-w-0 flex-1">
+          <p class="flex flex-wrap items-center gap-2 text-sm font-medium text-ink">
+            <span class="truncate">{request.document_label}</span>
+            <.document_type_badge type={request.document_type} />
+          </p>
+          <p class="truncate text-xs text-muted">
+            {Format.user_name(request.requested_by)} · {Format.date(request.inserted_at)} · {(request.workflow &&
+                                                                                                request.workflow.name) ||
+              "Workspace admins"}
+          </p>
+        </div>
+        <.approval_status status={request.status} />
+        <.icon
+          name="hero-chevron-down-micro"
+          class={["size-4 text-muted transition", @open == request.id && "rotate-180"]}
+        />
+      </button>
+      <div :if={@open == request.id} class="border-t border-line px-6 py-4">
+        <.approval_timeline request={request} id={"timeline-#{request.id}"} />
+        <.link
+          :if={document_path(request)}
+          navigate={document_path(request)}
+          class="mt-4 inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink"
+        >
+          Open document <.icon name="hero-arrow-right-micro" />
+        </.link>
+      </div>
+    </li>
+  </ul>
+
+  <.pager page={@page} path={&history_path(%{status: @status, type: @type, page: &1})} />
+</Layouts.app>

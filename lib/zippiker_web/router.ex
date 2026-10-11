@@ -214,19 +214,21 @@ defmodule ZippikerWeb.Router do
       live "/manufacturing/work-centers/new", ProductionLive.WorkCenters, :new
       live "/manufacturing/work-centers/:id/edit", ProductionLive.WorkCenters, :edit
 
+      live "/approvals", WorkflowLive.Inbox, :index
+      live "/approvals/history", WorkflowLive.History, :index
+      live "/approvals/workflows", WorkflowLive.Workflows, :index
+      live "/approvals/workflows/new", WorkflowLive.Workflows, :new
+      live "/approvals/workflows/:id/edit", WorkflowLive.Workflows, :edit
+      live "/approvals/groups", WorkflowLive.Groups, :index
+      live "/approvals/groups/new", WorkflowLive.Groups, :new
+      live "/approvals/groups/:id/edit", WorkflowLive.Groups, :edit
+
       live "/expenses", ExpenseLive.Index, :mine
       live "/expenses/all", ExpenseLive.Index, :all
       live "/expenses/new", ExpenseLive.Form, :new
-      live "/expenses/approvals", ExpenseLive.Approvals, :index
       live "/expenses/categories", ExpenseLive.Categories, :index
       live "/expenses/categories/new", ExpenseLive.Categories, :new
       live "/expenses/categories/:id/edit", ExpenseLive.Categories, :edit
-      live "/expenses/workflows", ExpenseLive.Workflows, :index
-      live "/expenses/workflows/new", ExpenseLive.Workflows, :new
-      live "/expenses/workflows/:id/edit", ExpenseLive.Workflows, :edit
-      live "/expenses/groups", ExpenseLive.Groups, :index
-      live "/expenses/groups/new", ExpenseLive.Groups, :new
-      live "/expenses/groups/:id/edit", ExpenseLive.Groups, :edit
       live "/expenses/:id", ExpenseLive.Show, :show
       live "/expenses/:id/edit", ExpenseLive.Form, :edit
       live "/expenses/:id/reimburse", ExpenseLive.Show, :reimburse

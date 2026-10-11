@@ -64,11 +64,8 @@ defmodule ZippikerWeb.Layouts do
     {:expenses, "Expenses", "hero-receipt-percent",
      [
        {:my_expenses, "My claims", "/expenses", :expenses},
-       {:expense_approvals, "Approvals", "/expenses/approvals", :expenses},
        {:all_expenses, "All claims", "/expenses/all", :expenses},
-       {:expense_categories, "Categories", "/expenses/categories", :expenses},
-       {:approval_workflows, "Approval workflows", "/expenses/workflows", :expenses},
-       {:approval_groups, "Approval groups", "/expenses/groups", :expenses}
+       {:expense_categories, "Categories", "/expenses/categories", :expenses}
      ]},
     {:accounting, "Accounting", "hero-calculator",
      [
@@ -76,6 +73,13 @@ defmodule ZippikerWeb.Layouts do
        {:journal, "Journal", "/accounting/journal", :accounting},
        {:accounts, "Chart of accounts", "/accounting/accounts", :accounting},
        {:reports, "Reports", "/accounting/reports", :accounting}
+     ]},
+    {:approvals, "Approvals", "hero-check-badge",
+     [
+       {:approval_inbox, "Inbox", "/approvals", nil},
+       {:approval_history, "History", "/approvals/history", nil},
+       {:approval_workflows, "Workflows", "/approvals/workflows", nil},
+       {:approval_groups, "Approval groups", "/approvals/groups", nil}
      ]},
     {:settings, "Settings", "hero-cog-6-tooth",
      [

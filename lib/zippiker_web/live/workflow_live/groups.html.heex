@@ -10,7 +10,7 @@
     <:actions>
       <.button
         :if={admin?(assigns)}
-        patch={~p"/expenses/groups/new"}
+        patch={~p"/approvals/groups/new"}
         variant="primary"
         id="new-group"
       >
@@ -23,7 +23,7 @@
     <.card :for={group <- @groups} id={"group-#{group.id}"} title={group.name}>
       <:action>
         <span :if={admin?(assigns)} class="flex gap-3">
-          <.link patch={~p"/expenses/groups/#{group}/edit"} class="text-ink-soft hover:text-ink">
+          <.link patch={~p"/approvals/groups/#{group}/edit"} class="text-ink-soft hover:text-ink">
             Edit
           </.link>
           <.link
@@ -56,7 +56,7 @@
     id="group-modal"
     show
     title={if(@group, do: "Edit #{@group.name}", else: "New approval group")}
-    on_cancel={JS.patch(~p"/expenses/groups")}
+    on_cancel={JS.patch(~p"/approvals/groups")}
   >
     <form id="group-form" phx-submit="save" class="space-y-4">
       <.input

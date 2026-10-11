@@ -7,12 +7,12 @@
   <.header>
     Approval workflows
     <:subtitle>
-      Who approves expense claims, in order. The last approver gives the final sign-off.
+      Who approves each kind of document, in order. The last approver gives the final sign-off.
     </:subtitle>
     <:actions>
       <.button
         :if={admin?(assigns)}
-        patch={~p"/expenses/workflows/new"}
+        patch={~p"/approvals/workflows/new"}
         variant="primary"
         id="new-workflow"
       >
@@ -21,77 +21,97 @@
     </:actions>
   </.header>
 
-  <div id="workflows" class="space-y-4">
-    <.card :for={workflow <- @workflows} id={"workflow-#{workflow.id}"}>
-      <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 class="flex items-center gap-2 text-base font-semibold text-ink">
-            {workflow.name}
-            <.badge :if={!workflow.active?}>Inactive</.badge>
-          </h2>
-          <p class="text-xs text-muted">{threshold(workflow, @currency)}</p>
-        </div>
-        <span :if={admin?(assigns)} class="flex gap-3 text-sm">
-          <.link
-            patch={~p"/expenses/workflows/#{workflow}/edit"}
-            class="text-ink-soft hover:text-ink"
-            id={"edit-workflow-#{workflow.id}"}
-          >
-            Edit
-          </.link>
-          <.link
-            phx-click="delete"
-            phx-value-id={workflow.id}
-            data-confirm={"Delete #{workflow.name}?"}
-            class="text-danger hover:opacity-80"
-          >
-            Delete
-          </.link>
+  <div id="workflows" class="space-y-8">
+    <section
+      :for={type <- @document_types}
+      id={"workflows-#{type.key}"}
+      class="space-y-3"
+    >
+      <h2 class="flex items-center gap-2 text-sm font-semibold text-ink">
+        {type.label}
+        <span class="text-xs font-normal text-muted">
+          · {ZippikerWeb.Modules.name(type.module)} module
         </span>
-      </div>
-      <ol class="flex flex-wrap items-center gap-2">
-        <li class="flex items-center gap-2">
-          <span class="rounded-xl border border-dashed border-line px-3 py-2 text-sm text-muted">
-            <.icon name="hero-user-micro" /> Initiator
+      </h2>
+      <p
+        :if={workflows_for(@workflows, type.key) == []}
+        class="rounded-2xl border border-dashed border-line px-4 py-5 text-sm text-muted"
+      >
+        No workflow yet: any workspace admin approves {String.downcase(type.label)}.
+      </p>
+      <.card :for={workflow <- workflows_for(@workflows, type.key)} id={"workflow-#{workflow.id}"}>
+        <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 class="flex items-center gap-2 text-base font-semibold text-ink">
+              {workflow.name}
+              <.badge :if={!workflow.active?}>Inactive</.badge>
+            </h2>
+            <p class="text-xs text-muted">{threshold(workflow, @currency)}</p>
+          </div>
+          <span :if={admin?(assigns)} class="flex gap-3 text-sm">
+            <.link
+              patch={~p"/approvals/workflows/#{workflow}/edit"}
+              class="text-ink-soft hover:text-ink"
+              id={"edit-workflow-#{workflow.id}"}
+            >
+              Edit
+            </.link>
+            <.link
+              phx-click="delete"
+              phx-value-id={workflow.id}
+              data-confirm={"Delete #{workflow.name}?"}
+              class="text-danger hover:opacity-80"
+            >
+              Delete
+            </.link>
           </span>
-        </li>
-        <li :for={step <- workflow.steps} class="flex items-center gap-2">
-          <.icon name="hero-arrow-long-right" class="size-5 text-muted" />
-          <span class={[
-            "rounded-xl border px-3 py-2 text-sm shadow-card",
-            if(step.position == length(workflow.steps),
-              do: "border-ink bg-ink text-surface",
-              else: "border-line bg-surface text-ink"
-            )
-          ]}>
-            <span class="block text-[10px] font-semibold tracking-wide uppercase opacity-60">
-              {if step.position == length(workflow.steps),
-                do: "Final approver",
-                else: "Approver #{step.position}"}
+        </div>
+        <ol class="flex flex-wrap items-center gap-2">
+          <li class="flex items-center gap-2">
+            <span class="rounded-xl border border-dashed border-line px-3 py-2 text-sm text-muted">
+              <.icon name="hero-user-micro" /> Initiator
             </span>
-            {step.label || approver_label(step)}
-            <span :if={step.label} class="block text-xs opacity-70">{approver_label(step)}</span>
-          </span>
-        </li>
-      </ol>
-    </.card>
+          </li>
+          <li :for={step <- workflow.steps} class="flex items-center gap-2">
+            <.icon name="hero-arrow-long-right" class="size-5 text-muted" />
+            <span class={[
+              "rounded-xl border px-3 py-2 text-sm shadow-card",
+              if(step.position == length(workflow.steps),
+                do: "border-ink bg-ink text-surface",
+                else: "border-line bg-surface text-ink"
+              )
+            ]}>
+              <span class="block text-[10px] font-semibold tracking-wide uppercase opacity-60">
+                {if step.position == length(workflow.steps),
+                  do: "Final approver",
+                  else: "Approver #{step.position}"}
+              </span>
+              {step.label || approver_label(step)}
+              <span :if={step.label} class="block text-xs opacity-70">{approver_label(step)}</span>
+            </span>
+          </li>
+        </ol>
+      </.card>
+    </section>
   </div>
-
-  <.card :if={@workflows == []}>
-    <.empty_state icon="hero-arrows-right-left" title="No workflow yet">
-      Without one, any workspace admin can approve claims. Add a workflow to route claims
-      through managers, specific people or groups.
-    </.empty_state>
-  </.card>
 
   <.modal
     :if={@editing?}
     id="workflow-modal"
     show
     title={if(@workflow, do: "Edit #{@workflow.name}", else: "New approval workflow")}
-    on_cancel={JS.patch(~p"/expenses/workflows")}
+    on_cancel={JS.patch(~p"/approvals/workflows")}
   >
     <form id="workflow-form" phx-change="change" phx-submit="save" class="space-y-5">
+      <.input
+        :if={!@workflow}
+        type="select"
+        name="workflow[document_type]"
+        id="workflow-document-type"
+        value={@fields["document_type"]}
+        label="Approves"
+        options={Enum.map(@document_types, &{&1.label, &1.key})}
+      />
       <div class="grid gap-4 sm:grid-cols-[1fr_12rem]">
         <.input
           name="workflow[name]"
@@ -206,7 +226,7 @@
         </button>
         <p :if={@groups == []} class="mt-2 text-xs text-muted">
           Tip: create
-          <.link navigate={~p"/expenses/groups"} class="underline">approval groups</.link>
+          <.link navigate={~p"/approvals/groups"} class="underline">approval groups</.link>
           to let any member of a team approve a step.
         </p>
       </div>
