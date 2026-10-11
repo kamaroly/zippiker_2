@@ -26,6 +26,7 @@ defmodule ZippikerWeb.Router do
 
     get "/invitations/:token", WorkspaceController, :invitation
     post "/workspaces/:id/switch", WorkspaceController, :switch
+    get "/hr/leave/:id/attachment", LeaveAttachmentController, :show
 
     post "/workspaces/:organization_id/impersonate/:user_id",
          WorkspaceController,
@@ -180,6 +181,7 @@ defmodule ZippikerWeb.Router do
       live "/hr/employees/:id", EmployeeLive.Show, :show
       live "/hr/employees/:id/edit", EmployeeLive.Form, :edit
       live "/hr/employees/:id/terminate", EmployeeLive.Show, :terminate
+      live "/hr/employees/:id/adjust-leave", EmployeeLive.Show, :adjust_leave
       live "/hr/leave", LeaveLive.Index, :index
       live "/hr/leave/new", LeaveLive.Index, :new
       live "/hr/org-chart", HRLive.OrgChart, :index
@@ -189,8 +191,12 @@ defmodule ZippikerWeb.Router do
       live "/hr/leave-policies", HRLive.LeavePolicies, :index
       live "/hr/leave-policies/new", HRLive.LeavePolicies, :new
       live "/hr/leave-policies/:id/edit", HRLive.LeavePolicies, :edit
-      live "/hr/leave-policies/:id/rules", HRLive.LeavePolicies, :rules
       live "/hr/leave-policies/:id/assign", HRLive.LeavePolicies, :assign
+      live "/hr/leave-claims", LeaveLive.Claims, :index
+      live "/hr/leave-claims/new", LeaveLive.Claims, :new
+      live "/hr/holidays", HRLive.Holidays, :index
+      live "/hr/holidays/new", HRLive.Holidays, :new
+      live "/hr/holidays/:id/edit", HRLive.Holidays, :edit
       live "/hr/leave-types", HRLive.LeaveTypes, :index
       live "/hr/leave-types/new", HRLive.LeaveTypes, :new
       live "/hr/leave-types/:id/edit", HRLive.LeaveTypes, :edit

@@ -83,6 +83,23 @@ config :zippiker,
 
 config :ex_money, auto_start_exchange_rate_service: false
 
+# Background jobs. Cron: leave accruals daily, overdue leave reviews hourly.
+config :zippiker, Oban,
+  engine: Oban.Engines.Basic,
+  repo: Zippiker.Repo,
+  queues: [default: 10, hr: 5],
+  plugins: [
+    {Oban.Plugins.Pruner, max_age: 7 * 24 * 60 * 60},
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"15 0 * * *", Zippiker.HR.Workers.RunAccruals},
+       {"5 * * * *", Zippiker.HR.Workers.ReviewOverdueLeave}
+     ]}
+  ]
+
+# Where uploaded files (e.g. leave attachments) are stored.
+config :zippiker, :uploads_dir, "priv/uploads"
+
 # Configure the endpoint
 config :zippiker, ZippikerWeb.Endpoint,
   url: [host: "localhost"],

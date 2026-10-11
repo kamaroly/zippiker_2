@@ -7,11 +7,11 @@
   <.header>
     Leave policies
     <:subtitle>
-      Who gets which leave, and how much. Everyone not assigned follows the default policy.
+      How each leave type is granted and requested. People without a policy of their own follow the type's default.
     </:subtitle>
     <:actions>
-      <.button navigate={~p"/hr/leave-types"} id="manage-leave-types">
-        <.icon name="hero-tag-micro" /> Leave types
+      <.button :if={admin?(assigns)} phx-click="run_accruals" id="run-accruals">
+        <.icon name="hero-arrow-path-micro" /> Run accruals now
       </.button>
       <.button
         :if={admin?(assigns)}
@@ -24,166 +24,262 @@
     </:actions>
   </.header>
 
-  <div
-    :if={@leave_types == []}
-    class="mb-4 rounded-2xl border border-warning/30 bg-warning-soft p-4 text-sm text-ink-soft"
-  >
-    Start by adding
-    <.link navigate={~p"/hr/leave-types"} class="font-medium underline">leave types</.link>
-    (Annual, Sick…), then decide how many days each policy gives.
-  </div>
+  <.card :if={@leave_types == []}>
+    <.empty_state icon="hero-calendar-days" title="Add leave types first">
+      Policies are set per leave type (Annual, Sick…).
+      <:action>
+        <.button navigate={~p"/hr/leave-types/new"} variant="primary">Add a leave type</.button>
+      </:action>
+    </.empty_state>
+  </.card>
 
-  <div id="leave-policies" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-    <section
-      :for={policy <- @policies}
-      id={"policy-#{policy.id}"}
-      class="flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-card"
-    >
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h2 class="flex items-center gap-2 font-semibold text-ink">
-            {policy.name}
-            <.badge :if={policy.default?} color={:orange}>Default</.badge>
-          </h2>
-          <p :if={policy.description} class="mt-0.5 text-xs text-muted">{policy.description}</p>
-        </div>
-        <span class="text-xs text-muted">{Format.count(policy.employees_count, "person")}</span>
-      </div>
-
-      <ul class="mt-4 flex-1 space-y-2">
-        <li :for={rule <- policy.rules} class="flex items-center justify-between gap-3 text-sm">
-          <.leave_type_badge type={rule.leave_type} />
-          <span class="tabular text-ink">
-            {if rule.days_per_year, do: "#{days(rule.days_per_year)} days", else: "No limit"}
-            <span :if={Decimal.gt?(rule.carry_over_days, 0)} class="text-xs text-muted">
-              · carry {days(rule.carry_over_days)}
-            </span>
-          </span>
-        </li>
-        <li :if={policy.rules == []} class="text-sm text-muted">No leave types yet.</li>
-      </ul>
-
-      <div
-        :if={admin?(assigns)}
-        class="mt-5 flex flex-wrap gap-2 border-t border-line pt-4 text-xs"
-      >
-        <.button
-          patch={~p"/hr/leave-policies/#{policy}/rules"}
-          size="sm"
-          id={"rules-#{policy.id}"}
-        >
-          Entitlements
-        </.button>
-        <.button
-          patch={~p"/hr/leave-policies/#{policy}/assign"}
-          size="sm"
-          id={"assign-#{policy.id}"}
-        >
-          Assign people
-        </.button>
+  <div id="leave-policies" class="space-y-6">
+    <section :for={type <- @leave_types} id={"policies-#{type.id}"}>
+      <div class="mb-2 flex items-center justify-between">
+        <.leave_type_badge type={type} />
         <.link
-          patch={~p"/hr/leave-policies/#{policy}/edit"}
-          class="self-center px-2 text-muted hover:text-ink"
+          :if={admin?(assigns)}
+          patch={~p"/hr/leave-policies/new?leave_type_id=#{type.id}"}
+          class="text-xs text-muted hover:text-ink"
         >
-          Rename
+          + Policy for {type.name}
         </.link>
-        <button
-          phx-click="delete"
-          phx-value-id={policy.id}
-          data-confirm="Delete this policy? Its people move to the default policy."
-          class="self-center px-2 text-danger hover:underline"
+      </div>
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <.card
+          :for={policy <- policies_for(@policies, type)}
+          id={"policy-#{policy.id}"}
+          class={!policy.active? && "opacity-60"}
         >
-          Delete
-        </button>
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
+                {policy.name}
+                <.badge :if={policy.default?} color={:orange}>Default</.badge>
+                <.badge :if={!policy.active?}>Inactive</.badge>
+              </h3>
+              <p class="mt-0.5 text-sm text-ink-soft">{grant_summary(policy)}</p>
+              <p class="text-xs text-muted">
+                Since {Format.date(policy.effective_date)} · {if policy.default?,
+                  do: "everyone else",
+                  else: Format.count(policy.employees_count, "person")}
+              </p>
+            </div>
+          </div>
+          <div :if={rule_chips(policy) != []} class="mt-3 flex flex-wrap gap-1.5">
+            <.badge :for={chip <- rule_chips(policy)}>{chip}</.badge>
+          </div>
+          <p :if={policy.description} class="mt-3 text-xs text-muted">{policy.description}</p>
+          <div :if={admin?(assigns)} class="mt-4 flex gap-4 border-t border-line pt-3 text-sm">
+            <.link
+              patch={~p"/hr/leave-policies/#{policy}/edit"}
+              class="text-ink-soft hover:text-ink"
+              id={"edit-policy-#{policy.id}"}
+            >
+              Edit
+            </.link>
+            <.link
+              patch={~p"/hr/leave-policies/#{policy}/assign"}
+              class="text-ink-soft hover:text-ink"
+              id={"assign-policy-#{policy.id}"}
+            >
+              People
+            </.link>
+            <.link
+              phx-click="delete"
+              phx-value-id={policy.id}
+              data-confirm={"Delete #{policy.name}? Its people fall back to the default policy."}
+              class="ml-auto text-danger hover:opacity-80"
+            >
+              Delete
+            </.link>
+          </div>
+        </.card>
+        <p
+          :if={policies_for(@policies, type) == []}
+          class="rounded-2xl border border-dashed border-line px-4 py-6 text-sm text-muted"
+        >
+          No policy: {type.name} uses its own allowance ({if type.allowance_days,
+            do: "#{days(type.allowance_days)} days / year",
+            else: "no limit"}).
+        </p>
       </div>
     </section>
   </div>
-
-  <.empty_state :if={@policies == []} icon="hero-scale" title="No leave policies yet">
-    Without a policy, each leave type's default days per year apply to everyone. Create policies
-    when different people get different entitlements (e.g. Standard vs Senior).
-  </.empty_state>
 
   <.modal
     :if={@editing == :details}
     id="policy-modal"
     show
-    title={if(@policy, do: "Edit #{@policy.name}", else: "New leave policy")}
+    size="lg"
+    title="Define a leave policy and its rules."
     on_cancel={JS.patch(~p"/hr/leave-policies")}
   >
-    <.form for={@form} id="policy-form" phx-change="validate" phx-submit="save" class="space-y-4">
-      <.input field={@form[:name]} label="Name" placeholder="Standard" phx-mounted={JS.focus()} />
+    <.form
+      for={@form}
+      id="policy-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="space-y-5"
+    >
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:name]}
+          label="Policy name"
+          placeholder="Sick Leave"
+          phx-mounted={JS.focus()}
+        />
+        <%= if @policy do %>
+          <div>
+            <p class="mb-1 text-sm font-medium text-ink">Leave type</p>
+            <div class="py-2"><.leave_type_badge type={@policy.leave_type} /></div>
+          </div>
+        <% else %>
+          <.input
+            field={@form[:leave_type_id]}
+            type="select"
+            label="Leave type"
+            options={Enum.map(@leave_types, &{&1.name, &1.id})}
+          />
+        <% end %>
+        <.input field={@form[:effective_date]} type="date" label="Effective date" />
+        <.input
+          field={@form[:category]}
+          type="select"
+          label="Leave category"
+          options={[
+            {"Fixed yearly allowance", "fixed"},
+            {"Accrual (earned over time)", "accrual"},
+            {"Manual (admins add days)", "manual"},
+            {"Unlimited", "unlimited"}
+          ]}
+        />
+      </div>
+
+      <div
+        :if={to_string(@form[:category].value) in ["fixed", ""]}
+        class="grid gap-4 rounded-xl bg-canvas/60 p-4 sm:grid-cols-2"
+      >
+        <.input
+          field={@form[:days_per_year]}
+          type="number"
+          step="0.5"
+          min="0"
+          label="Days per year"
+          placeholder="No limit"
+        />
+        <.input
+          field={@form[:carry_over_days]}
+          type="number"
+          step="0.5"
+          min="0"
+          label="Carry over up to (days)"
+        />
+      </div>
+
+      <div
+        :if={to_string(@form[:category].value) == "accrual"}
+        class="grid gap-4 rounded-xl bg-canvas/60 p-4 sm:grid-cols-3"
+      >
+        <.input
+          field={@form[:accrual_days]}
+          type="number"
+          step="0.01"
+          min="0"
+          label="Days earned"
+          placeholder="1.67"
+        />
+        <.input
+          field={@form[:accrual_frequency]}
+          type="select"
+          label="Every"
+          options={[
+            {"Week", "weekly"},
+            {"Month", "monthly"},
+            {"Quarter", "quarterly"},
+            {"Year", "yearly"}
+          ]}
+        />
+        <.input
+          field={@form[:accrual_cap]}
+          type="number"
+          step="0.5"
+          min="0"
+          label="Maximum balance"
+          placeholder="No cap"
+        />
+        <p class="text-xs text-muted sm:col-span-3">
+          Days are credited automatically every night on the first day of each period, from the
+          effective date (or the person's hire date if later).
+        </p>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:review_threshold_days]}
+          type="number"
+          min="1"
+          label="Request review overdue threshold (days) ⓘ"
+          title="How long a request can wait for the manager before the action on the right applies."
+          placeholder="Never"
+        />
+        <.input
+          field={@form[:overdue_action]}
+          type="select"
+          label="What to do if review threshold elapses ⓘ"
+          title="Checked every hour. The request is decided automatically and marked as such."
+          options={[
+            {"Nothing (keep waiting)", "none"},
+            {"Approve", "approve"},
+            {"Reject", "reject"}
+          ]}
+        />
+      </div>
+
+      <div class="grid gap-2 sm:grid-cols-2">
+        <.input
+          field={@form[:requires_attachment?]}
+          type="checkbox"
+          label="Requires file upload?"
+        />
+        <.input
+          field={@form[:count_weekends_and_holidays?]}
+          type="checkbox"
+          label="Count weekends and holidays"
+        />
+        <.input
+          field={@form[:allow_backdated?]}
+          type="checkbox"
+          label="Allow backdated leave requests"
+        />
+        <.input
+          field={@form[:claimable?]}
+          type="checkbox"
+          label="Allow people to claim this leave (e.g. overtime)?"
+        />
+        <.input
+          field={@form[:default?]}
+          type="checkbox"
+          label="Default for this leave type (covers everyone else)"
+        />
+        <.input :if={@policy} field={@form[:active?]} type="checkbox" label="Active" />
+      </div>
+
       <.input
         field={@form[:description]}
+        type="textarea"
         label="Description"
-        placeholder="For all full-time staff"
+        rows="2"
+        placeholder="Taken when you are unwell and need to recover."
       />
-      <.input field={@form[:default?]} type="checkbox" label="Default for everyone not assigned" />
-      <div class="flex justify-end">
-        <.button type="submit" variant="primary" phx-disable-with="Saving…">
-          {if @policy, do: "Save", else: "Next: entitlements"}
+
+      <div class="flex justify-end gap-2">
+        <.button patch={~p"/hr/leave-policies"}>Close</.button>
+        <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-policy">
+          Save policy
         </.button>
       </div>
     </.form>
-  </.modal>
-
-  <.modal
-    :if={@editing == :rules}
-    id="rules-modal"
-    show
-    size="lg"
-    title={"#{@policy.name}: entitlements"}
-    on_cancel={JS.patch(~p"/hr/leave-policies")}
-  >
-    <form id="rules-form" phx-submit="save_rules" class="space-y-4">
-      <p class="text-sm text-muted">
-        Tick the leave types this policy gives. Days are working days per calendar year; leave
-        empty for no limit. Carry-over moves up to that many unused days into next year.
-      </p>
-      <div class="divide-y divide-line rounded-xl border border-line">
-        <div
-          :for={{type, index} <- Enum.with_index(@leave_types)}
-          class="grid items-center gap-3 px-4 py-3 sm:grid-cols-[1fr_120px_120px]"
-        >
-          <label class="flex items-center gap-3">
-            <input type="hidden" name={"rules[#{index}][included]"} value="false" />
-            <input
-              type="checkbox"
-              name={"rules[#{index}][included]"}
-              value="true"
-              checked={rule(@policy, type) != nil}
-              class="size-4 rounded border-line-strong text-brand focus:ring-brand/30"
-              id={"include-#{type.id}"}
-            />
-            <input type="hidden" name={"rules[#{index}][leave_type_id]"} value={type.id} />
-            <.leave_type_badge type={type} />
-          </label>
-          <.input
-            type="number"
-            step="0.5"
-            min="0"
-            name={"rules[#{index}][days_per_year]"}
-            id={"days-#{type.id}"}
-            value={
-              days((rule(@policy, type) || %{days_per_year: type.allowance_days}).days_per_year)
-            }
-            placeholder="No limit"
-          />
-          <.input
-            type="number"
-            step="0.5"
-            min="0"
-            name={"rules[#{index}][carry_over_days]"}
-            id={"carry-#{type.id}"}
-            value={days(rule(@policy, type) && rule(@policy, type).carry_over_days)}
-            placeholder="Carry 0"
-          />
-        </div>
-      </div>
-      <div class="flex justify-end">
-        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save entitlements</.button>
-      </div>
-    </form>
   </.modal>
 
   <.modal
@@ -191,20 +287,22 @@
     id="assign-modal"
     show
     size="lg"
-    title={"Assign people to #{@policy.name}"}
+    title={"People on #{@policy.name}"}
     on_cancel={JS.patch(~p"/hr/leave-policies")}
   >
     <form id="assign-form" phx-submit="save_assign" class="space-y-4">
+      <p class="text-sm text-muted">
+        Ticked people follow this policy for {@policy.leave_type.name}, replacing any other {@policy.leave_type.name} policy they were on. Unticked people go back to the default.
+      </p>
       <.input
         type="select"
         name="department_id"
         id="assign-department"
-        label="Everyone in a department"
+        label="Add everyone in a department"
         prompt="—"
         options={Enum.map(@departments, &{&1.name, &1.id})}
         value=""
       />
-      <p class="text-sm font-medium text-ink">…and/or these people</p>
       <input type="hidden" name="employee_ids[]" value="" />
       <div class="max-h-80 divide-y divide-line overflow-y-auto rounded-xl border border-line">
         <label
@@ -215,18 +313,18 @@
             type="checkbox"
             name="employee_ids[]"
             value={employee.id}
-            checked={employee.leave_policy_id == @policy.id}
+            checked={match?(%{id: id} when id == @policy.id, @assignments[employee.id])}
             class="size-4 rounded border-line-strong text-brand focus:ring-brand/30"
             id={"assign-#{employee.id}"}
           />
           <span class="min-w-0 flex-1 truncate text-sm text-ink">{employee.name}</span>
           <span class="text-xs text-muted">
-            {(employee.leave_policy && employee.leave_policy.name) || "Default"}
+            {(@assignments[employee.id] && @assignments[employee.id].name) || "Default"}
           </span>
         </label>
       </div>
       <div class="flex justify-end">
-        <.button type="submit" variant="primary" phx-disable-with="Saving…">Assign</.button>
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
       </div>
     </form>
   </.modal>

@@ -626,33 +626,79 @@ end
 # --- Leave policies and a request for quotation (added later). Once each. ---
 if HR.list_leave_policies!(opts) == [] and HR.list_leave_types!(opts) != [] do
   types = Map.new(HR.list_leave_types!(opts), &{&1.name, &1})
+  start_of_year = Date.new!(Date.utc_today().year, 1, 1)
 
-  standard =
-    HR.create_leave_policy!(
-      %{name: "Standard", description: "All staff", default?: true},
-      opts
-    )
-
-  HR.set_leave_policy_rules!(
-    standard,
-    [
-      %{leave_type_id: types["Annual leave"].id, days_per_year: "20", carry_over_days: "5"},
-      %{leave_type_id: types["Sick leave"].id, days_per_year: "10"},
-      %{leave_type_id: types["Unpaid leave"].id, days_per_year: ""}
-    ],
+  HR.create_leave_policy!(
+    %{
+      name: "Annual leave",
+      description: "Earned every month; up to 5 unused days carry into next year.",
+      leave_type_id: types["Annual leave"].id,
+      default?: true,
+      category: :accrual,
+      accrual_days: "1.67",
+      accrual_frequency: :monthly,
+      accrual_cap: "30",
+      effective_date: start_of_year,
+      review_threshold_days: 7,
+      overdue_action: :none,
+      allow_backdated?: false
+    },
     opts
   )
 
   senior =
-    HR.create_leave_policy!(%{name: "Senior", description: "Heads of department"}, opts)
+    HR.create_leave_policy!(
+      %{
+        name: "Annual leave · Senior",
+        description: "Heads of department.",
+        leave_type_id: types["Annual leave"].id,
+        category: :fixed,
+        days_per_year: "25",
+        carry_over_days: "10",
+        effective_date: start_of_year
+      },
+      opts
+    )
 
-  HR.set_leave_policy_rules!(
-    senior,
-    [
-      %{leave_type_id: types["Annual leave"].id, days_per_year: "25", carry_over_days: "10"},
-      %{leave_type_id: types["Sick leave"].id, days_per_year: "15"},
-      %{leave_type_id: types["Unpaid leave"].id, days_per_year: ""}
-    ],
+  HR.create_leave_policy!(
+    %{
+      name: "Sick leave",
+      description: "Taken when you are unwell and need to recover.",
+      leave_type_id: types["Sick leave"].id,
+      default?: true,
+      category: :fixed,
+      days_per_year: "10",
+      effective_date: start_of_year,
+      review_threshold_days: 30,
+      overdue_action: :approve,
+      requires_attachment?: true
+    },
+    opts
+  )
+
+  HR.create_leave_policy!(
+    %{
+      name: "Unpaid leave",
+      leave_type_id: types["Unpaid leave"].id,
+      default?: true,
+      category: :unlimited,
+      effective_date: start_of_year
+    },
+    opts
+  )
+
+  toil = HR.create_leave_type!(%{name: "Time off in lieu", color: :teal}, opts)
+
+  HR.create_leave_policy!(
+    %{
+      name: "Time off in lieu",
+      description: "Claim a day off after working a weekend or public holiday.",
+      leave_type_id: toil.id,
+      default?: true,
+      category: :manual,
+      claimable?: true,
+      effective_date: start_of_year
+    },
     opts
   )
 
@@ -662,7 +708,25 @@ if HR.list_leave_policies!(opts) == [] and HR.list_leave_types!(opts) != [] do
         do: employee.id
 
   HR.assign_leave_policy!(senior, %{employee_ids: heads}, opts)
-  IO.puts("Seeded leave policies.")
+
+  HR.run_leave_accruals!(%{}, opts)
+  IO.puts("Seeded leave policies and accruals.")
+end
+
+if HR.list_holidays!(opts) == [] do
+  for {name, date} <- [
+        {"New Year's Day", ~D[2026-01-01]},
+        {"Heroes' Day", ~D[2026-02-01]},
+        {"Genocide Memorial Day", ~D[2026-04-07]},
+        {"Labour Day", ~D[2026-05-01]},
+        {"Independence Day", ~D[2026-07-01]},
+        {"Liberation Day", ~D[2026-07-04]},
+        {"Christmas Day", ~D[2026-12-25]}
+      ] do
+    HR.create_holiday!(%{name: name, date: date, recurring?: true}, opts)
+  end
+
+  IO.puts("Seeded public holidays.")
 end
 
 if Purchasing.list_rfqs!(opts) == [] and

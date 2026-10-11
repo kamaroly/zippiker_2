@@ -45,12 +45,38 @@ defmodule Zippiker.HR do
       define :get_leave_policy, action: :read, get_by: [:id]
       define :create_leave_policy, action: :create
       define :update_leave_policy, action: :update
-      define :set_leave_policy_rules, action: :set_rules, args: [:rules]
       define :assign_leave_policy, action: :assign
       define :delete_leave_policy, action: :destroy
     end
 
-    resource Zippiker.HR.LeavePolicyRule
+    resource Zippiker.HR.LeavePolicyAssignment
+
+    resource Zippiker.HR.LeaveBalanceEntry do
+      define :leave_balance_entries, action: :for_employee, args: [:employee_id]
+      define :adjust_leave_balance, action: :adjust
+    end
+
+    resource Zippiker.HR.LeaveClaim do
+      define :list_leave_claims, action: :search
+      define :get_leave_claim, action: :read, get_by: [:id]
+      define :claim_leave, action: :create
+      define :approve_leave_claim, action: :approve
+      define :reject_leave_claim, action: :reject
+      define :cancel_leave_claim, action: :cancel
+    end
+
+    resource Zippiker.HR.Holiday do
+      define :list_holidays, action: :list
+      define :get_holiday, action: :read, get_by: [:id]
+      define :create_holiday, action: :create
+      define :update_holiday, action: :update
+      define :delete_holiday, action: :destroy
+    end
+
+    resource Zippiker.HR.Automation do
+      define :run_leave_accruals, action: :run_accruals
+      define :review_overdue_leave, action: :review_overdue
+    end
 
     resource Zippiker.HR.LeaveRequest do
       define :list_leave_requests, action: :search

@@ -30,13 +30,23 @@ defmodule Zippiker.HR.LeaveRequest.Actions do
 
     create :create do
       primary? true
-      accept [:employee_id, :leave_type_id, :start_date, :end_date, :reason]
+
+      accept [
+        :employee_id,
+        :leave_type_id,
+        :start_date,
+        :end_date,
+        :reason,
+        :attachment_name,
+        :attachment_path
+      ]
 
       change Changes.DefaultEmployee
       change Changes.CountDays
       validate Validations.DatesInOrder
       validate Validations.EmployeeIsActive
       validate Validations.NoOverlap
+      validate Validations.PolicyRules
       validate Validations.WithinAllowance
       change Changes.AutoApprove
     end
@@ -58,6 +68,14 @@ defmodule Zippiker.HR.LeaveRequest.Actions do
       change set_attribute(:status, :rejected)
       change set_attribute(:decided_at, &DateTime.utc_now/0)
       change relate_actor(:decided_by)
+    end
+
+    update :auto_decide do
+      description "Applies the policy's overdue action to a request nobody reviewed in time."
+      require_atomic? false
+      argument :decision, :atom, allow_nil?: false, constraints: [one_of: [:approve, :reject]]
+      validate {InStatus, statuses: [:pending]}
+      change Changes.AutoDecide
     end
 
     update :cancel do

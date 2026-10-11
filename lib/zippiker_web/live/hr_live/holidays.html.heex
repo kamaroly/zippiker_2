@@ -1,0 +1,78 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:holidays}
+>
+  <.header>
+    Holidays
+    <:subtitle>
+      Public holidays aren't counted as leave days, unless a leave policy counts weekends and holidays.
+    </:subtitle>
+    <:actions>
+      <.button
+        :if={admin?(assigns)}
+        patch={~p"/hr/holidays/new"}
+        variant="primary"
+        id="new-holiday"
+      >
+        <.icon name="hero-plus-micro" /> Holiday
+      </.button>
+    </:actions>
+  </.header>
+
+  <.table id="holidays" rows={@streams.holidays}>
+    <:col :let={{_id, holiday}} label="Holiday">
+      <span class="font-medium text-ink">{holiday.name}</span>
+    </:col>
+    <:col :let={{_id, holiday}} label="Date">
+      {Format.date(next_date(holiday))}
+      <span class="text-xs text-muted">{Calendar.strftime(next_date(holiday), "%A")}</span>
+    </:col>
+    <:col :let={{_id, holiday}} label="Repeats">
+      {if holiday.recurring?, do: "Every year", else: "Once"}
+    </:col>
+    <:action :let={{_id, holiday}}>
+      <span :if={admin?(assigns)} class="flex justify-end gap-3">
+        <.link patch={~p"/hr/holidays/#{holiday}/edit"} class="text-ink-soft hover:text-ink">
+          Edit
+        </.link>
+        <.link
+          phx-click="delete"
+          phx-value-id={holiday.id}
+          data-confirm={"Remove #{holiday.name}?"}
+          class="text-danger hover:opacity-80"
+        >
+          Delete
+        </.link>
+      </span>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-sun" title="No holidays yet">
+        Add New Year's Day, Independence Day… so they aren't taken from people's leave.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="holiday-modal"
+    show
+    title={if(@holiday, do: "Edit #{@holiday.name}", else: "New holiday")}
+    on_cancel={JS.patch(~p"/hr/holidays")}
+  >
+    <.form for={@form} id="holiday-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <.input
+        field={@form[:name]}
+        label="Name"
+        placeholder="New Year's Day"
+        phx-mounted={JS.focus()}
+      />
+      <.input field={@form[:date]} type="date" label="Date" />
+      <.input field={@form[:recurring?]} type="checkbox" label="Same day every year" />
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

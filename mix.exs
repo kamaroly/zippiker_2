@@ -45,6 +45,7 @@ defmodule Zippiker.MixProject do
       {:bcrypt_elixir, "~> 3.0"},
       {:picosat_elixir, "~> 0.2"},
       {:sourceror, "~> 1.8", only: [:dev, :test]},
+      {:oban, "~> 2.19"},
       {:ash_admin, "~> 1.0"},
       {:ash_money, "~> 0.2"},
       {:ash_archival, "~> 2.0"},

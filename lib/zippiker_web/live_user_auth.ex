@@ -86,6 +86,17 @@ defmodule ZippikerWeb.LiveUserAuth do
     end
   end
 
+  @doc """
+  The workspace a signed-in user is working in (the session's choice, else
+  their first), with their role: `{organization, role}` or nil. For
+  controllers that act on workspace data.
+  """
+  def current_workspace(user, chosen) do
+    user
+    |> Ash.load!([memberships: :organization], authorize?: false)
+    |> pick_workspace(chosen)
+  end
+
   defp pick_workspace(user, chosen) do
     case Enum.find(user.memberships, &(&1.organization_id == chosen)) do
       %{organization: organization, role: role} ->

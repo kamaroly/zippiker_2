@@ -103,7 +103,9 @@ defmodule ZippikerWeb.Modules do
       ZippikerWeb.HRLive.OrgChart,
       ZippikerWeb.HRLive.Departments,
       ZippikerWeb.HRLive.LeaveTypes,
-      ZippikerWeb.HRLive.LeavePolicies
+      ZippikerWeb.HRLive.LeavePolicies,
+      ZippikerWeb.HRLive.Holidays,
+      ZippikerWeb.LeaveLive.Claims
     ],
     expenses: [
       ZippikerWeb.ExpenseLive.Index,

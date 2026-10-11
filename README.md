@@ -106,10 +106,22 @@ RFQ (`Purchasing.Rfq`) → purchase order mirrors quote → sales order. Every d
 
 Employees are `Parties` people (created from the hire form) with an `EMP-0001` number (non-yearly
 sequence). `user_id` links a login: the actor's record (`HR.my_employee_record`) is used for their own
-leave; their manager's user approves (`LeaveRequest` policies; never yourself). Leave counts Mon–Fri
-days and is checked against the employee's entitlement (`HR.Entitlement`): their `LeavePolicy` (or the
-default policy) lists the leave types, days per year and carry-over; with no policies, each
-`LeaveType.allowance_days` applies. Salary and personal fields
+leave; their manager's user approves (`LeaveRequest` policies; never yourself).
+
+Leave policies are per leave type (`LeavePolicy`): category `:fixed` (days per year + carry-over),
+`:accrual` (credited per week/month/quarter/year up to a cap), `:manual` (adjustments and claims
+only) or `:unlimited`, plus request rules (attachment required, count weekends and holidays,
+backdating, claimable, review threshold with an automatic approve/reject). Employees get at most one
+policy per type (`LeavePolicyAssignment`); otherwise the type's default policy applies, else the
+type's `allowance_days`. `HR.Entitlement` computes balances from the policy, `LeaveBalanceEntry`
+rows (accruals, admin adjustments, approved `LeaveClaim`s) and pending/approved requests. Days are
+Mon–Fri minus `Holiday`s (`HR.WorkingDays`) unless the policy counts every day.
+
+Background jobs use Oban (`config :zippiker, Oban`): `HR.Workers.RunAccruals` daily and
+`HR.Workers.ReviewOverdueLeave` hourly, for every workspace with HR on. Both call generic actions
+on `HR.Automation` (`run_leave_accruals`, `review_overdue_leave`), which are idempotent. Leave
+attachments are stored under `:uploads_dir` (`ZippikerWeb.Uploads`) and served by
+`LeaveAttachmentController` after an access check. Salary and personal fields
 are protected by field policies (admins and the employee only).
 
 ### Approvals and expenses

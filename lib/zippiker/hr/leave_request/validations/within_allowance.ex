@@ -1,8 +1,7 @@
 defmodule Zippiker.HR.LeaveRequest.Validations.WithinAllowance do
   @moduledoc """
-  The leave type must be part of the employee's leave policy, and days
-  already approved or pending this year plus this request can't exceed their
-  entitlement (see `Zippiker.HR.Entitlement`).
+  The request can't take more days than the employee has left of the leave
+  type (see `Zippiker.HR.Entitlement`); unlimited leave always passes.
   """
   use Ash.Resource.Validation
 
@@ -19,31 +18,25 @@ defmodule Zippiker.HR.LeaveRequest.Validations.WithinAllowance do
          true <- is_binary(type_id) and is_binary(employee_id),
          {:ok, type} <- Zippiker.HR.get_leave_type(type_id, opts),
          {:ok, employee} <- Ash.get(Zippiker.HR.Employee, employee_id, opts) do
-      entitlement = Entitlement.for(employee, type, start.year, changeset.tenant)
-      check(entitlement, type, employee, start.year, get.(:days), record.id, opts)
+      summary = Entitlement.summary(employee, type, start.year, opts, record.id)
+      check(summary, get.(:days) || Decimal.new(0))
     else
       _ -> :ok
     end
   end
 
-  defp check(%{available?: false, policy: policy}, type, _employee, _year, _days, _id, _opts),
-    do:
+  defp check(%{left: nil}, _days), do: :ok
+
+  defp check(%{left: left, leave_type: type, category: category}, days) do
+    if Decimal.gt?(days, left) do
+      when_text = if category == :fixed, do: " this year", else: ""
+
       {:error,
-       field: :leave_type_id, message: "#{type.name} isn't part of the #{policy.name} policy"}
-
-  defp check(%{allowance: nil}, _type, _employee, _year, _days, _id, _opts), do: :ok
-
-  defp check(entitlement, type, employee, year, days, id, opts) do
-    left =
-      entitlement.allowance
-      |> Decimal.add(entitlement.carried_over)
-      |> Decimal.sub(Entitlement.used(employee.id, type.id, year, opts, id))
-
-    if Decimal.gt?(days || Decimal.new(0), left),
-      do:
-        {:error,
-         field: :leave_type_id,
-         message: "only #{Decimal.normalize(left)} #{type.name} days left this year"},
-      else: :ok
+       field: :leave_type_id,
+       message:
+         "only #{Decimal.normalize(Decimal.max(left, 0))} #{type.name} days left#{when_text}"}
+    else
+      :ok
+    end
   end
 end

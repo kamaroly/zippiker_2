@@ -7,7 +7,7 @@ defmodule ZippikerWeb.LeaveLive.Index do
   use ZippikerWeb, :live_view
 
   alias Zippiker.HR
-  alias Zippiker.HR.WorkingDays
+  alias Zippiker.HR.{Entitlement, WorkingDays}
 
   @views ~w(mine approve all)
 
@@ -26,6 +26,11 @@ defmodule ZippikerWeb.LeaveLive.Index do
     {:ok,
      socket
      |> assign(page_title: "Leave", me: me)
+     |> allow_upload(:attachment,
+       accept: ~w(.pdf .jpg .jpeg .png .heic .doc .docx),
+       max_entries: 1,
+       max_file_size: 10_000_000
+     )
      |> assign(:leave_types, HR.list_leave_types!(%{active_only?: true}, opts))
      |> assign(
        :away,
@@ -82,7 +87,7 @@ defmodule ZippikerWeb.LeaveLive.Index do
     |> assign_form(form)
   end
 
-  defp apply_action(socket, :index, _params), do: assign(socket, form: nil)
+  defp apply_action(socket, :index, _params), do: assign(socket, form: nil, policy: nil)
 
   @impl true
   def handle_event("validate", %{"leave" => params}, socket) do
@@ -90,6 +95,21 @@ defmodule ZippikerWeb.LeaveLive.Index do
   end
 
   def handle_event("save", %{"leave" => params}, socket) do
+    organization_id = socket.assigns.current_organization.id
+
+    params =
+      case consume_uploaded_entries(socket, :attachment, fn %{path: path}, entry ->
+             {:ok,
+              {entry.client_name,
+               ZippikerWeb.Uploads.store(path, organization_id, "leave", entry.client_name)}}
+           end) do
+        [{name, path}] ->
+          Map.merge(params, %{"attachment_name" => name, "attachment_path" => path})
+
+        [] ->
+          params
+      end
+
     case AshPhoenix.Form.submit(socket.assigns.form, params: params) do
       {:ok, request} ->
         {:noreply,
@@ -107,6 +127,9 @@ defmodule ZippikerWeb.LeaveLive.Index do
         {:noreply, assign_form(socket, form)}
     end
   end
+
+  def handle_event("cancel_upload", %{"ref" => ref}, socket),
+    do: {:noreply, cancel_upload(socket, :attachment, ref)}
 
   def handle_event("decide", %{"id" => id, "decision" => decision}, socket) do
     opts = ash_opts(socket)
@@ -158,10 +181,22 @@ defmodule ZippikerWeb.LeaveLive.Index do
     form = to_form(form)
     params = AshPhoenix.Form.params(form)
 
+    opts = ash_opts(socket)
+
+    policy =
+      with id when is_binary(id) and id != "" <- params["employee_id"],
+           type_id when is_binary(type_id) and type_id != "" <- params["leave_type_id"] do
+        Entitlement.policy_for(id, type_id, Keyword.put(opts, :authorize?, false))
+      else
+        _ -> nil
+      end
+
     days =
       with {:ok, from} <- Date.from_iso8601(params["start_date"] || ""),
            {:ok, to} <- Date.from_iso8601(params["end_date"] || "") do
-        WorkingDays.count(from, to)
+        if policy && policy.count_weekends_and_holidays?,
+          do: WorkingDays.calendar_days(from, to),
+          else: WorkingDays.count(from, to, WorkingDays.holidays(from, to, opts))
       else
         _ -> nil
       end
@@ -176,7 +211,7 @@ defmodule ZippikerWeb.LeaveLive.Index do
         _ -> nil
       end
 
-    assign(socket, form: form, days: days, balance: balance)
+    assign(socket, form: form, days: days, balance: balance, policy: policy)
   end
 
   defp can_decide?(request, assigns) do
@@ -189,4 +224,9 @@ defmodule ZippikerWeb.LeaveLive.Index do
     request.status in [:pending, :approved] and
       (admin?(assigns) or request.employee.user_id == assigns.current_user.id)
   end
+
+  defp upload_error(:too_large), do: "That file is over 10 MB"
+  defp upload_error(:not_accepted), do: "Use a PDF, image or Word document"
+  defp upload_error(:too_many_files), do: "Attach one file"
+  defp upload_error(_error), do: "That file couldn't be uploaded"
 end

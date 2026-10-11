@@ -1,5 +1,5 @@
 defmodule Zippiker.HR.LeavePolicy.Changes.SingleDefault do
-  @moduledoc "Making a policy the default takes the flag away from the previous one."
+  @moduledoc "Making a policy the default for its leave type takes the flag from the previous one."
   use Ash.Resource.Change
 
   require Ash.Query
@@ -9,8 +9,10 @@ defmodule Zippiker.HR.LeavePolicy.Changes.SingleDefault do
     if Ash.Changeset.get_attribute(changeset, :default?) and
          Ash.Changeset.changing_attribute?(changeset, :default?) do
       Ash.Changeset.before_action(changeset, fn changeset ->
+        type_id = Ash.Changeset.get_attribute(changeset, :leave_type_id)
+
         Zippiker.HR.LeavePolicy
-        |> Ash.Query.filter(default? == true)
+        |> Ash.Query.filter(default? == true and leave_type_id == ^type_id)
         |> Ash.bulk_update!(:update, %{default?: false},
           tenant: changeset.tenant,
           authorize?: false,

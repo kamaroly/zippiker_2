@@ -136,29 +136,35 @@ defmodule ZippikerWeb.DocumentsLiveTest do
     ada = HR.hire_employee!(%{first_name: "Ada"}, opts)
 
     {:ok, view, _html} = live(conn, ~p"/hr/leave-policies/new")
-    view |> form("#policy-form", policy: %{name: "Senior"}) |> render_submit()
-    [policy] = HR.list_leave_policies!(opts)
-    assert_patch(view, ~p"/hr/leave-policies/#{policy}/rules")
 
     view
-    |> form("#rules-form",
-      rules: %{
-        "0" => %{
-          included: "true",
-          leave_type_id: annual.id,
-          days_per_year: "25",
-          carry_over_days: "5"
-        }
+    |> form("#policy-form",
+      policy: %{
+        name: "Senior annual",
+        leave_type_id: annual.id,
+        category: "fixed",
+        days_per_year: "25",
+        carry_over_days: "5",
+        review_threshold_days: "30",
+        overdue_action: "approve",
+        requires_attachment?: "true"
       }
     )
     |> render_submit()
 
-    assert [%{rules: [%{days_per_year: days}]}] = HR.list_leave_policies!(opts)
-    assert Decimal.eq?(days, 25)
+    [policy] = HR.list_leave_policies!(opts)
+    assert_patch(view, ~p"/hr/leave-policies/#{policy}/assign")
+    assert Decimal.eq?(policy.days_per_year, 25)
+    assert policy.overdue_action == :approve
+    assert policy.requires_attachment?
 
     {:ok, view, _html} = live(conn, ~p"/hr/leave-policies/#{policy}/assign")
     view |> form("#assign-form", %{"employee_ids" => [ada.id]}) |> render_submit()
-    assert HR.get_employee!(ada.id, opts).leave_policy_id == policy.id
+
+    assert [%{id: id}] =
+             HR.get_employee!(ada.id, opts ++ [load: [:leave_policies]]).leave_policies
+
+    assert id == policy.id
     assert has_element?(view, "#policy-#{policy.id}", "1 person")
   end
 

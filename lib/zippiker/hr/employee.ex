@@ -36,7 +36,6 @@ defmodule Zippiker.HR.Employee do
       reference :user, on_delete: :nilify
       reference :department, on_delete: :nilify
       reference :manager, on_delete: :nilify
-      reference :leave_policy, on_delete: :nilify
     end
 
     custom_indexes do

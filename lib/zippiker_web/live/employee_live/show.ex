@@ -12,7 +12,7 @@ defmodule ZippikerWeb.EmployeeLive.Show do
     :department,
     :user,
     :on_leave_today?,
-    :leave_policy,
+    :leave_policies,
     manager: [:name],
     direct_reports: [:name]
   ]
@@ -34,10 +34,33 @@ defmodule ZippikerWeb.EmployeeLive.Show do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    {:noreply, assign(socket, :terminating?, socket.assigns.live_action == :terminate)}
+    entries =
+      if socket.assigns.live_action == :adjust_leave,
+        do:
+          Enum.take(HR.leave_balance_entries!(socket.assigns.employee.id, ash_opts(socket)), 10),
+        else: []
+
+    {:noreply,
+     assign(socket, terminating?: socket.assigns.live_action == :terminate, entries: entries)}
   end
 
   @impl true
+  def handle_event("adjust_leave", %{"adjust" => params}, socket) do
+    employee = socket.assigns.employee
+
+    case HR.adjust_leave_balance(Map.put(params, "employee_id", employee.id), ash_opts(socket)) do
+      {:ok, _entry} ->
+        {:noreply,
+         socket
+         |> load(employee)
+         |> put_flash(:info, "Leave balance adjusted")
+         |> push_patch(to: ~p"/hr/employees/#{employee}")}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, error_message(error))}
+    end
+  end
+
   def handle_event("terminate", %{"termination" => params}, socket) do
     case HR.terminate_employee(socket.assigns.employee, params, ash_opts(socket)) do
       {:ok, employee} ->

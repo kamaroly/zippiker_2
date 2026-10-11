@@ -22,6 +22,11 @@ defmodule Zippiker.HR.LeaveRequest.Policies do
       authorize_if expr(employee.manager.user_id == ^actor(:id))
     end
 
+    # Run by the overdue-review job with authorization off.
+    policy action(:auto_decide) do
+      forbid_if always()
+    end
+
     policy action(:cancel) do
       authorize_if ActorIsAdmin
       authorize_if expr(not is_nil(employee.user_id) and employee.user_id == ^actor(:id))

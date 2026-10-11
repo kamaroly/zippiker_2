@@ -54,10 +54,12 @@ defmodule ZippikerWeb.Layouts do
      [
        {:employees, "Employees", "/hr/employees", :hr},
        {:leave, "Leave", "/hr/leave", :hr},
+       {:leave_claims, "Leave claims", "/hr/leave-claims", :hr},
        {:org_chart, "Org chart", "/hr/org-chart", :hr},
        {:departments, "Departments", "/hr/departments", :hr},
        {:leave_policies, "Leave policies", "/hr/leave-policies", :hr},
-       {:leave_types, "Leave types", "/hr/leave-types", :hr}
+       {:leave_types, "Leave types", "/hr/leave-types", :hr},
+       {:holidays, "Holidays", "/hr/holidays", :hr}
      ]},
     {:expenses, "Expenses", "hero-receipt-percent",
      [
@@ -118,20 +120,48 @@ defmodule ZippikerWeb.Layouts do
 
     ~H"""
     <div class="min-h-screen lg:pl-64">
-      <%!-- Mobile top bar --%>
-      <div class="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface/90 px-4 backdrop-blur lg:hidden">
+      <%!-- Top bar: menu (mobile), then help, platform admin and the user menu on the right --%>
+      <div
+        id="top-bar"
+        class="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-4 backdrop-blur sm:px-6"
+      >
         <button
           id="sidebar-open"
           type="button"
-          class="rounded-lg p-1.5 text-ink-soft hover:bg-canvas"
           phx-click={
             JS.remove_class("-translate-x-full", to: "#sidebar") |> JS.show(to: "#sidebar-backdrop")
           }
           aria-label="Open menu"
+          class="rounded-lg p-1.5 text-ink-soft hover:bg-canvas lg:hidden"
         >
           <.icon name="hero-bars-3" class="size-5" />
         </button>
-        <.brand />
+        <div class="lg:hidden"><.brand /></div>
+        <div class="ml-auto flex items-center gap-1">
+          <.link
+            navigate="/help"
+            id="top-help"
+            class={[
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition hover:bg-canvas hover:text-ink",
+              if(@active == :help, do: "text-ink", else: "text-ink-soft")
+            ]}
+            title="Help center"
+          >
+            <.icon name="hero-question-mark-circle" class="size-5" />
+            <span class="hidden sm:inline">Help</span>
+          </.link>
+          <.link
+            :if={@current_user.super_admin?}
+            navigate="/platform"
+            id="top-platform"
+            class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-ink-soft transition hover:bg-canvas hover:text-ink"
+            title="Platform admin"
+          >
+            <.icon name="hero-shield-check" class="size-5" />
+            <span class="hidden sm:inline">Platform admin</span>
+          </.link>
+          <.user_menu current_user={@current_user} />
+        </div>
       </div>
 
       <div
@@ -146,9 +176,9 @@ defmodule ZippikerWeb.Layouts do
         id="sidebar"
         class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-line bg-surface transition-transform duration-200 lg:translate-x-0"
       >
-        <div class="flex h-16 items-center px-5"><.brand /></div>
+        <div class="flex h-14 items-center border-b border-line px-5"><.brand /></div>
 
-        <details id="workspace-switcher" class="group relative mx-3 mb-3">
+        <details id="workspace-switcher" class="group relative mx-3 my-3">
           <summary class="flex cursor-pointer list-none items-center gap-2.5 rounded-xl border border-line px-3 py-2 transition hover:border-line-strong [&::-webkit-details-marker]:hidden">
             <.avatar name={@current_organization.name} size="sm" square />
             <div class="min-w-0 flex-1">
@@ -193,37 +223,6 @@ defmodule ZippikerWeb.Layouts do
             {section.label}
           </.nav_item>
         </nav>
-
-        <div class="border-t border-line p-3">
-          <div class="mb-2 space-y-0.5">
-            <.nav_item active={@active == :help} icon="hero-question-mark-circle" navigate="/help">
-              Help center
-            </.nav_item>
-            <.nav_item
-              :if={@current_user.super_admin?}
-              active={false}
-              icon="hero-shield-check"
-              navigate="/platform"
-            >
-              Platform admin
-            </.nav_item>
-          </div>
-          <div class="mb-3 px-2"><.theme_toggle /></div>
-          <div class="flex items-center gap-2.5 rounded-xl px-2 py-1.5">
-            <.avatar name={Format.user_name(@current_user)} size="sm" />
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-ink">{Format.user_name(@current_user)}</p>
-              <p class="truncate text-xs text-muted">{@current_user.email}</p>
-            </div>
-            <.link
-              href={~p"/sign-out"}
-              class="rounded-lg p-1.5 text-muted transition hover:bg-canvas hover:text-ink"
-              title="Sign out"
-            >
-              <.icon name="hero-arrow-right-start-on-rectangle" class="size-4" />
-            </.link>
-          </div>
-        </div>
       </aside>
 
       <.platform_banner
@@ -299,7 +298,7 @@ defmodule ZippikerWeb.Layouts do
     <div
       :if={@impersonator || @platform_access?}
       id="platform-banner"
-      class="sticky top-0 z-20 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-ink px-4 py-2 text-center text-xs text-canvas"
+      class="sticky top-14 z-20 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-ink px-4 py-2 text-center text-xs text-canvas"
     >
       <.icon name="hero-shield-exclamation-micro" class="size-4 text-brand" />
       <span :if={@impersonator}>
@@ -499,6 +498,40 @@ defmodule ZippikerWeb.Layouts do
         {gettext("Attempting to reconnect")}
       </.flash>
     </div>
+    """
+  end
+
+  @doc "The signed-in user's menu (top right): who you are, theme, sign out."
+  attr :current_user, :map, required: true
+
+  def user_menu(assigns) do
+    ~H"""
+    <details id="user-menu" class="group relative">
+      <summary class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-1.5 py-1 transition hover:bg-canvas [&::-webkit-details-marker]:hidden">
+        <.avatar name={Format.user_name(@current_user)} size="sm" />
+        <span class="hidden max-w-36 truncate text-sm font-medium text-ink md:inline">
+          {Format.user_name(@current_user)}
+        </span>
+        <.icon
+          name="hero-chevron-down-micro"
+          class="size-4 text-muted transition group-open:rotate-180"
+        />
+      </summary>
+      <div class="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-line bg-surface p-2 shadow-pop">
+        <div class="px-2 py-1.5">
+          <p class="truncate text-sm font-semibold text-ink">{Format.user_name(@current_user)}</p>
+          <p class="truncate text-xs text-muted">{@current_user.email}</p>
+        </div>
+        <div class="my-2 px-2"><.theme_toggle /></div>
+        <.link
+          href={~p"/sign-out"}
+          id="sign-out"
+          class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-soft hover:bg-canvas hover:text-ink"
+        >
+          <.icon name="hero-arrow-right-start-on-rectangle" class="size-4" /> Sign out
+        </.link>
+      </div>
+    </details>
     """
   end
 

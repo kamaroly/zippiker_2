@@ -1,9 +1,13 @@
 defmodule ZippikerWeb.HRLive.LeavePolicies do
   @moduledoc """
-  Leave policies: which leave types apply, days per year and carry-over, and
-  who's on each policy. The default policy covers everyone not assigned.
+  Leave policies, one per leave type: how days are granted (fixed yearly,
+  accrual, manual, unlimited), from when, and the request rules. Admins
+  assign people to them; each leave type's default policy covers everyone
+  else. Accruals run daily (Oban) and can be run on demand.
   """
   use ZippikerWeb, :live_view
+
+  require Ash.Query
 
   alias Zippiker.HR
 
@@ -17,10 +21,23 @@ defmodule ZippikerWeb.HRLive.LeavePolicies do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :new, _params) do
+  defp apply_action(socket, :new, params) do
+    type_id = params["leave_type_id"] || List.first(socket.assigns.leave_types, %{id: nil}).id
+
     form =
       HR.LeavePolicy
-      |> AshPhoenix.Form.for_create(:create, form_opts(socket))
+      |> AshPhoenix.Form.for_create(:create,
+        as: "policy",
+        actor: socket.assigns.current_user,
+        tenant: socket.assigns.current_organization,
+        params: %{
+          "leave_type_id" => type_id,
+          "effective_date" => Date.to_iso8601(Date.utc_today()),
+          "category" => "fixed",
+          "allow_backdated?" => "true",
+          "carry_over_days" => "0"
+        }
+      )
       |> to_form()
 
     assign(socket, form: form, policy: nil, editing: :details)
@@ -31,36 +48,35 @@ defmodule ZippikerWeb.HRLive.LeavePolicies do
 
     form =
       policy
-      |> AshPhoenix.Form.for_update(:update, form_opts(socket))
+      |> AshPhoenix.Form.for_update(:update,
+        as: "policy",
+        actor: socket.assigns.current_user,
+        tenant: socket.assigns.current_organization
+      )
       |> to_form()
 
     assign(socket, form: form, policy: policy, editing: :details)
   end
 
-  defp apply_action(socket, :rules, %{"id" => id}) do
-    assign(socket, form: nil, policy: find(socket, id), editing: :rules)
-  end
-
   defp apply_action(socket, :assign, %{"id" => id}) do
-    employees =
-      HR.list_employees!(%{status: :active}, ash_opts(socket) ++ [load: [:leave_policy]])
+    policy = find(socket, id)
+    opts = ash_opts(socket)
+
+    assignments =
+      HR.LeavePolicyAssignment
+      |> Ash.Query.filter(leave_type_id == ^policy.leave_type_id)
+      |> Ash.Query.load(:leave_policy)
+      |> Ash.read!(opts)
+      |> Map.new(&{&1.employee_id, &1.leave_policy})
 
     socket
-    |> assign(form: nil, policy: find(socket, id), editing: :assign)
-    |> assign(:employees, employees)
-    |> assign(:departments, HR.list_departments!(ash_opts(socket)))
+    |> assign(form: nil, policy: policy, editing: :assign, assignments: assignments)
+    |> assign(:employees, HR.list_employees!(%{status: :active}, opts))
+    |> assign(:departments, HR.list_departments!(opts))
   end
 
   defp apply_action(socket, :index, _params),
     do: assign(socket, form: nil, policy: nil, editing: nil)
-
-  defp form_opts(socket) do
-    [
-      as: "policy",
-      actor: socket.assigns.current_user,
-      tenant: socket.assigns.current_organization
-    ]
-  end
 
   defp find(socket, id), do: Enum.find(socket.assigns.policies, &(&1.id == id))
 
@@ -74,32 +90,18 @@ defmodule ZippikerWeb.HRLive.LeavePolicies do
       {:ok, policy} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Policy saved")
+         |> put_flash(:info, "#{policy.name} saved")
          |> load()
          |> push_patch(
            to:
-             if(socket.assigns.policy,
+             if(socket.assigns.policy || policy.default?,
                do: ~p"/hr/leave-policies",
-               else: ~p"/hr/leave-policies/#{policy}/rules"
+               else: ~p"/hr/leave-policies/#{policy}/assign"
              )
          )}
 
       {:error, form} ->
         {:noreply, assign(socket, :form, form)}
-    end
-  end
-
-  def handle_event("save_rules", %{"rules" => rules}, socket) do
-    case HR.set_leave_policy_rules(socket.assigns.policy, Map.values(rules), ash_opts(socket)) do
-      {:ok, _policy} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Entitlements saved")
-         |> load()
-         |> push_patch(to: ~p"/hr/leave-policies")}
-
-      {:error, error} ->
-        {:noreply, put_flash(socket, :error, error_message(error))}
     end
   end
 
@@ -117,7 +119,7 @@ defmodule ZippikerWeb.HRLive.LeavePolicies do
       {:ok, _policy} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Employees assigned")
+         |> put_flash(:info, "People assigned")
          |> load()
          |> push_patch(to: ~p"/hr/leave-policies")}
 
@@ -133,6 +135,21 @@ defmodule ZippikerWeb.HRLive.LeavePolicies do
     end
   end
 
+  def handle_event("run_accruals", _params, socket) do
+    case HR.run_leave_accruals(%{}, ash_opts(socket)) do
+      {:ok, %{credited: credited}} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :info,
+           "Accruals are up to date (#{Format.count(credited, "new entry")})"
+         )}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, error_message(error))}
+    end
+  end
+
   defp load(socket) do
     opts = ash_opts(socket)
 
@@ -142,8 +159,47 @@ defmodule ZippikerWeb.HRLive.LeavePolicies do
     )
   end
 
-  defp rule(policy, type), do: Enum.find(policy.rules, &(&1.leave_type_id == type.id))
+  defp policies_for(policies, type), do: Enum.filter(policies, &(&1.leave_type_id == type.id))
 
-  defp days(nil), do: ""
-  defp days(value), do: Decimal.to_string(Decimal.normalize(value), :normal)
+  @doc false
+  def days(nil), do: nil
+  def days(value), do: value |> Decimal.normalize() |> Decimal.to_string(:normal)
+
+  @doc "One line describing how the policy grants days."
+  def grant_summary(%{category: :unlimited}), do: "Unlimited"
+  def grant_summary(%{category: :manual}), do: "Manual balance: admins add days"
+
+  def grant_summary(%{category: :fixed} = policy) do
+    base =
+      if policy.days_per_year,
+        do: "#{days(policy.days_per_year)} days / year",
+        else: "No limit"
+
+    if Decimal.gt?(policy.carry_over_days, 0),
+      do: "#{base} · carry over up to #{days(policy.carry_over_days)}",
+      else: base
+  end
+
+  def grant_summary(%{category: :accrual} = policy) do
+    base = "Earns #{days(policy.accrual_days)} days #{frequency(policy.accrual_frequency)}"
+    if policy.accrual_cap, do: "#{base} · cap #{days(policy.accrual_cap)}", else: base
+  end
+
+  defp frequency(:weekly), do: "every week"
+  defp frequency(:monthly), do: "every month"
+  defp frequency(:quarterly), do: "every quarter"
+  defp frequency(:yearly), do: "every year"
+
+  @doc "Short labels for the request rules that are switched on."
+  def rule_chips(policy) do
+    [
+      policy.requires_attachment? && "File required",
+      policy.count_weekends_and_holidays? && "Counts weekends & holidays",
+      !policy.allow_backdated? && "No backdating",
+      policy.claimable? && "Claimable",
+      policy.overdue_action != :none && policy.review_threshold_days &&
+        "Auto-#{if policy.overdue_action == :approve, do: "approve", else: "reject"} after #{policy.review_threshold_days} days"
+    ]
+    |> Enum.filter(& &1)
+  end
 end

@@ -13,28 +13,28 @@
       "type": "uuid"
     },
     {
-      "allow_nil?": true,
-      "default": "nil",
+      "allow_nil?": false,
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "days_per_year",
-      "type": "decimal"
+      "source": "inserted_at",
+      "type": "utc_datetime_usec"
     },
     {
       "allow_nil?": false,
-      "default": "\"0\"",
+      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "carry_over_days",
-      "type": "decimal"
+      "source": "updated_at",
+      "type": "utc_datetime_usec"
     },
     {
       "allow_nil?": false,
@@ -57,7 +57,7 @@
           "global": null,
           "strategy": null
         },
-        "name": "leave_policy_rules_organization_id_fkey",
+        "name": "leave_policy_assignments_organization_id_fkey",
         "on_delete": "delete",
         "on_update": null,
         "primary_key?": true,
@@ -90,7 +90,40 @@
           "global": false,
           "strategy": "attribute"
         },
-        "name": "leave_policy_rules_leave_policy_id_fkey",
+        "name": "leave_policy_assignments_employee_id_fkey",
+        "on_delete": "delete",
+        "on_update": null,
+        "primary_key?": true,
+        "schema": "public",
+        "table": "employees"
+      },
+      "scale": null,
+      "size": null,
+      "source": "employee_id",
+      "type": "uuid"
+    },
+    {
+      "allow_nil?": false,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": {
+        "deferrable": false,
+        "destination_attribute": "id",
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null,
+        "index?": false,
+        "index_where": null,
+        "match_tenant?": false,
+        "match_type": null,
+        "match_with": null,
+        "multitenancy": {
+          "attribute": "organization_id",
+          "global": false,
+          "strategy": "attribute"
+        },
+        "name": "leave_policy_assignments_leave_policy_id_fkey",
         "on_delete": "delete",
         "on_update": null,
         "primary_key?": true,
@@ -123,7 +156,7 @@
           "global": false,
           "strategy": "attribute"
         },
-        "name": "leave_policy_rules_leave_type_id_fkey",
+        "name": "leave_policy_assignments_leave_type_id_fkey",
         "on_delete": "delete",
         "on_update": null,
         "primary_key?": true,
@@ -142,23 +175,23 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "89ACA4D84EBF873E9A5E6968F117B39671D40E706070D539A571A4E3F39EDE63",
+  "hash": "84542827F33F475C7B08EB25FA5EF424B8770BD7A12A21C44B762CBABCB3A514",
   "identities": [
     {
       "all_tenants?": false,
       "base_filter": null,
-      "index_name": "leave_policy_rules_unique_type_index",
+      "index_name": "leave_policy_assignments_one_per_type_index",
       "keys": [
         {
           "type": "atom",
-          "value": "leave_policy_id"
+          "value": "employee_id"
         },
         {
           "type": "atom",
           "value": "leave_type_id"
         }
       ],
-      "name": "unique_type",
+      "name": "one_per_type",
       "nils_distinct?": true,
       "where": null
     }
@@ -170,6 +203,6 @@
   },
   "repo": "Elixir.Zippiker.Repo",
   "schema": null,
-  "table": "leave_policy_rules",
+  "table": "leave_policy_assignments",
   "temporal": null
 }

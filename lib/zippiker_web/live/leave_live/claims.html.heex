@@ -1,0 +1,142 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:leave_claims}
+>
+  <.header>
+    Leave claims
+    <:subtitle>Ask for days to be added to your balance, e.g. after working a weekend.</:subtitle>
+    <:actions>
+      <.button patch={~p"/hr/leave-claims/new"} variant="primary" id="new-leave-claim">
+        <.icon name="hero-plus-micro" /> Claim leave
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4">
+    <.segmented
+      current={@view}
+      options={[
+        {"Mine", "mine", ~p"/hr/leave-claims?view=mine"},
+        {"To approve", "approve", ~p"/hr/leave-claims?view=approve"},
+        {"All", "all", ~p"/hr/leave-claims?view=all"}
+      ]}
+    />
+  </div>
+
+  <div class="rounded-2xl border border-line bg-surface shadow-card">
+    <ul id="leave-claims" phx-update="stream" class="divide-y divide-line">
+      <li id="claims-empty" class="hidden px-5 py-10 text-center text-sm text-muted only:block">
+        No claims here.
+      </li>
+      <li
+        :for={{id, claim} <- @streams.claims}
+        id={id}
+        class="flex flex-wrap items-center gap-3 px-5 py-3"
+      >
+        <.avatar name={claim.employee.name} size="sm" />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-ink">
+            {claim.employee.name} · +{Decimal.normalize(claim.days)} days
+          </p>
+          <p class="truncate text-xs text-muted">
+            Worked {Format.date(claim.worked_on)} · {claim.reason}
+            <span :if={claim.decision_note}>· “{claim.decision_note}”</span>
+          </p>
+        </div>
+        <.leave_type_badge type={claim.leave_type} />
+        <.leave_status status={claim.status} />
+        <div class="flex items-center gap-2">
+          <.button
+            :if={can_decide?(claim, assigns)}
+            phx-click="decide"
+            phx-value-id={claim.id}
+            phx-value-decision="approve"
+            size="sm"
+            variant="primary"
+            id={"approve-claim-#{claim.id}"}
+          >
+            Approve
+          </.button>
+          <.button
+            :if={can_decide?(claim, assigns)}
+            phx-click="decide"
+            phx-value-id={claim.id}
+            phx-value-decision="reject"
+            size="sm"
+            id={"reject-claim-#{claim.id}"}
+          >
+            Reject
+          </.button>
+          <button
+            :if={can_cancel?(claim, assigns) and not can_decide?(claim, assigns)}
+            phx-click="cancel"
+            phx-value-id={claim.id}
+            data-confirm="Withdraw this claim?"
+            class="text-xs text-muted hover:text-danger"
+          >
+            Withdraw
+          </button>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <.modal
+    :if={@form}
+    id="claim-modal"
+    show
+    title="Claim leave"
+    on_cancel={JS.patch(~p"/hr/leave-claims?view=#{@view}")}
+  >
+    <%= if @me || admin?(assigns) do %>
+      <.form for={@form} id="claim-form" phx-change="validate" phx-submit="save" class="space-y-4">
+        <.input
+          :if={admin?(assigns)}
+          field={@form[:employee_id]}
+          type="select"
+          label="For"
+          prompt="Choose…"
+          options={@employee_options}
+        />
+        <input
+          :if={!admin?(assigns)}
+          type="hidden"
+          name={@form[:employee_id].name}
+          value={@form[:employee_id].value}
+        />
+        <%= if @claimable_types == [] do %>
+          <p id="no-claimable" class="rounded-xl bg-canvas px-4 py-3 text-sm text-muted">
+            No leave can be claimed under this person's leave policies. Admins can allow claims on a
+            policy (e.g. "Time off in lieu").
+          </p>
+        <% else %>
+          <.input
+            field={@form[:leave_type_id]}
+            type="select"
+            label="Leave"
+            options={@claimable_types}
+          />
+          <div class="grid gap-4 sm:grid-cols-2">
+            <.input field={@form[:days]} type="number" step="0.5" min="0" label="Days to add" />
+            <.input field={@form[:worked_on]} type="date" label="Worked on" />
+          </div>
+          <.input
+            field={@form[:reason]}
+            type="textarea"
+            label="Why"
+            placeholder="Covered the Saturday stock count"
+          />
+          <div class="flex justify-end">
+            <.button type="submit" variant="primary" phx-disable-with="Sending…">Send claim</.button>
+          </div>
+        <% end %>
+      </.form>
+    <% else %>
+      <p class="text-sm text-muted">
+        Your login isn't linked to an employee record yet. Ask a workspace admin to link it.
+      </p>
+    <% end %>
+  </.modal>
+</Layouts.app>

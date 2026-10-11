@@ -7,7 +7,6 @@ defmodule Zippiker.HR.Employee.Actions do
     :user_id,
     :department_id,
     :manager_id,
-    :leave_policy_id,
     :job_title,
     :employment_type,
     :hire_date,
@@ -76,10 +75,6 @@ defmodule Zippiker.HR.Employee.Actions do
 
       validate Validations.ManagerChain
       change Changes.UpdateParty
-    end
-
-    update :set_leave_policy do
-      accept [:leave_policy_id]
     end
 
     update :terminate do

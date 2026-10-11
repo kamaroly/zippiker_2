@@ -12,6 +12,7 @@ defmodule Zippiker.Application do
       Zippiker.Repo,
       {DNSCluster, query: Application.get_env(:zippiker, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Zippiker.PubSub},
+      {Oban, Application.fetch_env!(:zippiker, Oban)},
       # Start a worker by calling: Zippiker.Worker.start_link(arg)
       # {Zippiker.Worker, arg},
       # Start to serve requests, typically the last entry

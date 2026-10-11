@@ -42,3 +42,8 @@ config :phoenix_live_view,
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,
   sort_verified_routes_query_params: true
+
+# Jobs don't run in tests; call workers with `Oban.Testing.perform_job/3`.
+config :zippiker, Oban, testing: :manual
+
+config :zippiker, :uploads_dir, "tmp/test_uploads"

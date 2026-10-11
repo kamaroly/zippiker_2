@@ -59,9 +59,18 @@
                   <span class="font-normal text-muted">· {period(request)}</span>
                 </p>
                 <p class="truncate text-xs text-muted">
-                  {Decimal.normalize(request.days)} working days
+                  {Format.count(Decimal.to_integer(Decimal.round(request.days)), "day")}
                   <span :if={request.reason}>· {request.reason}</span>
                   <span :if={request.decision_note}>· “{request.decision_note}”</span>
+                  <.link
+                    :if={request.attachment_path}
+                    href={~p"/hr/leave/#{request.id}/attachment"}
+                    target="_blank"
+                    class="text-ink-soft underline hover:text-ink"
+                    id={"attachment-#{request.id}"}
+                  >
+                    <.icon name="hero-paper-clip-micro" />{request.attachment_name}
+                  </.link>
                 </p>
               </div>
             </div>
@@ -168,16 +177,65 @@
         >
           <span>
             <span class="tabular font-semibold text-ink">{@days || "–"}</span>
-            <span class="text-muted">working days</span>
+            <span class="text-muted">
+              {if @policy && @policy.count_weekends_and_holidays?,
+                do: "calendar days",
+                else: "working days"}
+            </span>
           </span>
           <span :if={@balance}>
             <span class="tabular font-semibold text-ink">
               {if @balance.left, do: Decimal.normalize(@balance.left), else: "No limit"}
             </span>
-            <span :if={@balance.left} class="text-muted">left this year</span>
+            <span :if={@balance.left} class="text-muted">
+              {if @balance.category == :fixed, do: "left this year", else: "in balance"}
+            </span>
           </span>
         </div>
         <.input field={@form[:reason]} type="textarea" label="Note (optional)" />
+        <div id="leave-attachment">
+          <p class="mb-1 text-sm font-medium text-ink">
+            Supporting document
+            <span :if={@policy && @policy.requires_attachment?} class="text-danger">
+              (required)
+            </span>
+            <span :if={!(@policy && @policy.requires_attachment?)} class="font-normal text-muted">
+              (optional)
+            </span>
+          </p>
+          <label
+            for={@uploads.attachment.ref}
+            phx-drop-target={@uploads.attachment.ref}
+            class="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-line-strong px-4 py-3 text-sm text-muted transition hover:border-ink hover:text-ink"
+          >
+            <.icon name="hero-arrow-up-tray" class="size-5" />
+            <span>Drop a file or click to choose (PDF or image, up to 10 MB)</span>
+            <.live_file_input upload={@uploads.attachment} class="sr-only" />
+          </label>
+          <div
+            :for={entry <- @uploads.attachment.entries}
+            class="mt-2 flex items-center gap-2 text-sm text-ink"
+          >
+            <.icon name="hero-paper-clip" class="size-4 text-muted" />
+            <span class="min-w-0 flex-1 truncate">{entry.client_name}</span>
+            <span class="tabular text-xs text-muted">{entry.progress}%</span>
+            <button
+              type="button"
+              phx-click="cancel_upload"
+              phx-value-ref={entry.ref}
+              class="text-muted hover:text-danger"
+              aria-label="Remove"
+            >
+              <.icon name="hero-x-mark-micro" />
+            </button>
+            <p
+              :for={error <- upload_errors(@uploads.attachment, entry)}
+              class="text-xs text-danger"
+            >
+              {upload_error(error)}
+            </p>
+          </div>
+        </div>
         <.error :for={{_field, {msg, _}} <- @form.errors}>{msg}</.error>
         <div class="flex justify-end">
           <.button type="submit" variant="primary" phx-disable-with="Sending…">Send request</.button>

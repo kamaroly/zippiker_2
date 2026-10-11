@@ -1,23 +1,24 @@
-defmodule Zippiker.HR.LeavePolicyRule do
-  @moduledoc "One entitlement in a leave policy: a leave type, days per year, carry-over."
+defmodule Zippiker.HR.LeavePolicyAssignment do
+  @moduledoc "Puts an employee on a leave policy; at most one policy per leave type."
   use Ash.Resource,
     otp_app: :zippiker,
     domain: Zippiker.HR,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
     fragments: [
-      Zippiker.HR.LeavePolicyRule.Attributes,
-      Zippiker.HR.LeavePolicyRule.Relationships,
-      Zippiker.HR.LeavePolicyRule.Actions,
+      Zippiker.HR.LeavePolicyAssignment.Attributes,
+      Zippiker.HR.LeavePolicyAssignment.Relationships,
+      Zippiker.HR.LeavePolicyAssignment.Actions,
       Zippiker.HR.LeavePolicy.Policies
     ]
 
   postgres do
-    table "leave_policy_rules"
+    table "leave_policy_assignments"
     repo Zippiker.Repo
 
     references do
       reference :organization, on_delete: :delete
+      reference :employee, on_delete: :delete
       reference :leave_policy, on_delete: :delete
       reference :leave_type, on_delete: :delete
     end
@@ -29,6 +30,6 @@ defmodule Zippiker.HR.LeavePolicyRule do
   end
 
   identities do
-    identity :unique_type, [:leave_policy_id, :leave_type_id]
+    identity :one_per_type, [:employee_id, :leave_type_id]
   end
 end

@@ -64,6 +64,92 @@
   </tbody>
 </table>
 
+<h2>Leave policies</h2>
+<p>
+  A policy says how one leave type works for the people on it. Admins set them up under
+  <.link navigate="/hr/leave-policies">Leave policies</.link>
+  (<strong>+ Policy</strong>):
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Setting</th><th>What it does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Leave category</td>
+      <td>
+        <strong>Fixed yearly allowance</strong>
+        (days per year, with optional carry-over of unused days), <strong>Accrual</strong>
+        (days earned every week, month, quarter or year, up to a maximum balance),
+        <strong>Manual</strong>
+        (only what admins add and approved claims) or <strong>Unlimited</strong>.
+      </td>
+    </tr>
+    <tr>
+      <td>Effective date</td>
+      <td>When the policy starts. Accruals count from here (or from the hire date if later).</td>
+    </tr>
+    <tr>
+      <td>Review overdue threshold</td>
+      <td>
+        If the manager hasn't decided within this many days, the request is automatically
+        <strong>approved</strong>
+        or <strong>rejected</strong>
+        (or left waiting), and marked as decided automatically.
+      </td>
+    </tr>
+    <tr>
+      <td>Requires file upload</td>
+      <td>Requests need a supporting document, e.g. a doctor's note.</td>
+    </tr>
+    <tr>
+      <td>Count weekends and holidays</td>
+      <td>Every calendar day counts, instead of working days only.</td>
+    </tr>
+    <tr>
+      <td>Allow backdated requests</td>
+      <td>Off: people can't request leave for past dates (admins still can).</td>
+    </tr>
+    <tr>
+      <td>Allow claims</td>
+      <td>People can claim extra days, e.g. time off in lieu after working a weekend.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Each leave type can have several policies. Click <strong>People</strong>
+  on a policy to choose who's on it (or a whole department); everyone else follows the type's
+  <strong>default</strong>
+  policy. Without any policy, the leave type's own allowance applies.
+</p>
+<.callout>
+  Accruals are credited automatically every night. Admins can also click
+  <strong>Run accruals now</strong>
+  after changing a policy. Missed nights catch up, and no period is ever credited twice.
+</.callout>
+
+<h2>Balances, adjustments and claims</h2>
+<ul>
+  <li>
+    Each employee's page shows their balance per leave type and which policy applies. Admins click
+    <strong>Adjust balance</strong>
+    to add days (or take them away with a negative number), e.g. an opening balance.
+  </li>
+  <li>
+    On <.link navigate="/hr/leave-claims">Leave claims</.link>, people claim days on leave types that
+    allow it. Their manager or an admin approves, and the days are added to their balance.
+  </li>
+</ul>
+
+<h2>Holidays</h2>
+<p>
+  Add public holidays under <.link navigate="/hr/holidays">Holidays</.link>; tick
+  <em>Same day every year</em>
+  for fixed dates. Holidays and weekends aren't counted as leave days, unless the policy counts them.
+</p>
+
 <h2>Requesting time off</h2>
 <ol>
   <li>
@@ -71,8 +157,8 @@
   </li>
   <li>
     Pick the type and dates. Zippiker counts the <strong>working days</strong>
-    (Monday to Friday) and shows
-    how many you have left this year.
+    (Monday to Friday, minus public holidays) and shows your balance. Attach a supporting document
+    if the policy asks for one.
   </li>
   <li>Your manager sees it under <strong>To approve</strong> and approves or rejects it.</li>
 </ol>
@@ -92,8 +178,4 @@
 <.callout>
   The right side of the Leave page shows who's away in the next 30 days, and employees on leave
   today get an <em>Away</em> badge in the directory.
-</.callout>
-<.callout kind={:warning}>
-  Public holidays aren't deducted yet: if a holiday falls inside your leave, shorten the request or
-  ask an admin to adjust.
 </.callout>
