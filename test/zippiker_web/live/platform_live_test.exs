@@ -115,7 +115,7 @@ defmodule ZippikerWeb.PlatformLiveTest do
       assert redirected_to(conn) == "/"
       assert get_session(conn, :impersonator_id) == admin.id
 
-      {:ok, view, _html} = live(recycle(conn), ~p"/")
+      {:ok, view, _html} = live(recycle(conn), ~p"/dashboard")
       assert has_element?(view, "#platform-banner", owner.email |> to_string())
       assert has_element?(view, "#stop-impersonating")
 

@@ -7,7 +7,7 @@ defmodule ZippikerWeb.WorkspaceLiveTest do
 
   describe "access" do
     test "anonymous visitors are sent to sign in", %{conn: conn} do
-      assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/")
+      assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/dashboard")
     end
 
     test "users without a workspace are onboarded", %{conn: conn} do
@@ -18,7 +18,7 @@ defmodule ZippikerWeb.WorkspaceLiveTest do
         |> Phoenix.ConnTest.init_test_session(%{})
         |> AshAuthentication.Plug.Helpers.store_in_session(user)
 
-      assert {:error, {:redirect, %{to: "/onboarding"}}} = live(conn, ~p"/")
+      assert {:error, {:redirect, %{to: "/onboarding"}}} = live(conn, ~p"/dashboard")
 
       {:ok, view, _html} = live(conn, ~p"/onboarding")
 
@@ -39,7 +39,7 @@ defmodule ZippikerWeb.WorkspaceLiveTest do
 
     test "every main page renders", %{conn: conn} do
       for path <-
-            ~w(/ /leads /deals /contacts /companies /tasks /settings/custom-fields /settings/pipeline /settings/workspace) do
+            ~w(/dashboard /leads /deals /contacts /companies /tasks /settings/custom-fields /settings/pipeline /settings/workspace) do
         assert {:ok, _view, _html} = live(conn, path)
       end
     end
@@ -60,12 +60,12 @@ defmodule ZippikerWeb.WorkspaceLiveTest do
       assert has_element?(view, "#tab-invoices.border-brand")
       refute has_element?(view, "#module-tabs #tab-leads")
 
-      {:ok, view, _html} = live(conn, ~p"/")
+      {:ok, view, _html} = live(conn, ~p"/dashboard")
       refute has_element?(view, "#module-tabs")
     end
 
     test "dashboard shows KPIs", %{conn: conn} do
-      {:ok, view, _html} = live(conn, ~p"/")
+      {:ok, view, _html} = live(conn, ~p"/dashboard")
       assert has_element?(view, "#stat-pipeline")
       assert has_element?(view, "#stat-win-rate")
     end

@@ -56,7 +56,7 @@ defmodule ZippikerWeb.PortalLiveTest do
     {portal, access} = claim(contact, organization)
 
     # Portal-only users land in the portal.
-    assert {:error, {:redirect, %{to: "/portal"}}} = live(portal, ~p"/")
+    assert {:error, {:redirect, %{to: "/portal"}}} = live(portal, ~p"/dashboard")
 
     {:ok, view, _html} = live(portal, ~p"/portal/#{access.id}")
     assert has_element?(view, "#portal-quote-list", quote.number)

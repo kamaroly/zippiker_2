@@ -24,6 +24,7 @@ defmodule ZippikerWeb.Router do
   scope "/", ZippikerWeb do
     pipe_through :browser
 
+    get "/", PageController, :home
     get "/invitations/:token", WorkspaceController, :invitation
     post "/workspaces/:id/switch", WorkspaceController, :switch
     get "/hr/leave/:id/attachment", LeaveAttachmentController, :show
@@ -87,7 +88,7 @@ defmodule ZippikerWeb.Router do
 
     ash_authentication_live_session :workspace,
       on_mount: {ZippikerWeb.LiveUserAuth, :live_workspace} do
-      live "/", DashboardLive
+      live "/dashboard", DashboardLive
 
       live "/leads", LeadLive.Index, :index
       live "/leads/new", LeadLive.Index, :new

@@ -74,7 +74,7 @@ defmodule ZippikerWeb.RolesLiveTest do
     {user, _membership} = member_with(organization, roles, ["employee"], opts)
     conn = log_in_user(build_conn(), user)
 
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, ~p"/dashboard")
     refute has_element?(view, "#sidebar a[href='/invoices']")
     assert has_element?(view, "#sidebar a[href='/me']")
     refute has_element?(view, "#command-palette-items a[href='/invoices/new']")

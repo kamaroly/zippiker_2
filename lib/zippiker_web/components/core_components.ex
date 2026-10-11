@@ -69,7 +69,7 @@ defmodule ZippikerWeb.CoreComponents do
 
       <.button>Save</.button>
       <.button variant="primary" phx-click="go">Go</.button>
-      <.button navigate={~p"/"} variant="ghost">Home</.button>
+      <.button navigate={~p"/dashboard"} variant="ghost">Home</.button>
   """
   attr :rest, :global,
     include: ~w(href navigate patch method download name value disabled form type)

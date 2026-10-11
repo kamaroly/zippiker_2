@@ -11,7 +11,7 @@ defmodule ZippikerWeb.Layouts do
   # page (like the platform panel). Pages: {key, label, path, module} – module
   # nil means always available; a module with no visible pages is hidden.
   @modules [
-    {:home, "Dashboard", "hero-squares-2x2", [{:dashboard, "Dashboard", "/", nil}]},
+    {:home, "Dashboard", "hero-squares-2x2", [{:dashboard, "Dashboard", "/dashboard", nil}]},
     {:ai, "Assistant", "hero-sparkles", [{:assistant, "Assistant", "/assistant", nil}]},
     {:me, "My workspace", "hero-user-circle",
      [
@@ -477,7 +477,7 @@ defmodule ZippikerWeb.Layouts do
           <div class="flex-1" />
           <.link
             :if={@current_user.memberships != []}
-            navigate={~p"/"}
+            navigate={~p"/dashboard"}
             class="hidden text-sm text-muted hover:text-ink sm:block"
           >
             My workspace →
@@ -565,7 +565,7 @@ defmodule ZippikerWeb.Layouts do
 
   def brand(assigns) do
     ~H"""
-    <.link navigate={~p"/"} class="flex items-center gap-2">
+    <.link navigate={~p"/dashboard"} class="flex items-center gap-2">
       <span class="flex size-7 items-center justify-center rounded-lg bg-brand text-brand-ink shadow-card">
         <.icon name="hero-bolt-solid" class="size-4" />
       </span>

@@ -111,7 +111,7 @@ defmodule ZippikerWeb.AccountingLiveTest do
   } do
     Accounts.set_plan_limits!(organization, %{enabled_modules: [:crm, :sales]}, authorize?: false)
 
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, ~p"/dashboard")
     refute has_element?(view, "#nav-accounting")
     assert has_element?(view, "#nav-sales")
 

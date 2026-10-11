@@ -26,7 +26,7 @@ defmodule ZippikerWeb.WorkspaceImpersonationTest do
     assert redirected_to(conn) == "/"
     assert get_session(conn, :impersonator_id) == owner.id
 
-    {:ok, view, _html} = live(recycle(conn), ~p"/")
+    {:ok, view, _html} = live(recycle(conn), ~p"/dashboard")
     assert has_element?(view, "#platform-banner", to_string(member.email))
 
     # No impersonating from inside an impersonation.

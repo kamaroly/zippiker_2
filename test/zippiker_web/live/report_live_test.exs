@@ -69,7 +69,7 @@ defmodule ZippikerWeb.ReportLiveTest do
   end
 
   test "reports show in the command search", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/")
+    {:ok, view, _html} = live(conn, ~p"/dashboard")
     assert has_element?(view, "#command-palette-items a[href='/reports/profit-and-loss']")
   end
 end
