@@ -122,6 +122,23 @@ defmodule ZippikerWeb.HelpArticles do
       render: &__MODULE__.accounting/1
     },
     %{
+      slug: "reports",
+      title: "Reports",
+      section: "Accounting",
+      icon: "hero-chart-bar",
+      summary:
+        "Over ninety standard reports: statements, who owes you, sales, stock, VAT and more.",
+      render: &__MODULE__.reports/1
+    },
+    %{
+      slug: "time-tracking",
+      title: "Time tracking",
+      section: "HR",
+      icon: "hero-clock",
+      summary: "Log hours by customer and project, billable or not, and report on them.",
+      render: &__MODULE__.time_tracking/1
+    },
+    %{
       slug: "custom-fields",
       title: "Custom fields",
       section: "Customize",

@@ -5,9 +5,12 @@
   active={:reports}
 >
   <.header>
-    Reports
+    Financial statements
     <:subtitle>Straight from the journal, always up to date.</:subtitle>
     <:actions>
+      <.button navigate={~p"/reports"} variant="ghost" id="all-reports">
+        All reports <.icon name="hero-arrow-right-micro" />
+      </.button>
       <.button phx-click={JS.dispatch("zippiker:print")} id="print-report">
         <.icon name="hero-printer-micro" /> Print / PDF
       </.button>

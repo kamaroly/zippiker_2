@@ -29,6 +29,7 @@ defmodule ZippikerWeb.Router do
     get "/hr/leave/:id/attachment", LeaveAttachmentController, :show
     get "/hr/checklist-attachments/:id", LeaveAttachmentController, :checklist
     get "/compliance/documents/:id/file", LeaveAttachmentController, :statutory
+    get "/reports/:key/export", ReportController, :export
 
     post "/workspaces/:organization_id/impersonate/:user_id",
          WorkspaceController,
@@ -189,6 +190,9 @@ defmodule ZippikerWeb.Router do
       live "/accounting/journal/:id", AccountingLive.Entry, :show
       live "/accounting/reports", AccountingLive.Reports, :index
 
+      live "/reports", ReportLive.Index, :index
+      live "/reports/:key", ReportLive.Show, :show
+
       live "/settings/billing", Settings.BillingLive, :index
 
       live "/me", MeLive.Overview, :index
@@ -219,6 +223,9 @@ defmodule ZippikerWeb.Router do
       live "/hr/checklist-templates/:id/edit", ChecklistLive.Templates, :edit
       live "/hr/leave-claims", LeaveLive.Claims, :index
       live "/hr/leave-claims/new", LeaveLive.Claims, :new
+      live "/hr/time", HRLive.Time, :index
+      live "/hr/time/new", HRLive.Time, :new
+      live "/hr/time/:id/edit", HRLive.Time, :edit
       live "/hr/holidays", HRLive.Holidays, :index
       live "/hr/holidays/new", HRLive.Holidays, :new
       live "/hr/holidays/:id/edit", HRLive.Holidays, :edit

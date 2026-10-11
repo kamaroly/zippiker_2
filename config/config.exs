@@ -80,6 +80,7 @@ config :zippiker,
     Zippiker.Manufacturing,
     Zippiker.Portal,
     Zippiker.Compliance,
+    Zippiker.Reporting,
     Zippiker.Platform
   ]
 

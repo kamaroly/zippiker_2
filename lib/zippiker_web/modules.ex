@@ -102,6 +102,7 @@ defmodule ZippikerWeb.Modules do
       ZippikerWeb.InventoryLive.Warehouses
     ],
     hr: [
+      ZippikerWeb.HRLive.Time,
       ZippikerWeb.EmployeeLive.Index,
       ZippikerWeb.EmployeeLive.Show,
       ZippikerWeb.EmployeeLive.Form,

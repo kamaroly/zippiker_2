@@ -24,6 +24,7 @@ defmodule ZippikerWeb.Commands do
     {"New employee", "/hr/employees/new", :hr, true, "hire staff add person onboard"},
     {"Request leave", "/hr/leave/new", :hr, false, "time off holiday vacation absence"},
     {"Claim leave days", "/hr/leave-claims/new", :hr, false, "overtime time off in lieu"},
+    {"Log time", "/hr/time/new", :hr, false, "timesheet hours billable project"},
     {"Start onboarding / offboarding checklist", "/hr/checklists/new", :hr, true,
      "checklist new hire leaver"},
     {"New leave policy", "/hr/leave-policies/new", :hr, true, "entitlement accrual"},
@@ -68,6 +69,16 @@ defmodule ZippikerWeb.Commands do
         }
       end
 
-    actions ++ Enum.uniq_by(pages, & &1.path)
+    reports =
+      for report <- Zippiker.Reporting.Catalog.available(organization) do
+        %{
+          label: report.title,
+          group: "Reports",
+          path: "/reports/#{report.key}",
+          keywords: "report #{report.description}"
+        }
+      end
+
+    actions ++ Enum.uniq_by(pages, & &1.path) ++ reports
   end
 end

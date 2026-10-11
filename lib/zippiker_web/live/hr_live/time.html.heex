@@ -1,0 +1,213 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:time}
+>
+  <.header>
+    Time
+    <:subtitle>
+      Log hours by day, customer and project. Billable time shows up as unbilled until invoiced.
+    </:subtitle>
+    <:actions>
+      <.button
+        navigate={~p"/reports/time-activities-by-employee-detail"}
+        variant="ghost"
+        id="time-reports"
+      >
+        <.icon name="hero-chart-bar-micro" /> Reports
+      </.button>
+      <.button
+        patch={query_path(~p"/hr/time/new", %{week: @week, employee: @employee})}
+        variant="primary"
+        id="log-time"
+      >
+        <.icon name="hero-plus-micro" /> Log time
+      </.button>
+    </:actions>
+  </.header>
+
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-card">
+      <.link
+        patch={index_path(assigns, Date.add(@week, -7))}
+        id="previous-week"
+        class="rounded-lg p-1.5 text-ink-soft transition hover:bg-canvas hover:text-ink"
+        aria-label="Previous week"
+      >
+        <.icon name="hero-chevron-left-micro" class="size-4" />
+      </.link>
+      <span id="week-label" class="px-2 text-sm font-medium text-ink">
+        {Format.date(@week)} – {Format.date(Date.add(@week, 6))}
+      </span>
+      <.link
+        patch={index_path(assigns, Date.add(@week, 7))}
+        id="next-week"
+        class="rounded-lg p-1.5 text-ink-soft transition hover:bg-canvas hover:text-ink"
+        aria-label="Next week"
+      >
+        <.icon name="hero-chevron-right-micro" class="size-4" />
+      </.link>
+      <.link
+        patch={index_path(assigns, Date.beginning_of_week(Date.utc_today()))}
+        class="rounded-lg px-2 py-1 text-xs text-muted transition hover:bg-canvas hover:text-ink"
+      >
+        This week
+      </.link>
+    </div>
+    <form :if={@admin?} id="time-employee" phx-change="employee" class="w-56">
+      <.input
+        type="select"
+        name="employee"
+        id="time-employee-select"
+        value={@employee}
+        prompt="Everyone"
+        options={@employee_options}
+      />
+    </form>
+  </div>
+
+  <div class="mb-4 grid gap-3 sm:grid-cols-3">
+    <div class="rounded-2xl border border-line bg-surface p-4 shadow-card">
+      <p class="text-xs text-muted">Hours this week</p>
+      <p id="total-hours" class="tabular mt-1 text-2xl font-semibold text-ink">
+        {hours(@total_hours)}
+      </p>
+    </div>
+    <div class="rounded-2xl border border-line bg-surface p-4 shadow-card">
+      <p class="text-xs text-muted">Billable hours</p>
+      <p class="tabular mt-1 text-2xl font-semibold text-ink">{hours(@billable_hours)}</p>
+    </div>
+    <div class="rounded-2xl border border-line bg-surface p-4 shadow-card">
+      <p class="text-xs text-muted">Unbilled value</p>
+      <p class="tabular mt-1 text-2xl font-semibold text-ink">
+        {amount(@unbilled, @current_organization.currency)}
+      </p>
+    </div>
+  </div>
+
+  <div class="mb-4 grid grid-cols-7 gap-2">
+    <div
+      :for={{day, total} <- @days}
+      class={[
+        "rounded-xl border px-2 py-2 text-center transition",
+        day == Date.utc_today() && "border-brand/50 bg-brand/5",
+        day != Date.utc_today() && "border-line bg-surface"
+      ]}
+    >
+      <p class="text-[10px] font-medium tracking-wide text-muted uppercase">
+        {Calendar.strftime(day, "%a %-d")}
+      </p>
+      <p class={[
+        "tabular text-sm font-semibold",
+        Decimal.eq?(total, 0) && "text-muted",
+        !Decimal.eq?(total, 0) && "text-ink"
+      ]}>
+        {hours(total)}h
+      </p>
+    </div>
+  </div>
+
+  <.table id="time-activities" rows={@streams.activities}>
+    <:col :let={{_id, activity}} label="Date">
+      <span class="whitespace-nowrap">{Format.date(activity.date)}</span>
+    </:col>
+    <:col :let={{_id, activity}} :if={@admin?} label="Employee">{activity.employee.name}</:col>
+    <:col :let={{_id, activity}} label="Customer / project">
+      <span class="text-ink">{(activity.customer && activity.customer.name) || "—"}</span>
+      <span :if={activity.deal} class="block text-xs text-muted">{activity.deal.title}</span>
+    </:col>
+    <:col :let={{_id, activity}} label="Description">
+      <span class="text-ink-soft">{activity.description}</span>
+    </:col>
+    <:col :let={{_id, activity}} label="Pay type">{Format.humanize(activity.pay_type)}</:col>
+    <:col :let={{_id, activity}} label="Billing">
+      <.badge :if={activity.invoice_id} color={:emerald}>Billed</.badge>
+      <.badge :if={activity.billable? and is_nil(activity.invoice_id)} color={:amber}>
+        Billable
+      </.badge>
+      <span :if={!activity.billable?} class="text-xs text-muted">Not billable</span>
+    </:col>
+    <:col :let={{_id, activity}} label="Hours" class="text-right">
+      <span class="tabular font-medium text-ink">{hours(activity.hours)}</span>
+    </:col>
+    <:action :let={{_id, activity}}>
+      <span :if={can_edit?(activity, assigns)} class="flex justify-end gap-3">
+        <.link
+          patch={query_path(~p"/hr/time/#{activity}/edit", %{week: @week, employee: @employee})}
+          class="text-ink-soft hover:text-ink"
+        >
+          Edit
+        </.link>
+        <.link
+          phx-click="delete"
+          phx-value-id={activity.id}
+          data-confirm="Remove this time entry?"
+          class="text-danger hover:opacity-80"
+        >
+          Delete
+        </.link>
+      </span>
+    </:action>
+    <:empty>
+      <.empty_state icon="hero-clock" title="No time logged this week">
+        Log hours worked for customers and projects, or for leave and overtime.
+      </.empty_state>
+    </:empty>
+  </.table>
+
+  <.modal
+    :if={@form}
+    id="time-modal"
+    show
+    title={if(@activity, do: "Edit time", else: "Log time")}
+    on_cancel={JS.patch(index_path(assigns))}
+  >
+    <.form for={@form} id="time-form" phx-change="validate" phx-submit="save" class="space-y-4">
+      <.input
+        :if={@admin? and is_nil(@activity)}
+        field={@form[:employee_id]}
+        type="select"
+        label="Employee"
+        prompt="Me"
+        options={@employee_options}
+      />
+      <div class="grid grid-cols-2 gap-3">
+        <.input field={@form[:date]} type="date" label="Date" />
+        <.input field={@form[:hours]} type="number" step="0.25" min="0" max="24" label="Hours" />
+      </div>
+      <.input field={@form[:pay_type]} type="select" label="Pay type" options={@pay_types} />
+      <div class="grid gap-3 sm:grid-cols-2">
+        <.input
+          field={@form[:customer_id]}
+          type="select"
+          label="Customer"
+          prompt="No customer"
+          options={@customer_options}
+        />
+        <.input
+          :if={@deal_options != []}
+          field={@form[:deal_id]}
+          type="select"
+          label="Project (deal)"
+          prompt="No project"
+          options={@deal_options}
+        />
+      </div>
+      <.input field={@form[:description]} type="textarea" label="What did you work on?" />
+      <div class="grid items-end gap-3 sm:grid-cols-2">
+        <.input field={@form[:billable?]} type="checkbox" label="Billable to the customer" />
+        <.input
+          field={@form[:hourly_rate]}
+          type="number"
+          step="0.01"
+          min="0"
+          label={"Hourly rate (#{@current_organization.currency})"}
+        />
+      </div>
+      <div class="flex justify-end">
+        <.button type="submit" variant="primary" phx-disable-with="Saving…" id="save-time">Save</.button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

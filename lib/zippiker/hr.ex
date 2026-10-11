@@ -58,6 +58,15 @@ defmodule Zippiker.HR do
       define :adjust_leave_balance, action: :adjust
     end
 
+    resource Zippiker.HR.TimeActivity do
+      define :list_time_activities, action: :search
+      define :get_time_activity, action: :read, get_by: [:id]
+      define :log_time, action: :create
+      define :update_time_activity, action: :update
+      define :delete_time_activity, action: :destroy
+      define :mark_time_billed, action: :mark_billed
+    end
+
     resource Zippiker.HR.LeaveClaim do
       define :list_leave_claims, action: :search
       define :get_leave_claim, action: :read, get_by: [:id]

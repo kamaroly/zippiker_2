@@ -10,7 +10,7 @@ defmodule ZippikerWeb.AccountingLive.Reports do
   def mount(_params, _session, socket) do
     {:ok,
      assign(socket,
-       page_title: "Reports",
+       page_title: "Financial statements",
        branch_options: branch_options(socket.assigns),
        branch_names:
          if(socket.assigns.current_organization.multi_branch?,

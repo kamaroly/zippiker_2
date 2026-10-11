@@ -96,6 +96,7 @@ defmodule ZippikerWeb do
       import ZippikerWeb.WorkflowComponents
       import ZippikerWeb.ManufacturingComponents
       import ZippikerWeb.ComplianceComponents
+      import ZippikerWeb.ReportComponents
       import ZippikerWeb.LiveHelpers
 
       # Common modules used in templates

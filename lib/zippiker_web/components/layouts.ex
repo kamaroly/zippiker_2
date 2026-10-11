@@ -62,6 +62,7 @@ defmodule ZippikerWeb.Layouts do
        {:checklists, "On/offboarding", "/hr/checklists", :hr},
        {:leave, "Leave", "/hr/leave", :hr},
        {:leave_claims, "Leave claims", "/hr/leave-claims", :hr},
+       {:time, "Time", "/hr/time", :hr},
        {:org_chart, "Org chart", "/hr/org-chart", :hr},
        {:departments, "Departments", "/hr/departments", :hr},
        {:leave_policies, "Leave policies", "/hr/leave-policies", :hr},
@@ -80,7 +81,11 @@ defmodule ZippikerWeb.Layouts do
        {:accounting, "Overview", "/accounting", :accounting},
        {:journal, "Journal", "/accounting/journal", :accounting},
        {:accounts, "Chart of accounts", "/accounting/accounts", :accounting},
-       {:reports, "Reports", "/accounting/reports", :accounting}
+       {:reports, "Statements", "/accounting/reports", :accounting}
+     ]},
+    {:analytics, "Reports", "hero-chart-bar",
+     [
+       {:report_center, "Standard reports", "/reports", nil}
      ]},
     {:compliance, "Company secretarial", "hero-building-library",
      [
@@ -630,15 +635,7 @@ defmodule ZippikerWeb.Layouts do
                 navigate={command.path}
                 class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink transition hover:bg-canvas"
               >
-                <.icon
-                  name={
-                    if(command.group == "Actions",
-                      do: "hero-bolt-micro",
-                      else: "hero-arrow-right-micro"
-                    )
-                  }
-                  class="size-4 text-muted"
-                />
+                <.icon name={command_icon(command.group)} class="size-4 text-muted" />
                 <span class="flex-1 truncate">{command.label}</span>
                 <span class="text-[10px] font-medium tracking-wide text-muted uppercase">{command.group}</span>
               </.link>
@@ -652,6 +649,10 @@ defmodule ZippikerWeb.Layouts do
     </div>
     """
   end
+
+  defp command_icon("Actions"), do: "hero-bolt-micro"
+  defp command_icon("Reports"), do: "hero-chart-bar-micro"
+  defp command_icon(_group), do: "hero-arrow-right-micro"
 
   @doc "The signed-in user's menu (top right): who you are, theme, sign out."
   attr :current_user, :map, required: true

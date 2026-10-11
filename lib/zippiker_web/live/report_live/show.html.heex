@@ -1,0 +1,88 @@
+<Layouts.app
+  flash={@flash}
+  current_user={@current_user}
+  current_organization={@current_organization}
+  active={:report_center}
+  wide
+>
+  <.header>
+    {@definition.title}
+    <:breadcrumb>
+      <.link navigate={~p"/reports"} class="hover:text-ink">Reports</.link>
+    </:breadcrumb>
+    <:subtitle>{@definition.description}</:subtitle>
+    <:actions>
+      <.button href={export_path(@definition, @selection)} id="export-report" download>
+        <.icon name="hero-arrow-down-tray-micro" /> Export CSV
+      </.button>
+      <.button phx-click={JS.dispatch("zippiker:print")} id="print-report">
+        <.icon name="hero-printer-micro" /> Print / PDF
+      </.button>
+    </:actions>
+  </.header>
+
+  <form
+    :if={@definition.period != :none or @branch_options != []}
+    id="report-filters"
+    phx-change="filter"
+    class="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-surface p-3 shadow-card print:hidden"
+  >
+    <%= if @definition.period == :range do %>
+      <div class="w-44">
+        <.input
+          type="select"
+          name="period"
+          id="report-period"
+          value={@selection.period}
+          label="Report period"
+          options={@presets}
+        />
+      </div>
+      <div class="w-40">
+        <.input type="date" name="from" id="report-from" value={@selection.from} label="From" />
+      </div>
+      <div class="w-40">
+        <.input type="date" name="to" id="report-to" value={@selection.to} label="To" />
+      </div>
+    <% end %>
+    <div :if={@definition.period == :as_of} class="w-44">
+      <.input type="date" name="to" id="report-to" value={@selection.to} label="As of" />
+    </div>
+    <div :if={@branch_options != []} class="w-52">
+      <.input
+        type="select"
+        name="branch"
+        id="report-branch"
+        value={@selection.branch_id}
+        label="Branch"
+        prompt="All branches"
+        options={@branch_options}
+      />
+    </div>
+  </form>
+
+  <article
+    id={"report-#{@definition.key}"}
+    class="overflow-hidden rounded-2xl border border-line bg-surface shadow-card print:border-0 print:shadow-none"
+  >
+    <header class="border-b border-line px-5 py-5 text-center">
+      <p class="text-xs font-medium tracking-wide text-muted uppercase">
+        {@current_organization.name}<span :if={@branch_name}> · {@branch_name}</span>
+      </p>
+      <h2 class="mt-1 text-lg font-semibold text-ink">{@definition.title}</h2>
+      <p class="text-xs text-muted">{period_text(@definition, @selection)}</p>
+    </header>
+
+    <.report_table report={@report} />
+
+    <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-line px-5 py-3 text-xs text-muted">
+      <span :if={@report.note} id="report-note">{@report.note}</span>
+      <span class="ml-auto">
+        Amounts in {@current_organization.currency} · Generated {Calendar.strftime(
+          @generated_at,
+          "%b %-d, %Y %H:%M"
+        )} UTC
+      </span>
+    </footer>
+  </article>
+</Layouts.app>
