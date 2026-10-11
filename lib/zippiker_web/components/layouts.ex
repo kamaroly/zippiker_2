@@ -129,6 +129,7 @@ defmodule ZippikerWeb.Layouts do
             Enum.any?(section.pages, &(elem(&1, 0) == assigns.active))
           end),
         impersonator: assigns.current_user.__metadata__[:impersonator],
+        role: role(assigns.current_user, organization),
         platform_access?: organization.__metadata__[:platform_access?] == true
       )
 
@@ -151,6 +152,7 @@ defmodule ZippikerWeb.Layouts do
           <.icon name="hero-bars-3" class="size-5" />
         </button>
         <div class="lg:hidden"><.brand /></div>
+        <.command_palette commands={ZippikerWeb.Commands.list(@current_organization, @role)} />
         <div class="ml-auto flex items-center gap-1">
           <.link
             navigate="/help"
@@ -287,7 +289,16 @@ defmodule ZippikerWeb.Layouts do
   end
 
   # Modules with the pages this workspace can see; the sidebar links to the first.
-  defp sections(organization) do
+  # The user's role in the workspace (memberships are loaded on mount).
+  defp role(%{memberships: memberships} = user, organization) when is_list(memberships) do
+    Enum.find_value(memberships, &(&1.organization_id == organization.id && &1.role)) ||
+      if(user.super_admin?, do: :admin)
+  end
+
+  defp role(_user, _organization), do: nil
+
+  @doc "The sidebar modules and their pages that the workspace can see."
+  def sections(organization) do
     for {key, label, icon, pages} <- @modules,
         pages = Enum.filter(pages, &visible?(&1, organization)),
         pages != [] do
@@ -552,6 +563,79 @@ defmodule ZippikerWeb.Layouts do
       >
         {gettext("Attempting to reconnect")}
       </.flash>
+    </div>
+    """
+  end
+
+  @doc """
+  The command search in the top bar (⌘K / Ctrl+K): jump to any page or
+  action ("new employee", "request leave"). Filtering runs in the browser
+  (`CommandPalette` hook) over the list rendered here.
+  """
+  attr :commands, :list, required: true
+
+  def command_palette(assigns) do
+    ~H"""
+    <div
+      id="command-palette"
+      phx-hook="CommandPalette"
+      phx-update="ignore"
+      class="min-w-0 flex-1 sm:max-w-md"
+    >
+      <button
+        type="button"
+        data-palette-open
+        id="command-palette-open"
+        class="flex w-full items-center gap-2 rounded-lg border border-line bg-canvas/60 px-3 py-1.5 text-sm text-muted transition hover:border-line-strong hover:text-ink"
+      >
+        <.icon name="hero-magnifying-glass-micro" class="size-4" />
+        <span class="flex-1 truncate text-left">Search or jump to…</span>
+        <kbd class="hidden rounded border border-line bg-surface px-1.5 text-[10px] font-medium sm:inline">⌘K</kbd>
+      </button>
+      <div data-palette-dialog class="fixed inset-0 z-50 hidden">
+        <div data-palette-backdrop class="absolute inset-0 bg-ink/30 backdrop-blur-[2px]" />
+        <div class="relative mx-auto mt-[12vh] w-[min(36rem,calc(100%-2rem))] overflow-hidden rounded-2xl border border-line bg-surface shadow-pop">
+          <div class="flex items-center gap-2 border-b border-line px-4">
+            <.icon name="hero-magnifying-glass" class="size-5 text-muted" />
+            <input
+              data-palette-input
+              id="command-palette-input"
+              type="text"
+              autocomplete="off"
+              placeholder="Type a page or an action, e.g. new employee"
+              class="h-12 w-full border-0 bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none focus:ring-0"
+            />
+            <kbd class="rounded border border-line px-1.5 text-[10px] text-muted">Esc</kbd>
+          </div>
+          <ul id="command-palette-items" class="max-h-[50vh] overflow-y-auto p-2">
+            <li
+              :for={command <- @commands}
+              data-palette-item
+              data-search={"#{command.label} #{command.group} #{command.keywords}"}
+            >
+              <.link
+                navigate={command.path}
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink transition hover:bg-canvas"
+              >
+                <.icon
+                  name={
+                    if(command.group == "Actions",
+                      do: "hero-bolt-micro",
+                      else: "hero-arrow-right-micro"
+                    )
+                  }
+                  class="size-4 text-muted"
+                />
+                <span class="flex-1 truncate">{command.label}</span>
+                <span class="text-[10px] font-medium tracking-wide text-muted uppercase">{command.group}</span>
+              </.link>
+            </li>
+            <li data-palette-empty class="hidden px-3 py-6 text-center text-sm text-muted">
+              Nothing matches. Try “invoice”, “leave” or “new employee”.
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
     """
   end
