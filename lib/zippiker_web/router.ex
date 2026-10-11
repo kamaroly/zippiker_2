@@ -43,7 +43,8 @@ defmodule ZippikerWeb.Router do
     ash_authentication_live_session :platform,
       on_mount: {ZippikerWeb.LiveUserAuth, :live_super_admin} do
       live "/platform", Platform.OverviewLive
-      live "/platform/teams", Platform.TeamsLive
+      live "/platform/teams", Platform.TeamsLive, :index
+      live "/platform/teams/new", Platform.TeamsLive, :new
       live "/platform/teams/:id", Platform.TeamLive, :show
       live "/platform/teams/:id/subscription", Platform.TeamLive, :subscription
       live "/platform/users", Platform.UsersLive

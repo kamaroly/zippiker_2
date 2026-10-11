@@ -2,6 +2,11 @@
   <.header>
     Workspaces
     <:subtitle>Open one to manage its plan, modules and billing, or to step inside.</:subtitle>
+    <:actions>
+      <.button patch={~p"/platform/teams/new"} variant="primary" id="new-workspace">
+        <.icon name="hero-plus-micro" /> Workspace
+      </.button>
+    </:actions>
   </.header>
 
   <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -55,4 +60,55 @@
   </.table>
 
   <.pager :if={@page} page={@page} path={&teams_path(%{q: @query, page: &1})} />
+  <.modal
+    :if={@form}
+    id="workspace-modal"
+    show
+    title="New workspace"
+    on_cancel={JS.patch(~p"/platform/teams")}
+  >
+    <.form
+      for={@form}
+      id="workspace-form"
+      phx-change="validate"
+      phx-submit="create"
+      class="space-y-4"
+    >
+      <.input
+        field={@form[:name]}
+        label="Workspace name"
+        placeholder="Acme Ltd"
+        phx-mounted={JS.focus()}
+      />
+      <.input
+        field={@form[:owner_email]}
+        type="email"
+        label="Owner's email"
+        placeholder="founder@acme.com"
+        hint="Someone with an account becomes the owner now; anyone else is invited and becomes the owner when they accept."
+      />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <.input field={@form[:domain]} label="Domain (optional)" placeholder="acme.com" />
+        <.input
+          field={@form[:currency]}
+          type="select"
+          label="Reporting currency"
+          options={@currencies}
+        />
+      </div>
+      <p class="text-xs text-muted">
+        It starts on the default plan; change the plan and modules on its page.
+      </p>
+      <div class="flex justify-end">
+        <.button
+          type="submit"
+          variant="primary"
+          phx-disable-with="Creating…"
+          id="create-workspace"
+        >
+          Create workspace
+        </.button>
+      </div>
+    </.form>
+  </.modal>
 </Layouts.platform>

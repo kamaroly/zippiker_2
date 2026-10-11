@@ -8,7 +8,7 @@ defmodule Zippiker.Accounts.Organization.Policies do
       authorize_if always()
     end
 
-    policy action([:set_plan_limits, :platform_search]) do
+    policy action([:set_plan_limits, :platform_search, :platform_create]) do
       forbid_if always()
     end
 

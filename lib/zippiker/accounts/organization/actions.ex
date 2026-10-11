@@ -17,6 +17,24 @@ defmodule Zippiker.Accounts.Organization.Actions do
       change Zippiker.Accounts.Organization.Changes.StartSubscription
     end
 
+    create :platform_create do
+      description """
+      A super admin opens a workspace for someone: the owner is the user with
+      `owner_email`, or, if they have no account yet, whoever accepts the
+      invitation sent to that address.
+      """
+
+      accept [:name, :currency, :domain]
+      allow_nil_input [:domain]
+      argument :owner_email, :ci_string, allow_nil?: false
+      change Zippiker.Accounts.Organization.Changes.AssignDomain
+      change Zippiker.Accounts.Organization.Changes.CreateTenant
+      change Zippiker.Accounts.Organization.Changes.SeedRoles
+      change Zippiker.Accounts.Organization.Changes.CreateDefaultLegalEntity
+      change Zippiker.Accounts.Organization.Changes.StartSubscription
+      change Zippiker.Accounts.Organization.Changes.AssignOwner
+    end
+
     update :update do
       primary? true
       accept [:name, :currency]

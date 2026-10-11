@@ -16,6 +16,7 @@ defmodule Zippiker.Accounts do
     end
 
     resource Zippiker.Accounts.Organization do
+      define :platform_create_organization, action: :platform_create
       define :create_organization, action: :create
       define :update_organization, action: :update
       define :set_maker_checker, action: :set_maker_checker
